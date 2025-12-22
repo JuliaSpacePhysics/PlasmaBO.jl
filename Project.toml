@@ -1,0 +1,7 @@
+name = "PlasmaBO"
+uuid = "89aa2b4b-ed13-41a6-8160-6e24b4388da4"
+authors = ["Beforerr <zzj956959688@gmail.com> and contributors"]
+version = "1.0.0-DEV"
+
+[compat]
+julia = "1.10"
