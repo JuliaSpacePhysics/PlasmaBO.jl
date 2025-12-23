@@ -49,8 +49,6 @@ Create a Species with automatic Hermite coefficient computation.
 # Keyword Arguments
 - `kappa`: Kappa index for kappa distributions (default: 5.5)
 - `Nz`, `Nx`: Maximum Hermite indices (default: 16)
-
-See also: [`expand_fv2d`](@ref), [`gen_fv2d`](@ref)
 """
 function Species(q, m, n, Tz, Tp = Tz; vdz = 0.0, vdr = 0.0, distribution = :maxwellian, kwargs...)
     aslm = if distribution == :maxwellian || distribution == :bi_maxwellian
@@ -63,3 +61,5 @@ function Species(q, m, n, Tz, Tp = Tz; vdz = 0.0, vdr = 0.0, distribution = :max
 
     return Species(promote(q, m, n, Tz, Tp, vdz, vdr)..., aslm)
 end
+
+(sym::Symbol)(s::Species) = getfield(s, sym)
