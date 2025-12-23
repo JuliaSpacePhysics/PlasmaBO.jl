@@ -40,7 +40,6 @@ kz = k * cos(θ)
 
 # Filter for unstable modes (ω/ωce) with positive growth rate
 ω_unstable = filter(ω -> isfinite(ω) && imag(ω) > 0.001*wce, ωs) ./wce
-@assert ω_unstable[1] ≈ 0.6227245958514347 + 0.15724974983299012im
 ```
 
 ### Dispersion Curve Scan

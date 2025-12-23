@@ -32,7 +32,7 @@ Create HHSolverParams from a list of Species.
 - `kx`: Perpendicular wave vector (m⁻¹)
 - `kz`: Parallel wave vector (m⁻¹)
 
-See also: [`Species`](@ref), [`fDrHH`](@ref)
+See also: [`Species`](@ref)
 """
 function create_solver_params(species, B0)
     S = length(species)
@@ -43,9 +43,9 @@ function create_solver_params(species, B0)
     # Compute derived quantities for each species
     qs = charge.(species)
     ms = mass.(species)
-    ns = [s.n for s in species]
-    Tzs = [s.Tz * q / kb for s in species]  # eV -> K
-    Tps = [s.Tp * q / kb for s in species]
+    ns = (:n).(species)
+    Tzs = (:Tz).(species) * q / kb  # eV -> K
+    Tps = (:Tp).(species) * q / kb  # eV -> K
 
     vtzs = @. sqrt(2 * kb * Tzs / ms)
     vtps = @. sqrt(2 * kb * Tps / ms)
