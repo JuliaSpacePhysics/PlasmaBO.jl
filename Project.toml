@@ -1,6 +1,6 @@
 name = "PlasmaBO"
 uuid = "89aa2b4b-ed13-41a6-8160-6e24b4388da4"
-version = "1.0.0-DEV"
+version = "0.1.0"
 authors = ["Beforerr <zzj956959688@gmail.com> and contributors"]
 
 [workspace]
