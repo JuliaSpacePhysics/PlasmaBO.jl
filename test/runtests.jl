@@ -16,9 +16,9 @@ end
     me_mp = 1 / 1836 # [proton mass]
     T = 51 # [eV]
     # Ring beam electrons (10% density)
-    ring_beam = Species(-1.0, me_mp, 1.0e5, T; vdz = 0.1, vdr = 0.05)
+    ring_beam = Maxwellian(-1.0, me_mp, 1.0e5, T; vdz = 0.1, vdr = 0.05)
     # Background electrons (90% density)
-    background = Species(-1.0, me_mp, 9.0e5, T)
+    background = Maxwellian(-1.0, me_mp, 9.0e5, T)
 
     species = [ring_beam, background]
 

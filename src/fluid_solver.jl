@@ -1,11 +1,4 @@
 # Electromagnetic fluid dispersion relation solver
-# Ported from MATLAB bo_fluid_matrix.m by Hua-sheng XIE
-#
-# References:
-# - Xie, H. S. (2014). PDRF: A general dispersion relation solver for
-#   magnetized multi-fluid plasma. Comput. Phys. Comm. 185, 670-675.
-
-export FluidSpecies, FluidSolverParams, solve_fluid_dispersion
 
 """
     FluidSpecies{T}
@@ -32,9 +25,6 @@ struct FluidSpecies{T}
     gamma_z::T     # Parallel polytrope exponent
     gamma_p::T     # Perpendicular polytrope exponent
 end
-
-charge(s) = s.q * q
-mass(s) = s.m * mp
 
 plasma_frequency(s::FluidSpecies) = plasma_frequency(charge(s), s.n, mass(s))
 gyrofrequency(s::FluidSpecies) = gyrofrequency(charge(s), s.B, mass(s))

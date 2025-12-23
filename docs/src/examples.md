@@ -8,6 +8,8 @@ The matrix eigenvalue method finds all wave modes simultaneously by transforming
 
 This approach is more efficient to find multiple modes at once, and doesn't require initial guesses for the root finder.
 
+Here we use the ring beam configuration from Umeda 2012 [umedaNumericalElectromagneticLinear2012](@citet).
+
 ```@example matrix
 using PlasmaBO
 using PlasmaBO: q, kb, ε0, me, c0
@@ -18,9 +20,9 @@ B0 = 96.24e-9  # [Tesla]
 me_mp = 1/1836 # [proton mass]
 T = 51 # [eV]
 # Ring beam electrons (10% density)
-ring_beam = Species(-1.0, me_mp, 1e5, T; vdz=0.1, vdr=0.05)
+ring_beam = Maxwellian(-1.0, me_mp, 1e5, T; vdz=0.1, vdr=0.05)
 # Background electrons (90% density)
-background = Species(-1.0, me_mp, 9e5, T)
+background = Maxwellian(-1.0, me_mp, 9e5, T)
 
 species = [ring_beam, background]
 
@@ -39,7 +41,7 @@ kz = k * cos(θ)
 ωs = solve_kinetic_dispersion(species, B0, kx, kz; N=6, J=12)
 
 # Filter for unstable modes (ω/ωce) with positive growth rate
-ω_unstable = filter(ω -> isfinite(ω) && imag(ω) > 0.001*wce, ωs) ./wce
+ω_unstable = filter(ω -> isfinite(ω) && imag(ω) > 0.001*wce, ωs)[1] ./wce
 ```
 
 ### Dispersion Curve Scan
