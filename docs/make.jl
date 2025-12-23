@@ -1,7 +1,9 @@
 using PlasmaBO
-using Documenter
+using Documenter, DocumenterCitations
 
 DocMeta.setdocmeta!(PlasmaBO, :DocTestSetup, :(using PlasmaBO); recursive = true)
+
+const bib = CitationBibliography(joinpath(@__DIR__, "PlasmaWaves.jl.bib"))
 
 makedocs(;
     modules = [PlasmaBO],
@@ -12,8 +14,10 @@ makedocs(;
     ),
     pages = [
         "Home" => "index.md",
-        "Examples" => "examples.md"
+        "Examples" => "examples.md",
+        "Firehose instability" => "firehose_Astfalk17.md",
     ],
+    plugins = [bib],
 )
 
 deploydocs(;

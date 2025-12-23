@@ -1,126 +1,89 @@
 # Matrix eigenvalue solver for plasma dispersion relations
-"""
-    HHSolverParams{T}
-
-Parameters for the matrix eigenvalue solver.
-"""
-struct HHSolverParams{T} <: AbstractSolverParams
-    S::Int                      # Number of species
-    c2::T                       # Speed of light squared
-    wcs::Vector{T}              # Cyclotron frequencies
-    wps2::Vector{T}             # Plasma frequencies squared
-    rhocs::Vector{T}            # Cyclotron radii
-    vtzs::Vector{T}             # Parallel thermal velocities
-    vtps::Vector{T}             # Perpendicular thermal velocities
-    vdsz::Vector{T}             # Parallel drift velocities
-    ds::Vector{T}               # Ring beam drift parameters
-    Rs::Vector{T}               # Normalization parameters
-    aslm::Vector{Matrix{T}}     # Hermite expansion coefficients
-    msmax::Vector{Int}          # Max perpendicular Hermite index in HH expansion
-    lsmax::Vector{Int}          # Max parallel Hermite index in HH expansion
+struct HHSolverParam{T}
+    wc::T                       # Cyclotron frequency
+    wp::T                      # Plasma frequency
+    ρc::T                     # Cyclotron radius
+    vtz::T                      # Parallel thermal velocity
+    vtp::T                      # Perpendicular thermal velocity
+    vdz::T                     # Parallel drift velocity
+    vdr::T
+    aslm::Matrix{T}             # Hermite expansion coefficients
 end
 
+HHSolverParam(param::HHSolverParam, B0) = param
 
-"""
-    create_solver_params(species::Vector{Species}, B0, kx, kz)
+# The coefficients a_{s,lm}
+_alm(::Maxwellian{T}) where {T} = ones(T, 1, 1)
 
-Create HHSolverParams from a list of Species.
-
-# Arguments
-- `species`: Vector of Species objects
-- `B0`: Magnetic field strength (Tesla)
-- `kx`: Perpendicular wave vector (m⁻¹)
-- `kz`: Parallel wave vector (m⁻¹)
-
-See also: [`Species`](@ref)
-"""
-function create_solver_params(species, B0)
-    S = length(species)
+function HHSolverParam(species, B0)
     T = Float64
-
-    c2 = c0^2
-
     # Compute derived quantities for each species
-    qs = charge.(species)
-    ms = mass.(species)
-    ns = (:n).(species)
-    Tzs = (:Tz).(species) * q / kb  # eV -> K
-    Tps = (:Tp).(species) * q / kb  # eV -> K
+    q = charge(species)
+    m = mass(species)
+    Tz = temperature(species.Tz)  # eV -> K
+    Tp = temperature(species.Tp)  # eV -> K
 
-    vtzs = @. sqrt(2 * kb * Tzs / ms)
-    vtps = @. sqrt(2 * kb * Tps / ms)
+    vtzs = sqrt(2 * kb * Tz / m)
+    vtp = sqrt(2 * kb * Tp / m)
 
-    wps = plasma_frequency.(qs, ns, ms)
-    wps2 = wps .^ 2
-
-    wcs = @. B0 * qs / ms
-    rhocs = @. sqrt(kb * Tps / ms) / wcs
-
-    vdsz = [sp.vdz * c0 for sp in species]
-    ds = [species[i].vdr * c0 / vtps[i] for i in 1:S]
-
-    As = [exp(-ds[i]^2) + sqrt(π) * ds[i] * erfc(-ds[i]) for i in 1:S]
-
-    aslm = [s.aslm for s in species]
-    msmax = [size(s.aslm, 2) - 1 for s in species]
-    lsmax = [size(s.aslm, 1) - 1 for s in species]
-
-    return HHSolverParams{T}(
-        S, T(c2), T.(wcs), T.(wps2), T.(rhocs),
-        T.(vtzs), T.(vtps), T.(vdsz),
-        T.(ds), T.(As), aslm, msmax, lsmax
-    )
+    wp = plasma_frequency(q, species.n, m)
+    wc = B0 * q / m
+    ρc = sqrt(kb * Tp / m) / wc
+    vdz = species.vdz * c0
+    vdr = species.vdr * c0
+    return HHSolverParam{T}(wc, wp, ρc, vtzs, vtp, vdz, vdr, _alm(species))
 end
 
+function HHSolverParam(q, m, n, B0, vtz, vtp, vdz, vdr, alm)
+    T = Float64
+    wc = B0 * q / m
+    wp = plasma_frequency(q, n, m)
+    ρc = vtp / sqrt(2) / wc
+    return HHSolverParam{T}(wc, wp, ρc, vtz, vtp, vdz, vdr, alm)
+end
 
 function _assemble_species!(
         M,
-        s,
         snj,
-        kx, kz,
-        S, SNJ1, SNJ3,
-        as_s,
-        cj, cj_l,
-        wcₛ, wp2ₛ, vtzₛ, vtpₛ, vdzₛ, dₛ,
-        R, # normalization factor
-        N,
-        aslm,
-        m_max, l_max,
-        bzj,
-        J,
+        kx, kz, SNJ1, SNJ3,
+        as,
+        cj, bzj, cj_l,
+        wc, wp2, vtz, vtp, vdz, d, R, alm,
+        N, J,
     )
+    l_max, m_max = size(alm) .- 1
 
     b11, b12, b13, b21, b22, b23, b31, b32, b33 = ntuple(_ -> 0.0im, 9)
     Aₙ = zeros(m_max + 4, 2) # Γ_{a,n,m,p}
     Bₙ = zeros(m_max + 4, 2) # Γ_{b,n,m,p}
     Cₙ = zeros(m_max + 4, 2) # Γ_{c,n,m,p}
 
-    vr = vtpₛ / vtzₛ
-    dr = vdzₛ / vtzₛ
+    vr = vtp / vtz
+    dr = vdz / vtz
 
     Ils = funIn.(0:(l_max + 2))
     for n in -N:N
         Aₙ .= 0
         Bₙ .= 0
         Cₙ .= 0
-        nw_c = n * wcₛ
-        nwkp = nw_c / (kx * vtpₛ)
+        nw_c = n * wc
+        nwkp = nw_c / (kx * vtp)
 
         for m in 0:(m_max + 2)
             idm = m + 2
-            Aₙ[idm, 1] = 2.0 / R * funAn(n, as_s, dₛ, m, 0)
-            Aₙ[idm, 2] = 2.0 / R * funAn(n, as_s, dₛ, m, 1)
-            Bₙ[idm, 1] = 2.0 / R * funBn(n, as_s, dₛ, m, 1)
-            Bₙ[idm, 2] = 2.0 / R * funBn(n, as_s, dₛ, m, 2)
-            Cₙ[idm, 1] = 2.0 / R * funCn(n, as_s, dₛ, m, 2)
-            Cₙ[idm, 2] = 2.0 / R * funCn(n, as_s, dₛ, m, 3)
+            Aₙ[idm, 1] = 2.0 / R * funAn(n, as, d, m, 0)
+            Aₙ[idm, 2] = 2.0 / R * funAn(n, as, d, m, 1)
+            Bₙ[idm, 1] = 2.0 / R * funBn(n, as, d, m, 1)
+            Bₙ[idm, 2] = 2.0 / R * funBn(n, as, d, m, 2)
+            Cₙ[idm, 1] = 2.0 / R * funCn(n, as, d, m, 2)
+            Cₙ[idm, 2] = 2.0 / R * funCn(n, as, d, m, 3)
         end
 
         for j in 1:J
             snj += 1
             cⱼ = cj[j]
 
-            cnj = cⱼ * kz * vtzₛ + kz * vdzₛ + nw_c
+            cnj = cⱼ * kz * vtz + kz * vdz + nw_c
 
             sum11tmp1, sum11tmp2, sum11tmp3 = 0.0im, 0.0im, 0.0im
             sum12tmp1, sum12tmp2 = 0.0im, 0.0im
@@ -143,7 +106,7 @@ function _assemble_species!(
                 dZlc = dZl * cⱼ
 
                 for m in 0:m_max
-                    aₗₘ = aslm[l + 1, m + 1] # aₗₘ
+                    aₗₘ = alm[l + 1, m + 1] # aₗₘ
                     idx_m = m + 2
                     idx_mp1 = idx_m + 1
                     idx_mm1 = idx_m - 1
@@ -184,27 +147,27 @@ function _assemble_species!(
             end
 
             if j == 1
-                nwkp = nw_c / (kx * vtpₛ)
-                b11 -= wp2ₛ * nwkp^2 * sum11tmp3
-                b22 -= wp2ₛ * sum22tmp3
-                b33 -= wp2ₛ * sum33tmp3
+                nwkp = nw_c / (kx * vtp)
+                b11 -= wp2 * nwkp^2 * sum11tmp3
+                b22 -= wp2 * sum22tmp3
+                b33 -= wp2 * sum33tmp3
             end
 
-            tmp = wp2ₛ * bzj[j] / cnj
+            tmp = wp2 * bzj[j] / cnj
 
-            kzvtz = kz * vtzₛ
-            kzvtp = kz * vtpₛ
+            kzvtz = kz * vtz
+            kzvtp = kz * vtp
             vr2 = vr * vr
 
             p11snj = nwkp^2 * (nw_c * sum11tmp1 + kzvtz * vr2 * sum11tmp2) * tmp
             p12snj = 1im * nwkp * (nw_c * sum12tmp1 + kzvtz * vr2 * sum12tmp2) * tmp
             p21snj = -p12snj
             p22snj = (nw_c * sum22tmp1 + kzvtz * vr2 * sum22tmp2) * tmp
-            p13snj = nwkp * ((vtzₛ / vtpₛ) * nw_c * sum13tmp1 + kzvtp * sum13tmp2) * tmp
+            p13snj = nwkp * ((vtz / vtp) * nw_c * sum13tmp1 + kzvtp * sum13tmp2) * tmp
             p31snj = p13snj
-            p23snj = -1im * ((vtzₛ / vtpₛ) * nw_c * sum23tmp1 + kzvtp * sum23tmp2) * tmp
-            p32snj = 1im * ((vtzₛ / vtpₛ) * nw_c * sum32tmp1 + kzvtp * sum32tmp2) * tmp
-            p33snj = (vtzₛ / vtpₛ) * ((vtzₛ / vtpₛ) * nw_c * sum33tmp1 + kzvtp * sum33tmp2) * tmp
+            p23snj = -1im * ((vtz / vtp) * nw_c * sum23tmp1 + kzvtp * sum23tmp2) * tmp
+            p32snj = 1im * ((vtz / vtp) * nw_c * sum32tmp1 + kzvtp * sum32tmp2) * tmp
+            p33snj = (vtz / vtp) * ((vtz / vtp) * nw_c * sum33tmp1 + kzvtp * sum33tmp2) * tmp
 
             jjx = snj + 0 * SNJ1
             jjy = snj + 1 * SNJ1
@@ -233,19 +196,27 @@ function _assemble_species!(
             b33 -= p33snj
         end
     end
+    return snj, (b11, b12, b13, b21, b22, b23, b31, b32, b33)
+end
 
-    SNJ = SNJ1 - S
-    M[SNJ + s, SNJ3 + 1] = b11
-    M[SNJ + s, SNJ3 + 2] = b12
-    M[SNJ + s, SNJ3 + 3] = b13
-    M[SNJ + SNJ1 + s, SNJ3 + 1] = b21
-    M[SNJ + SNJ1 + s, SNJ3 + 2] = b22
-    M[SNJ + SNJ1 + s, SNJ3 + 3] = b23
-    M[SNJ + 2SNJ1 + s, SNJ3 + 1] = b31
-    M[SNJ + 2SNJ1 + s, SNJ3 + 2] = b32
-    M[SNJ + 2SNJ1 + s, SNJ3 + 3] = b33
-
-    return snj
+function _assemble_species!(
+        M, param,
+        snj, kx, kz,
+        SNJ1, SNJ3,
+        czj, bzj,
+        czj_l, N,
+        J,
+    )
+    as = kx * param.ρc * sqrt(2) # Perpendicular wavenumber parameter
+    vtp = param.vtp
+    d = param.vdr / vtp
+    R = exp(-d^2) + sqrt(π) * d * erfc(-d) # Normalization parameters
+    wp2 = param.wp^2
+    return _assemble_species!(
+        M, snj, kx, kz, SNJ1, SNJ3, as, czj, bzj, czj_l,
+        param.wc, wp2, param.vtz, vtp, param.vdz, d, R, param.aslm,
+        N, J
+    )
 end
 
 """
@@ -259,8 +230,6 @@ This method transforms the dispersion relation into a matrix eigenvalue problem
 using J-pole approximation for the plasma dispersion function, allowing
 simultaneous computation of all wave modes.
 
-# Arguments
-- `params`: HHSolverParams or MatrixSolverParams with plasma parameters
 - `kx`: Perpendicular wave vector component (m⁻¹)
 - `kz`: Parallel wave vector component (m⁻¹)
 - `J`: Number of poles for Z-function approximation (default: 8)
@@ -277,15 +246,12 @@ function solve_dispersion_matrix end
 # Indices SNJ3+1 to SNJ3+6:    E_x, E_y, E_z, B_x, B_y, B_z
 # where SNJ1 = SNJ + S (SNJ pole velocities + S species auxiliary j's)
 
-function build_dispersion_matrix(params::HHSolverParams, kx, kz; N = 2, J = 8)
-    (; S, c2, wcs, wps2, rhocs, vtzs, vtps, vdsz, ds, Rs, aslm, msmax, lsmax) = params
+function build_dispersion_matrix(params, kx, kz; N = 2, J = 8, c2 = c0^2)
+    S = length(params)
     (; J, bzj, czj) = get_jpole_coefficients(J)
 
     # Handle singularities
     kx = kx == 0.0 ? 1.0e-30 : kx
-    # Perpendicular wavenumber parameter
-    as = kx .* rhocs .* sqrt(2)
-
     # Compute matrix dimensions
     Ns = 2 .* fill(N, S) .+ 1  # Number of harmonics per species
     SNJ = S * (2 * N + 1) * J
@@ -297,6 +263,7 @@ function build_dispersion_matrix(params::HHSolverParams, kx, kz; N = 2, J = 8)
     kz < 0 && (czj = -czj)
 
     # Precompute czj^l for all l values
+    lsmax = [size(params[s].aslm, 1) - 1 for s in 1:S]
     max_lsmax = maximum(lsmax)
     czj_l = zeros(ComplexF64, J, max_lsmax + 5)
     for l in 0:(max_lsmax + 3)
@@ -309,32 +276,24 @@ function build_dispersion_matrix(params::HHSolverParams, kx, kz; N = 2, J = 8)
 
     snj = 0
     for s in 1:S
-        snj = _assemble_species!(
-            M,
-            s,
-            snj,
-            kx,
-            kz,
-            S,
-            SNJ1,
-            SNJ3,
-            as[s],
-            czj,
-            czj_l,
-            wcs[s],
-            wps2[s],
-            vtzs[s],
-            vtps[s],
-            vdsz[s],
-            ds[s],
-            Rs[s],
-            N,
-            aslm[s],
-            msmax[s],
-            lsmax[s],
-            bzj,
-            J,
+        param = params[s]
+        snj, (b11, b12, b13, b21, b22, b23, b31, b32, b33) = _assemble_species!(
+            M, param,
+            snj, kx, kz,
+            SNJ1, SNJ3,
+            czj, bzj, czj_l,
+            N, J,
         )
+
+        M[SNJ + s, SNJ3 + 1] = b11
+        M[SNJ + s, SNJ3 + 2] = b12
+        M[SNJ + s, SNJ3 + 3] = b13
+        M[SNJ + SNJ1 + s, SNJ3 + 1] = b21
+        M[SNJ + SNJ1 + s, SNJ3 + 2] = b22
+        M[SNJ + SNJ1 + s, SNJ3 + 3] = b23
+        M[SNJ + 2SNJ1 + s, SNJ3 + 1] = b31
+        M[SNJ + 2SNJ1 + s, SNJ3 + 2] = b32
+        M[SNJ + 2SNJ1 + s, SNJ3 + 3] = b33
     end
 
 
@@ -365,7 +324,7 @@ function solve_dispersion_matrix(params, kx, kz; kw...)
 end
 
 function solve_kinetic_dispersion(species, B0, kx, kz; kw...)
-    params = create_solver_params(species, B0)
+    params = HHSolverParam.(species, B0)
     return solve_dispersion_matrix(params, kx, kz; kw...)
 end
 

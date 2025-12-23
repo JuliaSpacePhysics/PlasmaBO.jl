@@ -9,6 +9,18 @@
 
 **Documentation**: [![Dev](https://img.shields.io/badge/docs-dev-blue.svg?logo=julia)](https://JuliaSpacePhysics.github.io/PlasmaBO.jl/dev/)
 
+
+## Features and Roadmap
+
+- Hermite-Hermite (HH) expansion for arbitrary/analytic distributions
+    - [x] Maxwellian / BiMaxwellian
+    - [ ] Kappa / BiKappa / product Bikappa
+- [ ] Generalized plasma dispersion function (GPDF)
+- [ ] Integration with [VelocityDistributionFunctions.jl](https://github.com/JuliaSpacePhysics/VelocityDistributionFunctions.jl) and observation / simulation data
+- [ ] Multi-fluid solver
+- [ ] Reformulate as a `LinearProblem` for use with `SciML` [LinearSolve](https://docs.sciml.ai/LinearSolve/stable/)
+- [ ] Faster eigenvalue solver using Krylov methods ([Arpack](https://github.com/JuliaLinearAlgebra/Arpack.jl) / [KrylovKit](https://github.com/Jutho/KrylovKit.jl))
+
 ## Elsewhere
 
 - [hsxie/BO-Arbitrary](https://github.com/hsxie/boarbitrary/tree/main): Extension of the kinetic electromagnetic magnetized dispersion relation solver [PDRK](https://github.com/hsxie/pdrk)/[BO](https://github.com/hsxie/bo) to arbitrary distributions.
