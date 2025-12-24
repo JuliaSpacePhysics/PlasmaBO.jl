@@ -6,6 +6,8 @@ using Test
     Aqua.test_all(PlasmaBO)
 end
 
+include("test_track.jl")
+
 @testset "Umeda 2012 ring beam configuration" begin
     using PlasmaBO: q, me
 

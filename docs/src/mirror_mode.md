@@ -30,14 +30,12 @@ species = (proton, electron)
 params = HHSolverParam.(species, B0)
 ρᵢ = params[1].ρc
 ωₙ = params[1].wc
-ks = (0.005:0.04:0.62) ./ ρᵢ
+ks = (0.005:0.04:0.7) ./ ρᵢ
 
-results = solve_kinetic_dispersion(species, B0, ks, θ)
+sol = solve_kinetic_dispersion(species, B0, ks, θ)
 
 # Extract the most unstable mode at each k (by growth rate)
-ωmax = map(results.ωs) do ωs
-    argmax(imag, ωs)
-end
+ωmax = argmax.(imag, sol.ωs)
 ```
 
 ```@example mirror
@@ -46,8 +44,8 @@ using CairoMakie
 let fig = Figure()
     ax1 = Axis(fig[1,1]; xlabel = "k*λD", ylabel = "ωᵣ / ωₙ")
     ax2 = Axis(fig[1,2]; xlabel = "k*λD", ylabel = "γ / ωₙ")
-    scatterlines!(ax1, results.ks .* ρᵢ, real.(ωmax)./ ωₙ)
-    scatterlines!(ax2, results.ks .* ρᵢ, imag.(ωmax)./ ωₙ)
+    scatterlines!(ax1, sol.ks .* ρᵢ, real.(ωmax)./ ωₙ)
+    scatterlines!(ax2, sol.ks .* ρᵢ, imag.(ωmax)./ ωₙ)
     fig
 end
 ```

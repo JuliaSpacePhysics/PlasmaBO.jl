@@ -220,12 +220,8 @@ function _assemble_species!(
 end
 
 function _assemble_species!(
-        M, param,
-        snj, kx, kz,
-        SNJ1, SNJ3,
-        czj, bzj,
-        czj_l, N,
-        J,
+        M, param, snj, kx, kz,
+        SNJ1, SNJ3, czj, bzj, czj_l, N, J
     )
     as = kx * param.ρc * sqrt(2) # Perpendicular wavenumber parameter
     vtp = param.vtp
@@ -268,11 +264,14 @@ function solve_dispersion_matrix end
 
 # Compute matrix dimensions
 _size(S::Int, N, J) = 3 * (S * (2 * N + 1) * J + S) + 6
-_size(species, N, J) = _size(length(species), N, J)
+_zeros(species, N, J) = begin
+    S = length(species)
+    n = _size(S, N, J)
+    zeros(ComplexF64, n, n)
+end
 
 function build_dispersion_matrix(species, args...; N = 2, J = 8, kw...)
-    NN = _size(species, N, J)
-    M = zeros(ComplexF64, NN, NN)
+    M = _zeros(species, N, J)
     return build_dispersion_matrix!(M, species, args...; N, J, kw...)
 end
 
@@ -363,12 +362,24 @@ function solve_kinetic_dispersion(species, B0, kx, kz; kw...)
 end
 
 function solve_kinetic_dispersion(species, B0, ks::AbstractVector, θ; N = 2, J = 8, kw...)
-    NN = _size(species, N, J)
-    M = zeros(ComplexF64, NN, NN)
+    M = _zeros(species, N, J)
     params = HHSolverParam.(species, B0)
     ωs = @showprogress desc = "Solving dispersion..." map(ks) do k
         kx, kz = k .* sincos(θ)
         solve_dispersion_matrix!(M, params, kx, kz; N, J, kw...)
     end
     return DispersionSolution(ks, ωs)
+end
+
+function solve_kinetic_dispersion(species, B0, ks::AbstractVector, θs::AbstractVector; N = 2, J = 8, kw...)
+    M = _zeros(species, N, J)
+    params = HHSolverParam.(species, B0)
+    ωs = Matrix{Vector{ComplexF64}}(undef, length(ks), length(θs))
+    @showprogress desc = "Solving dispersion (k, θ)..." for (iθ, θ) in enumerate(θs)
+        for (ik, k) in enumerate(ks)
+            kx, kz = k .* sincos(θ)
+            ωs[ik, iθ] = solve_dispersion_matrix!(M, params, kx, kz; N, J, kw...)
+        end
+    end
+    return DispersionSolution(ks, θs, ωs)
 end

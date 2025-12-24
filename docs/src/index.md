@@ -27,7 +27,7 @@ The matrix eigenvalue method ([xieEfficientFrameworkSolving2025](@citet), [xiePD
 
 This approach is more efficient to find multiple modes at once, and doesn't require initial guesses for the root finder.
 
-Check out the [ring beam instability example](ringbeam_Umeda12.md) for detailed usage instructions, also see [firehose instability example](firehose_Astfalk17.md) for using with arbitrary velocity distributions, and [cold plasma example](cold_plasma.md) for comparing kinetic and fluid solvers.
+Check out the [ring beam instability example](ringbeam_Umeda12.md) for detailed usage instructions, also see [firehose instability example](firehose_Astfalk17.md) for using with arbitrary velocity distributions, [cold plasma example](cold_plasma.md) for comparing kinetic and fluid solvers, and [dispersion surface tracking example](dispersion_surface.md) for 2D scanning and mode tracking.
 
 ## Notation & Assumptions
 

@@ -19,6 +19,7 @@ makedocs(;
         "Mirror mode" => "mirror_mode.md",
         "Ion cyclotron emission" => "ice_Irvine18.md",
         "Cold plasma (fluid vs kinetic solver)" => "cold_plasma.md",
+        "Dispersion surface tracking" => "dispersion_surface.md",
     ],
     plugins = [bib],
 )
