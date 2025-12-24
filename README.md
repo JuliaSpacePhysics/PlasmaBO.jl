@@ -4,7 +4,6 @@
 [![Coverage](https://codecov.io/gh/JuliaSpacePhysics/PlasmaBO.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/JuliaSpacePhysics/PlasmaBO.jl)
 [![Aqua](https://raw.githubusercontent.com/JuliaTesting/Aqua.jl/refs/heads/master/badge.svg)](https://github.com/JuliaTesting/Aqua.jl)
 
-
 **Installation**: at the Julia REPL, run `using Pkg; Pkg.add("PlasmaBO")`
 
 **Documentation**: [![Dev](https://img.shields.io/badge/docs-dev-blue.svg?logo=julia)](https://JuliaSpacePhysics.github.io/PlasmaBO.jl/dev/)
@@ -12,14 +11,14 @@
 
 ## Features and Roadmap
 
-- Hermite-Hermite (HH) expansion for arbitrary/analytic distributions
+- [x] Hermite-Hermite (HH) expansion for arbitrary/analytic distributions
     - [x] Maxwellian / BiMaxwellian
-    - [ ] Kappa / BiKappa / product Bikappa
+    - [x] Kappa / BiKappa / product Bikappa
 - [ ] Generalized plasma dispersion function (GPDF)
 - [ ] Integration with [VelocityDistributionFunctions.jl](https://github.com/JuliaSpacePhysics/VelocityDistributionFunctions.jl) and observation / simulation data
 - [ ] Multi-fluid solver
 - [ ] Faster eigenvalue solver using Krylov methods ([Arpack](https://github.com/JuliaLinearAlgebra/Arpack.jl) / [KrylovKit](https://github.com/Jutho/KrylovKit.jl))
-- [ ] GPU Acceleration / Parallelization
+- [ ] GPU Acceleration / Parallelization / Sparse matrix optimizations
 - [ ] Reformulate as a `SciMLProblem` for use with `SciML` (ref: [LinearSolve](https://docs.sciml.ai/LinearSolve/stable/), [ApproxFun.jl](https://juliaapproximation.github.io/ApproxFun.jl/stable/generated/Eigenvalue/))
 
 ## Elsewhere

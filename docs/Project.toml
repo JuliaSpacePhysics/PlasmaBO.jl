@@ -2,5 +2,4 @@
 CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 DocumenterCitations = "daee34ce-89f3-4625-b898-19384cb65244"
-MAT = "23992714-dd62-5051-b70f-ba57cb901cac"
 PlasmaBO = "89aa2b4b-ed13-41a6-8160-6e24b4388da4"

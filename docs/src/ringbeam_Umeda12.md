@@ -1,14 +1,6 @@
-# Examples
+# Case: Ring beam instability
 
-This page demonstrates how to use the package to solve kinetic dispersion relations.
-
-## Matrix Eigenvalue Solver
-
-The matrix eigenvalue method finds all wave modes simultaneously by transforming the dispersion relation into a matrix eigenvalue problem using J-pole approximation for the plasma dispersion function.
-
-This approach is more efficient to find multiple modes at once, and doesn't require initial guesses for the root finder.
-
-Here we use the ring beam configuration from Umeda 2012 [umedaNumericalElectromagneticLinear2012](@citet).
+This page demonstrates how to use the package to solve kinetic dispersion relations for the ring beam instability [umedaNumericalElectromagneticLinear2012](@citet).
 
 ```@example matrix
 using PlasmaBO
@@ -43,7 +35,7 @@ kz = k * cos(θ)
 ω_unstable = filter(ω -> isfinite(ω) && imag(ω) > 0.001*wce, ωs)[1] ./wce
 ```
 
-### Dispersion Curve Scan
+## Dispersion Curve Scan
 
 ```@example matrix
 # Scan k*λD from 0.01 to 0.3

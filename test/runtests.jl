@@ -1,12 +1,9 @@
 using PlasmaBO
 using Test
-using Aqua
 
-@testset "PlasmaBO.jl" begin
-    @testset "Code quality (Aqua.jl)" begin
-        Aqua.test_all(PlasmaBO)
-    end
-    # Write your tests here.
+@testset "Code quality (Aqua.jl)" begin
+    using Aqua
+    Aqua.test_all(PlasmaBO)
 end
 
 @testset "Umeda 2012 ring beam configuration" begin
@@ -48,6 +45,12 @@ end
     θ = deg2rad(45)
     n = 5.0e19
 
+    κz = 5.5
+    κx = 5.5
+    proton = BiKappa2(5.0e19, κz, κx, 1986.734, 993.367)
+    data = gen_fv2d(proton)
+    alm = hermite_expansion(data.fv, data.vz, data.vx, data.vtz, data.vtx).alm
+
     me_mp = 1 / 1836 # [proton mass]
     electron = Maxwellian(-1.0, me_mp, n, 496.683)
     fpath = pkgdir(PlasmaBO, "test/firehose_Astfalk17_fvceff1.mat")
@@ -55,6 +58,8 @@ end
         fvc = read(file, "fvc")
         HHSolverParam(q, mp, n, B0, fvc["vtz"], fvc["vtp"], 0.0, 0.0, fvc["alm"])
     end
+
+    @test alm ≈ proton_param.aslm rtol = 1.0e-4
 
     kn = 31.0613
     k = kn / 4

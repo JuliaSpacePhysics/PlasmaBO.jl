@@ -15,23 +15,23 @@ HHSolverParam(param::HHSolverParam, B0) = param
 # The coefficients a_{s,lm}
 _alm(::Maxwellian{T}) where {T} = ones(T, 1, 1)
 
-function HHSolverParam(species, B0)
+
+_vtz(s) = sqrt(2 * kb * temperature(s.Tz) / mass(s))
+_vtp(s) = sqrt(2 * kb * temperature(s.Tp) / mass(s))
+
+function HHSolverParam(species, B0; alm = _alm(species))
     T = Float64
     # Compute derived quantities for each species
     q = charge(species)
     m = mass(species)
-    Tz = temperature(species.Tz)  # eV -> K
-    Tp = temperature(species.Tp)  # eV -> K
-
-    vtzs = sqrt(2 * kb * Tz / m)
-    vtp = sqrt(2 * kb * Tp / m)
-
+    vtzs = _vtz(species)
+    vtp = _vtp(species)
     wp = plasma_frequency(q, species.n, m)
     wc = B0 * q / m
-    ρc = sqrt(kb * Tp / m) / wc
+    ρc = vtp / sqrt(2) / wc
     vdz = species.vdz * c0
     vdr = species.vdr * c0
-    return HHSolverParam{T}(wc, wp, ρc, vtzs, vtp, vdz, vdr, _alm(species))
+    return HHSolverParam{T}(wc, wp, ρc, vtzs, vtp, vdz, vdr, alm)
 end
 
 function HHSolverParam(q, m, n, B0, vtz, vtp, vdz, vdr, alm)
@@ -344,7 +344,7 @@ function solve_kinetic_dispersion(species, B0, ks::AbstractVector, θ; N = 2, J 
     NN = _size(species, N, J)
     M = zeros(ComplexF64, NN, NN)
     params = HHSolverParam.(species, B0)
-    ωs = map(ks) do k
+    ωs = @showprogress desc = "Solving dispersion..." map(ks) do k
         kx, kz = k .* sincos(θ)
         solve_dispersion_matrix!(M, params, kx, kz; N, J, kw...)
     end
