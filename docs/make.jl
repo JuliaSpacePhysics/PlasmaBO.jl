@@ -3,7 +3,7 @@ using Documenter, DocumenterCitations
 
 DocMeta.setdocmeta!(PlasmaBO, :DocTestSetup, :(using PlasmaBO); recursive = true)
 
-const bib = CitationBibliography(joinpath(@__DIR__, "PlasmaWaves.jl.bib"))
+const bib = CitationBibliography(joinpath(@__DIR__, "PlasmaBO.jl.bib"))
 
 makedocs(;
     modules = [PlasmaBO],

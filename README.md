@@ -18,8 +18,9 @@
 - [ ] Generalized plasma dispersion function (GPDF)
 - [ ] Integration with [VelocityDistributionFunctions.jl](https://github.com/JuliaSpacePhysics/VelocityDistributionFunctions.jl) and observation / simulation data
 - [ ] Multi-fluid solver
-- [ ] Reformulate as a `LinearProblem` for use with `SciML` [LinearSolve](https://docs.sciml.ai/LinearSolve/stable/)
 - [ ] Faster eigenvalue solver using Krylov methods ([Arpack](https://github.com/JuliaLinearAlgebra/Arpack.jl) / [KrylovKit](https://github.com/Jutho/KrylovKit.jl))
+- [ ] GPU Acceleration / Parallelization
+- [ ] Reformulate as a `SciMLProblem` for use with `SciML` (ref: [LinearSolve](https://docs.sciml.ai/LinearSolve/stable/), [ApproxFun.jl](https://juliaapproximation.github.io/ApproxFun.jl/stable/generated/Eigenvalue/))
 
 ## Elsewhere
 
