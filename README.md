@@ -16,7 +16,7 @@
     - [x] Kappa / BiKappa / product Bikappa
 - [ ] Generalized plasma dispersion function (GPDF)
 - [ ] Integration with [VelocityDistributionFunctions.jl](https://github.com/JuliaSpacePhysics/VelocityDistributionFunctions.jl) and observation / simulation data
-- [ ] Multi-fluid solver
+- [x] Multi-fluid solver
 - [ ] Faster eigenvalue solver using Krylov methods ([Arpack](https://github.com/JuliaLinearAlgebra/Arpack.jl) / [KrylovKit](https://github.com/Jutho/KrylovKit.jl), ref: [Eigen solvers](https://docs.sciml.ai/BifurcationKit/stable/eigensolver/))
 - [ ] GPU Acceleration / Parallelization / Sparse matrix optimizations
 - [ ] Reformulate as a `SciMLProblem` for use with `SciML` (ref: [LinearSolve](https://docs.sciml.ai/LinearSolve/stable/), [ApproxFun.jl](https://juliaapproximation.github.io/ApproxFun.jl/stable/generated/Eigenvalue/))

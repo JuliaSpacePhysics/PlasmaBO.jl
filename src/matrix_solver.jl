@@ -319,24 +319,26 @@ function build_dispersion_matrix!(M, params, kx, kz; N = 2, J = 8, c2 = c0^2)
         M[SNJ + 2SNJ1 + s, SNJ3 + 2] = b32
         M[SNJ + 2SNJ1 + s, SNJ3 + 3] = b33
     end
-
-
     # E(J) coupling: J_xyz = j_xyz + sum(v_snj_xyz)
     M[SNJ3 + 1, 1:SNJ1] .= -1.0
     M[SNJ3 + 2, (SNJ1 + 1):2SNJ1] .= -1.0
     M[SNJ3 + 3, (2SNJ1 + 1):3SNJ1] .= -1.0
+    _B_E_part!(M, SNJ3, kx, kz; c2)
+    return M
+end
 
+function _B_E_part!(M, idx, kx, kz; c2 = c0^2)
     # E(B) coupling: Maxwell's equations
-    M[SNJ3 + 1, SNJ3 + 5] = c2 * kz
-    M[SNJ3 + 2, SNJ3 + 4] = -c2 * kz
-    M[SNJ3 + 2, SNJ3 + 6] = c2 * kx
-    M[SNJ3 + 3, SNJ3 + 5] = -c2 * kx
+    M[idx + 1, idx + 5] = c2 * kz
+    M[idx + 2, idx + 4] = -c2 * kz
+    M[idx + 2, idx + 6] = c2 * kx
+    M[idx + 3, idx + 5] = -c2 * kx
 
     # B(E) coupling: Faraday's law
-    M[SNJ3 + 4, SNJ3 + 2] = -kz
-    M[SNJ3 + 5, SNJ3 + 1] = kz
-    M[SNJ3 + 5, SNJ3 + 3] = -kx
-    M[SNJ3 + 6, SNJ3 + 2] = kx
+    M[idx + 4, idx + 2] = -kz
+    M[idx + 5, idx + 1] = kz
+    M[idx + 5, idx + 3] = -kx
+    M[idx + 6, idx + 2] = kx
     return M
 end
 

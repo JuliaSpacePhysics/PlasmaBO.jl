@@ -15,7 +15,7 @@ export Maxwellian
 export BiKappa, BiKappa2
 export gen_fv2d
 export HHSolverParam
-export FluidSpecies, FluidSolverParams, solve_fluid_dispersion
+export FluidSpecies, solve_fluid_dispersion
 export BranchPoint, track_dispersion_branch, track_dispersion_branches
 export hermite_expansion
 
