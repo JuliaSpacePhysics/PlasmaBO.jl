@@ -16,6 +16,7 @@ makedocs(;
         "Home" => "index.md",
         "Examples" => "examples.md",
         "Firehose instability" => "firehose_Astfalk17.md",
+        "Mirror mode" => "mirror_mode.md",
         "Ion cyclotron emission" => "ice_Irvine18.md",
     ],
     plugins = [bib],
