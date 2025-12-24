@@ -1,6 +1,6 @@
 # Examples
 
-This page demonstrates how to use the package to solve kinetic dispersion relations for plasmas with arbitrary velocity distributions.
+This page demonstrates how to use the package to solve kinetic dispersion relations.
 
 ## Matrix Eigenvalue Solver
 
@@ -36,7 +36,6 @@ k = 0.03 / lambdaD
 kx = k * sin(θ)
 kz = k * cos(θ)
 
-# Solve using matrix eigenvalue method
 # J=12 provides good accuracy (J-pole approximation order)
 ωs = solve_kinetic_dispersion(species, B0, kx, kz; N=6, J=12)
 
