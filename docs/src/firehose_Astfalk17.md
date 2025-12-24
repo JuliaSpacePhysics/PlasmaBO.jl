@@ -6,14 +6,12 @@ Here we first generate numerical samples of the distribution function using `gen
 
 ```@example firehose
 using PlasmaBO
-using PlasmaBO: q, kb, ε0, me, c0, mp
 
 B0 = 0.1  # [Tesla]
 θ = deg2rad(45)
 n = 5.0e19
 
-me_mp = 1 / 1836 # [proton mass]
-electron = Maxwellian(-1.0, me_mp, n, 496.683)
+electron = Maxwellian(:e, n, 496.683)
 
 κz = 5.5
 κx = 5.5
@@ -37,8 +35,8 @@ println("Unstable modes (ω/ωci): ", ω_unstable ./ wci)
 
 ## Dispersion Curve Scan
 
-```@example firehose
-k_ranges = (0.05:0.02:0.5) .* kn
+```@repl firehose
+k_ranges = (0.05:0.02:0.5) .* kn;
 results = solve_kinetic_dispersion(species, B0, k_ranges, θ; N = 2, J = 24);
 ```
 

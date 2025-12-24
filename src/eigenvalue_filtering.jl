@@ -29,6 +29,14 @@ struct BranchPoint{T}
     track_by_real::Bool
 end
 
+_k(b::BranchPoint) = b.k
+_ω(b::BranchPoint) = b.ω
+_track_by_real(b::BranchPoint) = b.track_by_real
+_k(tuple) = tuple[1]
+_ω(tuple) = tuple[2]
+_track_by_real(tuple) = real(tuple[2]) != 0
+
+
 function BranchPoint(k::T, ω::Complex{T}) where {T}
     return BranchPoint{T}(k, ω, real(ω) != 0)
 end
@@ -59,7 +67,8 @@ See also: [`BranchPoint`](@ref), [`track_dispersion_branches`](@ref)
 function track_dispersion_branch(ks, ωs, point)
     nk = length(ks)
     T = eltype(ks)
-
+    k = _k(point)
+    ω = _ω(point)
     # Initialize output arrays
     k_branch = zeros(T, nk)
     ω_branch = zeros(Complex{T}, nk)
@@ -74,15 +83,15 @@ function track_dispersion_branch(ks, ωs, point)
     end
 
     # Find starting index closest to initial k
-    start_idx = argmin(abs.(ks .- point.k))
+    start_idx = argmin(abs.(ks .- k))
     k_start = ks[start_idx]
 
     # Find starting eigenvalue
     ω_at_start = get_eigenvalues(start_idx)
-    idx = if point.track_by_real
-        argmin(abs.(real.(ω_at_start) .- real(point.ω)))
+    idx = if _track_by_real(point)
+        argmin(abs.(real.(ω_at_start) .- real(ω)))
     else
-        argmin(abs.(imag.(ω_at_start) .- imag(point.ω)))
+        argmin(abs.(imag.(ω_at_start) .- imag(ω)))
     end
     ω_start = ω_at_start[idx]
 

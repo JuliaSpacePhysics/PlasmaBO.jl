@@ -4,17 +4,18 @@ This page demonstrates how to use the package to solve kinetic dispersion relati
 
 ```@example matrix
 using PlasmaBO
-using PlasmaBO: q, kb, ε0, me, c0
+using PlasmaBO: q, me
+using Unitful
 
 # Umeda 2012 ring beam configuration
 B0 = 96.24e-9  # [Tesla]
 
-me_mp = 1/1836 # [proton mass]
-T = 51 # [eV]
+T = 51u"eV"
 # Ring beam electrons (10% density)
-ring_beam = Maxwellian(-1.0, me_mp, 1e5, T; vdz=0.1, vdr=0.05)
+# The first argument (optional) indicates particle type of the distribution (by default we use `proton`)
+ring_beam = Maxwellian(:e, 1e5, T; vdz=0.1, vdr=0.05)
 # Background electrons (90% density)
-background = Maxwellian(-1.0, me_mp, 9e5, T)
+background = Maxwellian(:e, 9e5, T)
 
 species = [ring_beam, background]
 
@@ -39,17 +40,18 @@ kz = k * cos(θ)
 
 ```@example matrix
 # Scan k*λD from 0.01 to 0.3
-k_ranges = (0.01:0.0025:0.3) ./ lambdaD
+k_ranges = (0.01:0.004:0.3) ./ lambdaD
 results = solve_kinetic_dispersion(species, B0, k_ranges, θ; N=6)
 ```
 
 ```@example matrix
 using CairoMakie
 
+# k, ω pairs for initial branch points (see `BranchPoint` for more control over tracking)
 initial_points = [
-    BranchPoint(0.1 / lambdaD, 0.3im * wce),
-    BranchPoint(0.1 / lambdaD, 0.1im * wce),
-    BranchPoint(0.2 / lambdaD, 0.25im * wce)
+    (0.1 / lambdaD, 0.3im * wce),
+    (0.1 / lambdaD, 0.1im * wce),
+    (0.2 / lambdaD, 0.25im * wce)
 ]
 
 branches = track_dispersion_branches(results, initial_points)
@@ -62,14 +64,13 @@ for (i, (k_branch, ω_branch)) in enumerate(branches)
 end
 
 # Plot all branches
-let xlabel = "k*λD", fig = Figure()
+let xlabel = L"k λ_D", fig = Figure()
     ax1 = Axis(fig[1, 1]; xlabel, ylabel = "ωᵣ / ωₙ",)
     ax2 = Axis(fig[1, 2]; xlabel, ylabel = "γ / ωₙ")
     for (i, (k, ω)) in enumerate(branches)
         lines!(ax1, k * lambdaD, real.(ω) ./ wce, label = "Branch $i")
         lines!(ax2, k * lambdaD, imag.(ω) ./ wce)
     end
-
     fig
 end
 ```

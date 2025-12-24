@@ -4,7 +4,6 @@ Ion cyclotron emission (ICE) driven by a ring ion beam distribution in a magneti
 
 ```@example ice
 using PlasmaBO
-using PlasmaBO: q, kb, ε0, me, c0, mp
 using PlasmaBO: gyrofrequency, Alfven_speed
 
 using DelimitedFiles
@@ -25,8 +24,8 @@ readdlm(fpath)
 ```@example ice
 tbl = readdlm(fpath, Float64; skipstart = 1)
 species = map(eachrow(tbl)) do row
-    q_s, m_s, n_s, Tz_s, Tp_s, vdz_s, vdr_s = row[1:7]
-    Maxwellian(q_s, m_s, n_s, Tz_s, Tp_s; vdz = vdz_s, vdr = vdr_s)
+    Z, A, n_s, Tz_s, Tp_s, vdz_s, vdr_s = row[1:7]
+    Maxwellian(n_s, Tz_s, Tp_s; vdz = vdz_s, vdr = vdr_s, Z , A)
 end
 
 ωn = gyrofrequency(B0, species[1])

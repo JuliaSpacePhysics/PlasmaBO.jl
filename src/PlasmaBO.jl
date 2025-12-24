@@ -6,6 +6,9 @@ using QuadGK: quadgk
 using LinearAlgebra
 using Tullio: @tullio
 using ProgressMeter: @showprogress
+using ChargedParticles: charge, mass, charge_number, mass_number, particle, ParticleLike
+import ChargedParticles as CP
+using Unitful
 
 export solve_kinetic_dispersion
 export Maxwellian
@@ -27,7 +30,5 @@ include("hermite_expansion.jl")
 include("matrix_solver.jl")
 include("fluid_solver.jl")
 include("eigenvalue_filtering.jl")
-include("distributions/BiKappa.jl")
-
 
 end

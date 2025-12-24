@@ -23,8 +23,8 @@ B0 = 100e-9
 n = 1e6
 me_mp = 1 / 1836
 
-electron = Maxwellian(-1.0, me_mp, n, 24840.0)
-proton   = Maxwellian( 1.0, 1.0,   n, 24840.0, 49680.0)
+electron = Maxwellian(:e, n, 24840.0)
+proton   = Maxwellian(n, 24840.0, 49680.0)
 
 species = (proton, electron)
 params = HHSolverParam.(species, B0)

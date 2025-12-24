@@ -13,6 +13,13 @@ using Pkg
 Pkg.add(url="https://github.com/JuliaSpacePhysics/PlasmaBO.jl")
 ```
 
+## Features
+
+- [x] Hermite-Hermite (HH) expansion for arbitrary/analytic distributions
+    - [x] Maxwellian / BiMaxwellian
+    - [x] Kappa / BiKappa / product Bikappa
+- [x] Integration with [`ChargedParticles.jl`](https://juliaplasma.github.io/ChargedParticles.jl/dev/)
+
 ## Usage Examples
 
 The matrix eigenvalue method finds all wave modes simultaneously by transforming the dispersion relation into a matrix eigenvalue problem using J-pole approximation for the plasma dispersion function.
