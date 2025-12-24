@@ -6,7 +6,7 @@ Perpendicular integral for J_n²: ∫ J_n²(ay) exp(-(y-d)²) (y-d)^m y^p dy.
 function funAn(n, a, d, m, p; rtol = 1.0e-10, atol = 1.0e-10)
     m < 0 && return 0.0
 
-    ym = 10.0
+    ym = 5.0
     ymin = max(0.0, d - ym)
     ymax = ym + d
 
@@ -23,7 +23,7 @@ Perpendicular integral for J_n·J_n': ∫ J_n(ay) J_n'(ay) exp(-(y-d)²) (y-d)^m
 function funBn(n, a, d, m, p; rtol = 1.0e-10, atol = 1.0e-10)
     m < 0 && return 0.0
 
-    ym = 10.0
+    ym = 5.0
     ymin = max(0.0, d - ym)
     ymax = ym + d
 
@@ -44,13 +44,13 @@ Perpendicular integral for (J_n')²: ∫ [J_n'(ay)]² exp(-(y-d)²) (y-d)^m y^p 
 function funCn(n, a, d, m, p; rtol = 1.0e-10, atol = 1.0e-10)
     m < 0 && return 0.0
 
-    ym = 10.0
+    ym = 5.0
     ymin = max(0.0, d - ym)
     ymax = ym + d
 
     function integrand(y)
         jn_deriv = 0.5 * (besselj(n - 1, a * y) - besselj(n + 1, a * y))
-        return 0.25 * jn_deriv^2 * exp(-(y - d)^2) * (y - d)^m * y^p
+        return jn_deriv^2 * exp(-(y - d)^2) * (y - d)^m * y^p
     end
 
     return quadgk(integrand, ymin, ymax; rtol, atol)[1]

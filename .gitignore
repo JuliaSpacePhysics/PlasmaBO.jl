@@ -6,3 +6,4 @@
 /docs/build/
 *.mat
 !.test/*fvceff1.mat
+lib/boarbitrary

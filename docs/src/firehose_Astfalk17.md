@@ -3,7 +3,7 @@
 ```@example firehose
 using PlasmaBO
 using PlasmaBO: q, kb, ε0, me, c0, mp
-using MAT
+using MAT: matopen
 
 B0 = 0.1  # [Tesla]
 θ = deg2rad(45)
@@ -21,7 +21,10 @@ kn = 31.0613
 k = kn / 4
 
 wci = proton_param.wc
-ωs = solve_kinetic_dispersion((proton_param, electron), B0, k * sin(θ), k * cos(θ); N = 2, J = 24)
+
+species = (proton_param, electron)
+
+ωs = solve_kinetic_dispersion(species, B0, k .* sincos(θ)...; N = 2, J = 24)
 ω_unstable = filter(ω -> isfinite(ω) && imag(ω) > 0.001 * wci, ωs)
 println("Unstable modes (ω/ωci): ", ω_unstable ./ wci)
 ```
@@ -45,7 +48,7 @@ end
 let
     f, (ax, ax2) = plot_results(results, kn, wci)
     ylims!(ax, [0, 1])
-    ylims!(ax2, [-0.05, 0.5])
+    ylims!(ax2, [-0.1, 0.1])
     f
 end
 ```

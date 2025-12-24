@@ -345,8 +345,7 @@ function solve_kinetic_dispersion(species, B0, ks::AbstractVector, θ; N = 2, J 
     M = zeros(ComplexF64, NN, NN)
     params = HHSolverParam.(species, B0)
     ωs = map(ks) do k
-        kx = k * sin(θ)
-        kz = k * cos(θ)
+        kx, kz = k .* sincos(θ)
         solve_dispersion_matrix!(M, params, kx, kz; N, J, kw...)
     end
     return DispersionSolution(ks, ωs)

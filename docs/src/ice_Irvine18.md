@@ -24,7 +24,6 @@ species = map(eachrow(tbl)) do row
     Maxwellian(q_s, m_s, n_s, Tz_s, Tp_s; vdz = vdz_s, vdr = vdr_s)
 end
 
-# MATLAB normalization (bo_knwn.m): wn = |ωcs(1)| and kn = wn / vA
 ωn = gyrofrequency(B0, species[1])
 vA = Alfven_speed(B0, species)
 kn = ωn / vA
