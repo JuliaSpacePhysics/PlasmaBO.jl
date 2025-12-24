@@ -27,7 +27,6 @@ struct FluidSpecies{T}
 end
 
 plasma_frequency(s::FluidSpecies) = plasma_frequency(charge(s), s.n, mass(s))
-gyrofrequency(s::FluidSpecies) = gyrofrequency(charge(s), s.B, mass(s))
 
 """
     FluidSpecies(q, m, n, Tz, Tp; vdz=0.0, gamma_z=1.0, gamma_p=1.0)

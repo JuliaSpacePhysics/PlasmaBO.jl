@@ -246,18 +246,26 @@ function solve_dispersion_matrix end
 # Indices SNJ3+1 to SNJ3+6:    E_x, E_y, E_z, B_x, B_y, B_z
 # where SNJ1 = SNJ + S (SNJ pole velocities + S species auxiliary j's)
 
-function build_dispersion_matrix(params, kx, kz; N = 2, J = 8, c2 = c0^2)
+# Compute matrix dimensions
+_size(S::Int, N, J) = 3 * (S * (2 * N + 1) * J + S) + 6
+_size(species, N, J) = _size(length(species), N, J)
+
+function build_dispersion_matrix(species, args...; N = 2, J = 8, kw...)
+    NN = _size(species, N, J)
+    M = zeros(ComplexF64, NN, NN)
+    return build_dispersion_matrix!(M, species, args...; N, J, kw...)
+end
+
+function build_dispersion_matrix!(M, params, kx, kz; N = 2, J = 8, c2 = c0^2)
     S = length(params)
     (; J, bzj, czj) = get_jpole_coefficients(J)
 
     # Handle singularities
     kx = kx == 0.0 ? 1.0e-30 : kx
     # Compute matrix dimensions
-    Ns = 2 .* fill(N, S) .+ 1  # Number of harmonics per species
     SNJ = S * (2 * N + 1) * J
     SNJ1 = SNJ + S
     SNJ3 = 3 * SNJ1
-    NN = SNJ3 + 6
 
     # Adjust czj for kz sign
     kz < 0 && (czj = -czj)
@@ -269,10 +277,6 @@ function build_dispersion_matrix(params, kx, kz; N = 2, J = 8, c2 = c0^2)
     for l in 0:(max_lsmax + 3)
         czj_l[:, l + 2] .= czj .^ l
     end
-
-    # Initialize coefficient arrays
-    # M = Matrix(sparse(I_idx, J_idx, V_val, NN, NN))
-    M = zeros(ComplexF64, NN, NN)
 
     snj = 0
     for s in 1:S
@@ -323,17 +327,27 @@ function solve_dispersion_matrix(params, kx, kz; kw...)
     end
 end
 
+function solve_dispersion_matrix!(M, params, kx, kz; kw...)
+    fill!(M, zero(eltype(M)))
+    build_dispersion_matrix!(M, params, kx, kz; kw...)
+    return solve_with_threads(6) do
+        eigvals!(M)
+    end
+end
+
 function solve_kinetic_dispersion(species, B0, kx, kz; kw...)
     params = HHSolverParam.(species, B0)
     return solve_dispersion_matrix(params, kx, kz; kw...)
 end
 
-
-function solve_kinetic_dispersion(species, B0, ks::AbstractVector, θ; kw...)
+function solve_kinetic_dispersion(species, B0, ks::AbstractVector, θ; N = 2, J = 8, kw...)
+    NN = _size(species, N, J)
+    M = zeros(ComplexF64, NN, NN)
+    params = HHSolverParam.(species, B0)
     ωs = map(ks) do k
         kx = k * sin(θ)
         kz = k * cos(θ)
-        solve_kinetic_dispersion(species, B0, kx, kz; kw...)
+        solve_dispersion_matrix!(M, params, kx, kz; N, J, kw...)
     end
     return DispersionSolution(ks, ωs)
 end
