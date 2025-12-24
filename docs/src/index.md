@@ -22,15 +22,30 @@ Pkg.add(url="https://github.com/JuliaSpacePhysics/PlasmaBO.jl")
 
 ## Usage Examples
 
-The matrix eigenvalue method finds all wave modes simultaneously by transforming the dispersion relation into a matrix eigenvalue problem using J-pole approximation for the plasma dispersion function.
+The matrix eigenvalue method ([xieEfficientFrameworkSolving2025](@citet), [xiePDRKGeneralKinetic2016](@citet)) finds all wave modes simultaneously by transforming the dispersion relation into a matrix eigenvalue problem using J-pole approximation for the plasma dispersion function.
 
 This approach is more efficient to find multiple modes at once, and doesn't require initial guesses for the root finder.
 
 Check out the [ring beam instability example](ringbeam_Umeda12.md) for detailed usage instructions, also see [firehose instability example](firehose_Astfalk17.md) for using with arbitrary velocity distributions.
 
+## Notation & Assumptions
+
+The formulation (code) is valid for non-relativistic, arbitrary gyrotropic distributions.
+
+- **Coordinates**
+  - **`z`**: direction parallel to the background magnetic field (**`B0`**).
+  - **`x`**: one perpendicular direction (any perpendicular direction is equivalent).
+- **Velocities**
+  - **`vz`, `vx`**: particle velocity components along `z` and `x`.
+  - **`vdz`, `vdx`**: drift/bulk velocity components along `z` and `x` (when present in a distribution parameterization).
+  - **`vtz`, `vtx`**: thermal speeds along `z` and `x`.
+- **Wave vector**
+  - **`θ`**: propagation angle between `k` and `B0`.
+  - **`k∥ = k cos(θ)`**, **`k⊥ = k sin(θ)`**.
+
 ## References
 
-[xieEfficientFrameworkSolving2025](@citet), [xieRapidComputationPlasma2024](@citet), [xieBO20Plasma2021](@citet), [xiePDRKGeneralKinetic2016](@citet), [xiePDRFGeneralDispersion2014](@citet), [xieGeneralizedPlasmaDispersion2013](@citet), 
+[xieRapidComputationPlasma2024](@citet), [xieBO20Plasma2021](@citet), [xiePDRFGeneralDispersion2014](@citet), [xieGeneralizedPlasmaDispersion2013](@citet), 
 
 ```@bibliography
 ```
