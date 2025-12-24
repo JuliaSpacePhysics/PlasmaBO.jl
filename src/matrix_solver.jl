@@ -13,17 +13,16 @@ end
 HHSolverParam(param::HHSolverParam, B0) = param
 
 # The coefficients a_{s,lm}
-_alm(::Maxwellian{T}) where {T} = ones(T, 1, 1)
+_alm(s) = ones(eltype(s), 1, 1)
 
-
-_vtz(s) = sqrt(2 * kb * temperature(s.Tz) / mass(s))
-_vtp(s) = sqrt(2 * kb * temperature(s.Tp) / mass(s))
+_vtz(s) = sqrt(2 * kb * temperature(s.Tz) / s.m)
+_vtp(s) = sqrt(2 * kb * temperature(s.Tp) / s.m)
 
 function HHSolverParam(species, B0; alm = _alm(species))
     T = Float64
     # Compute derived quantities for each species
-    q = charge(species)
-    m = mass(species)
+    q = species.q
+    m = species.m
     vtzs = _vtz(species)
     vtp = _vtp(species)
     wp = plasma_frequency(q, species.n, m)
@@ -40,6 +39,78 @@ function HHSolverParam(q, m, n, B0, vtz, vtp, vdz, vdr, alm)
     wp = plasma_frequency(q, n, m)
     ρc = vtp / sqrt(2) / wc
     return HHSolverParam{T}(wc, wp, ρc, vtz, vtp, vdz, vdr, alm)
+end
+
+function _compute_sums(j, cⱼ, cj_l, alm, Aₙ, Bₙ, Cₙ, dr, Ils)
+    l_max, m_max = size(alm) .- 1
+
+    sum11tmp1, sum11tmp2, sum11tmp3 = 0.0im, 0.0im, 0.0im
+    sum12tmp1, sum12tmp2 = 0.0im, 0.0im
+    sum22tmp1, sum22tmp2, sum22tmp3 = 0.0im, 0.0im, 0.0im
+    sum13tmp1, sum13tmp2 = 0.0im, 0.0im
+    sum23tmp1, sum23tmp2 = 0.0im, 0.0im
+    sum32tmp1, sum32tmp2 = 0.0im, 0.0im
+    sum33tmp1, sum33tmp2, sum33tmp3 = 0.0im, 0.0im, 0.0im
+
+    for l in 0:l_max
+        cˡ = cj_l[j, l + 2]
+        cˡ⁺¹ = cⱼ * cˡ
+        cˡ⁺² = cⱼ * cˡ⁺¹
+        cˡ⁺³ = cⱼ * cˡ⁺²
+        cˡ⁻¹ = l >= 1 ? cj_l[j, l - 1 + 2] : 0.0im
+        dZl = 2 * cˡ⁺¹ - l * cˡ⁻¹
+        dZlc = dZl * cⱼ
+
+        for m in 0:m_max
+            aₗₘ = alm[l + 1, m + 1]
+            idx_m = m + 2
+            idx_mp1 = idx_m + 1
+            idx_mm1 = idx_m - 1
+
+            dAm = 2 * Aₙ[idx_mp1, 1] - m * Aₙ[idx_mm1, 1]
+            dBm = 2 * Bₙ[idx_mp1, 1] - m * Bₙ[idx_mm1, 1]
+            dCm = 2 * Cₙ[idx_mp1, 1] - m * Cₙ[idx_mm1, 1]
+
+            sum11tmp1 += aₗₘ * cˡ * dAm
+            sum11tmp2 += aₗₘ * dZl * Aₙ[idx_m, 2]
+
+            sum12tmp1 += aₗₘ * cˡ * dBm
+            sum12tmp2 += aₗₘ * dZl * Bₙ[idx_m, 2]
+
+            sum22tmp1 += aₗₘ * cˡ * dCm
+            sum22tmp2 += aₗₘ * dZl * Cₙ[idx_m, 2]
+
+            sum13tmp1 += aₗₘ * (dr * cˡ + cˡ⁺¹) * dAm
+            sum13tmp2 += aₗₘ * (dZlc + dr * dZl) * Aₙ[idx_m, 2]
+
+            sum23tmp1 += aₗₘ * (dr * cˡ + cˡ⁺¹) * dBm
+            sum23tmp2 += aₗₘ * (dZlc + dr * dZl) * Bₙ[idx_m, 2]
+
+            sum32tmp1 += aₗₘ * (dr * cˡ + cˡ⁺¹) * dBm
+            sum32tmp2 += aₗₘ * (dZlc + dr * dZl) * Bₙ[idx_m, 2]
+
+            sum33tmp1 += aₗₘ * (dr^2 * cˡ + 2 * dr * cˡ⁺¹ + cˡ⁺²) * dAm
+            sum33tmp2 += aₗₘ * (dr^2 * dZl + 2 * dr * dZlc + (2 * cˡ⁺³ - l * cˡ⁺¹)) * Aₙ[idx_m, 2]
+
+            if j == 1
+                Iₗ, Iₗ₊₁, Iₗ₊₂ = Ils[l + 1], Ils[l + 2], Ils[l + 3]
+                Iₗ₋₁ = l >= 1 ? Ils[l] : 0.0
+                sum11tmp3 += aₗₘ * Iₗ * dAm
+                sum22tmp3 += aₗₘ * Iₗ * dCm
+                sum33tmp3 += aₗₘ * (dr * (2 * Iₗ₊₁ - l * Iₗ₋₁) + (2 * Iₗ₊₂ - l * Iₗ)) * Aₙ[idx_m, 2]
+            end
+        end
+    end
+
+    return (
+        sum11tmp1, sum11tmp2, sum11tmp3,
+        sum12tmp1, sum12tmp2,
+        sum22tmp1, sum22tmp2, sum22tmp3,
+        sum13tmp1, sum13tmp2,
+        sum23tmp1, sum23tmp2,
+        sum32tmp1, sum32tmp2,
+        sum33tmp1, sum33tmp2, sum33tmp3,
+    )
 end
 
 function _assemble_species!(
@@ -85,66 +156,15 @@ function _assemble_species!(
 
             cnj = cⱼ * kz * vtz + kz * vdz + nw_c
 
-            sum11tmp1, sum11tmp2, sum11tmp3 = 0.0im, 0.0im, 0.0im
-            sum12tmp1, sum12tmp2 = 0.0im, 0.0im
-            sum22tmp1, sum22tmp2, sum22tmp3 = 0.0im, 0.0im, 0.0im
-            sum13tmp1, sum13tmp2 = 0.0im, 0.0im
-            sum23tmp1, sum23tmp2 = 0.0im, 0.0im
-            sum32tmp1, sum32tmp2 = 0.0im, 0.0im
-            sum33tmp1, sum33tmp2, sum33tmp3 = 0.0im, 0.0im, 0.0im
-
-            # @tullio sum11tmp1 := aslm[l + 1, m + 1] * czjj_l[$j, l + 2] * (2 * Ans[m + 1 + 2, 1] - m * Ans[m - 1 + 2, 1]) threads = false avx = false tensor = false
-            # @tullio sum11tmp2 := aslm[l + 1, m + 1] * (2 * czjj_l[$j, l + 1 + 2] - l * czjj_l[$j, l + 2]) * Ans[m + 2, 2] threads = false avx = false tensor = false
-
-            for l in 0:l_max
-                cˡ = cj_l[j, l + 2]
-                cˡ⁺¹ = cⱼ * cˡ
-                cˡ⁺² = cⱼ * cˡ⁺¹
-                cˡ⁺³ = cⱼ * cˡ⁺²
-                cˡ⁻¹ = l >= 1 ? cj_l[j, l - 1 + 2] : 0.0im
-                dZl = 2 * cˡ⁺¹ - l * cˡ⁻¹
-                dZlc = dZl * cⱼ
-
-                for m in 0:m_max
-                    aₗₘ = alm[l + 1, m + 1] # aₗₘ
-                    idx_m = m + 2
-                    idx_mp1 = idx_m + 1
-                    idx_mm1 = idx_m - 1
-
-                    dAm = 2 * Aₙ[idx_mp1, 1] - m * Aₙ[idx_mm1, 1]
-                    dBm = 2 * Bₙ[idx_mp1, 1] - m * Bₙ[idx_mm1, 1]
-                    dCm = 2 * Cₙ[idx_mp1, 1] - m * Cₙ[idx_mm1, 1]
-
-                    sum11tmp1 += aₗₘ * cˡ * dAm
-                    sum11tmp2 += aₗₘ * dZl * Aₙ[idx_m, 2]
-
-                    sum12tmp1 += aₗₘ * cˡ * dBm
-                    sum12tmp2 += aₗₘ * dZl * Bₙ[idx_m, 2]
-
-                    sum22tmp1 += aₗₘ * cˡ * dCm
-                    sum22tmp2 += aₗₘ * dZl * Cₙ[idx_m, 2]
-
-                    sum13tmp1 += aₗₘ * (dr * cˡ + cˡ⁺¹) * dAm
-                    sum13tmp2 += aₗₘ * (dZlc + dr * dZl) * Aₙ[idx_m, 2]
-
-                    sum23tmp1 += aₗₘ * (dr * cˡ + cˡ⁺¹) * dBm
-                    sum23tmp2 += aₗₘ * (dZlc + dr * dZl) * Bₙ[idx_m, 2]
-
-                    sum32tmp1 += aₗₘ * (dr * cˡ + cˡ⁺¹) * dBm
-                    sum32tmp2 += aₗₘ * (dZlc + dr * dZl) * Bₙ[idx_m, 2]
-
-                    sum33tmp1 += aₗₘ * (dr^2 * cˡ + 2 * dr * cˡ⁺¹ + cˡ⁺²) * dAm
-                    sum33tmp2 += aₗₘ * (dr^2 * dZl + 2 * dr * dZlc + (2 * cˡ⁺³ - l * cˡ⁺¹)) * Aₙ[idx_m, 2]
-
-                    if j == 1
-                        Iₗ, Iₗ₊₁, Iₗ₊₂ = Ils[l + 1], Ils[l + 2], Ils[l + 3]
-                        Iₗ₋₁ = l >= 1 ? Ils[l] : 0.0
-                        sum11tmp3 += aₗₘ * Iₗ * dAm
-                        sum22tmp3 += aₗₘ * Iₗ * dCm
-                        sum33tmp3 += aₗₘ * (dr * (2 * Iₗ₊₁ - l * Iₗ₋₁) + (2 * Iₗ₊₂ - l * Iₗ)) * Aₙ[idx_m, 2]
-                    end
-                end
-            end
+            (
+                sum11tmp1, sum11tmp2, sum11tmp3,
+                sum12tmp1, sum12tmp2,
+                sum22tmp1, sum22tmp2, sum22tmp3,
+                sum13tmp1, sum13tmp2,
+                sum23tmp1, sum23tmp2,
+                sum32tmp1, sum32tmp2,
+                sum33tmp1, sum33tmp2, sum33tmp3,
+            ) = _compute_sums(j, cⱼ, cj_l, alm, Aₙ, Bₙ, Cₙ, dr, Ils)
 
             if j == 1
                 nwkp = nw_c / (kx * vtp)
@@ -320,16 +340,16 @@ function build_dispersion_matrix!(M, params, kx, kz; N = 2, J = 8, c2 = c0^2)
     return M
 end
 
-function solve_dispersion_matrix(params, kx, kz; kw...)
-    M = build_dispersion_matrix(params, kx, kz; kw...)
+function solve_dispersion_matrix(args...; kw...)
+    M = build_dispersion_matrix(args...; kw...)
     return solve_with_threads(6) do # 6 threads is faster than 8 threads
         eigvals!(M)
     end
 end
 
-function solve_dispersion_matrix!(M, params, kx, kz; kw...)
+function solve_dispersion_matrix!(M, args...; kw...)
     fill!(M, zero(eltype(M)))
-    build_dispersion_matrix!(M, params, kx, kz; kw...)
+    build_dispersion_matrix!(M, args...; kw...)
     return solve_with_threads(6) do
         eigvals!(M)
     end

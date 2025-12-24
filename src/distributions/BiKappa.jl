@@ -1,4 +1,4 @@
-struct BiKappa{T} <: AbstractDistribution
+struct BiKappa{T <: Number} <: AbstractDistribution
     n::T
     κ::T
     Tz::T
@@ -9,10 +9,13 @@ struct BiKappa{T} <: AbstractDistribution
     m::T
 end
 
-BiKappa(n, κ, Tz, Tp = Tz; vdz = 0.0, vdr = 0.0, q = 1.0, m = 1.0) = BiKappa(promote(n, κ, Tz, Tp, vdz, vdr, q, m)...)
+function BiKappa(n, κ, Tz, Tp = Tz; vdz = 0.0, vdr = 0.0, Z = nothing, A = nothing, q = nothing, m = nothing, particle = :p)
+    q, m = _charge_mass(particle, Z, A, q, m)
+    return BiKappa(promote(n, κ, Tz, Tp, vdz, vdr, q, m)...)
+end
 
 # BiKappa with different κ for z and x
-struct BiKappa2{T} <: AbstractDistribution
+struct BiKappa2{T <: Number} <: AbstractDistribution
     n::T
     κz::T
     κx::T
@@ -24,8 +27,10 @@ struct BiKappa2{T} <: AbstractDistribution
     m::T
 end
 
-BiKappa2(n, κz, κx, Tz, Tp = Tz; vdz = 0.0, vdr = 0.0, q = 1.0, m = 1.0) =
-    BiKappa2(promote(n, κz, κx, Tz, Tp, vdz, vdr, q, m)...)
+function BiKappa2(n, κz, κx, Tz, Tp = Tz; vdz = 0.0, vdr = 0.0, Z = nothing, A = nothing, q = nothing, m = nothing, particle = :p)
+    q, m = _charge_mass(particle, Z, A, q, m)
+    return BiKappa2(promote(n, κz, κx, Tz, Tp, vdz, vdr, q, m)...)
+end
 
 function _velocity_grid(vtx, vtz, vdx, vdz; dvx = nothing, dvz = nothing)
     dvx = @something dvx 0.05 * vtx
@@ -58,8 +63,8 @@ function gen_fv2d(s::BiKappa; dvx = nothing, dvz = nothing)
     return (; vz, vx, fv, dvz, dvx, vtz, vtx, vdz, vdx)
 end
 
-_vtz(s::BiKappa2) = sqrt(2 * (1 - 0.5 / s.κz) * q * s.Tz / mass(s))
-_vtp(s::BiKappa2) = sqrt(2 * (1 - 1 / s.κx) * q * s.Tp / mass(s))
+_vtz(s::BiKappa2) = sqrt(2 * (1 - 0.5 / s.κz) * q * s.Tz / _mass(s))
+_vtp(s::BiKappa2) = sqrt(2 * (1 - 1 / s.κx) * q * s.Tp / _mass(s))
 
 function gen_fv2d(s::BiKappa2; dvx = nothing, dvz = nothing)
     κz = s.κz
