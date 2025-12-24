@@ -15,10 +15,15 @@ B0 = 2.1
 # Wave vector angle between k and B0
 θ = deg2rad(89.5)
 
-# Species table taken from the original BO MATLAB input (docs/src/bo.in)
+# Species table taken from the original BO MATLAB input
 fpath = pkgdir(PlasmaBO, "test/ice_Irvine18.in")
-tbl = readdlm(fpath, Float64; skipstart = 1)
+readdlm(fpath)
+```
 
+## Dispersion Curve Scan
+
+```@example ice
+tbl = readdlm(fpath, Float64; skipstart = 1)
 species = map(eachrow(tbl)) do row
     q_s, m_s, n_s, Tz_s, Tp_s, vdz_s, vdr_s = row[1:7]
     Maxwellian(q_s, m_s, n_s, Tz_s, Tp_s; vdz = vdz_s, vdr = vdr_s)
@@ -28,17 +33,8 @@ end
 vA = Alfven_speed(B0, species)
 kn = ωn / vA
 
-# Scan k/kn (bo_setup.m)
 ks = (9.5:0.025:11.5) .* kn
-
-# Solve using the same default accuracy parameters as the MATLAB setup
 results = solve_kinetic_dispersion(species, B0, ks, θ; N = 12, J = 4)
-
-# Extract the most unstable eigenvalue at each k
-ω_maxγ = map(results.ωs) do ωs
-    ωf = filter(isfinite, ωs)
-    ωf[argmax(imag.(ωf))]
-end
 ```
 
 ```@example ice

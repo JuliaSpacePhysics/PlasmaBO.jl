@@ -15,6 +15,10 @@ Pkg.add(url="https://github.com/JuliaSpacePhysics/PlasmaBO.jl")
 
 ## Usage Examples
 
+The matrix eigenvalue method finds all wave modes simultaneously by transforming the dispersion relation into a matrix eigenvalue problem using J-pole approximation for the plasma dispersion function.
+
+This approach is more efficient to find multiple modes at once, and doesn't require initial guesses for the root finder.
+
 Check out the [ring beam instability example](ringbeam_Umeda12.md) for detailed usage instructions, also see [firehose instability example](firehose_Astfalk17.md) for using with arbitrary velocity distributions.
 
 ## References
