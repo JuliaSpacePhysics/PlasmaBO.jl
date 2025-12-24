@@ -9,6 +9,8 @@ using ProgressMeter: @showprogress
 using ChargedParticles: charge, mass, charge_number, mass_number, particle, ParticleLike
 import ChargedParticles as CP
 using Unitful
+# using KrylovKit
+using ArnoldiMethod
 
 export solve_kinetic_dispersion
 export Maxwellian

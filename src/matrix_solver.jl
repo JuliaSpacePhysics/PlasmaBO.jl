@@ -340,19 +340,94 @@ function build_dispersion_matrix!(M, params, kx, kz; N = 2, J = 8, c2 = c0^2)
     return M
 end
 
-function solve_dispersion_matrix(args...; kw...)
-    M = build_dispersion_matrix(args...; kw...)
-    return solve_with_threads(6) do # 6 threads is faster than 8 threads
-        eigvals!(M)
+function solve_dispersion_matrix(params, args...; N, J, kw...)
+    NN = _size(params, N, J)
+    M = zeros(ComplexF64, NN, NN)
+    return solve_dispersion_matrix!(M, params, args...; N, J, kw...)
+end
+
+function solve_dispersion_matrix!(
+        M, params,
+        args...;
+        nev = nothing,
+        which = :LI,
+        tol = 1.0e-12,
+        krylovdim = 200,
+        maxiter = 1000,
+        return_info = false,
+        omega0 = nothing,
+        scale_w = false,
+        scale_B = true,
+        N = 2,
+        J = 8,
+        kw...
+    )
+    fill!(M, zero(eltype(M)))
+    build_dispersion_matrix!(M, params, args...; N, J, kw...)
+
+    ω0 = 1.0
+
+    if scale_B
+        S = length(params)
+        SNJ = S * (2 * N + 1) * J
+        SNJ1 = SNJ + S
+        SNJ3 = 3 * SNJ1
+        _scale_B!(M, SNJ3)
+    end
+
+    if scale_w
+        if isempty(params) || !hasproperty(params[1], :wc)
+            error(
+                "nondimensionalize=true requires first positional argument to be a non-empty vector of solver params with field :wc"
+            )
+        end
+
+        if isnothing(omega0)
+            wcs = abs.(getfield.(params, :wc))
+            ω0 = isempty(wcs) ? 1.0 : minimum(wcs)
+        else
+            ω0 = float(omega0)
+        end
+        ω0 <= 0 && error("omega0 must be positive")
+
+        M ./= ω0
+    end
+    return if isnothing(nev)
+        solve_with_threads(6) do
+            vals = eigvals!(M)
+            return scale_w ? (ω0 .* vals) : vals
+        end
+    else
+        decomp, history = partialschur(M; nev, which = :LM, mindim = 100, maxdim = 200)
+        vals = partialeigen(decomp)[1]
+        # vals, vecs, info = KrylovKit.eigsolve(
+        #     M,
+        #     nev,
+        #     which;
+        #     tol,
+        #     krylovdim,
+        #     maxiter,
+        #     verbosity,
+        # )
+        # if info.converged < nev
+        #     error(
+        #         "KrylovKit.eigsolve did not converge: requested $(nev), converged $(info.converged). " *
+        #             "Increase krylovdim/maxiter or relax tol, or use nev=nothing for a dense solve."
+        #     )
+        # end
+        vals = vals[1:nev]
+        vals = scale_w ? (ω0 .* vals) : vals
+        return return_info ? (vals, info) : vals
     end
 end
 
-function solve_dispersion_matrix!(M, args...; kw...)
-    fill!(M, zero(eltype(M)))
-    build_dispersion_matrix!(M, args...; kw...)
-    return solve_with_threads(6) do
-        eigvals!(M)
-    end
+function _scale_B!(M, SNJ3)
+    Binds = (SNJ3 + 4):(SNJ3 + 6)
+
+    # Similarity transform with B' = c0 * B (x = D*x̃ with D_B = 1/c0)
+    # M̃ = D^{-1} M D: scale B columns by 1/c0 and B rows by c0.
+    M[:, Binds] .*= (1 / c0)
+    return M[Binds, :] .*= c0
 end
 
 function solve_kinetic_dispersion(species, B0, kx, kz; kw...)
