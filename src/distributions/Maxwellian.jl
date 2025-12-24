@@ -5,7 +5,7 @@ struct Maxwellian{T <: Number} <: AbstractDistribution
     vdz::T         # Parallel drift velocity (c)
     vdr::T         # Perpendicular drift velocity (c)
     q::T           # Charge
-    m::T           # Mass (units of mp)
+    m::T           # Mass
 end
 
 Base.eltype(::Maxwellian{T}) where {T} = T

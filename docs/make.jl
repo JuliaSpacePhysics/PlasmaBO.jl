@@ -18,6 +18,7 @@ makedocs(;
         "Firehose instability" => "firehose_Astfalk17.md",
         "Mirror mode" => "mirror_mode.md",
         "Ion cyclotron emission" => "ice_Irvine18.md",
+        "Cold plasma (fluid vs kinetic solver)" => "cold_plasma.md",
     ],
     plugins = [bib],
 )

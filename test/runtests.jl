@@ -34,6 +34,40 @@ end
     @test filter(ω -> isfinite(ω) && imag(ω) > 0.001 * wce, ωs) ./ wce ≈ [0.6229290799953453 + 0.15687749193741884im]
 end
 
+@testset "Fluid vs Kinetic: cold plasma limit" begin
+    using PlasmaBO: qe, me, mp
+
+    # Cold plasma parameters
+    B0 = 1.0e-8  # [Tesla]
+    n = 1.0e6    # [m^-3]
+    T = 0.01     # [eV] - very cold
+
+    # Wave vector
+    k = 1.0  # [m^-1]
+    θ = deg2rad(45)
+    kx, kz = k .* sincos(θ)
+
+    # Kinetic solver with cold Maxwellian
+    e_vdf = Maxwellian(:e, n, T)
+    kinetic_species = [e_vdf, Maxwellian(:p, n, T)]
+    ωs_kinetic = solve_kinetic_dispersion(kinetic_species, B0, kx, kz; N = 2, J = 8)
+
+    # Fluid solver
+    fluid_species = [e_vdf, FluidSpecies(:p, n, T)]
+    ωs_fluid = solve_fluid_dispersion(fluid_species, B0, kx, kz)
+
+    # Compare electromagnetic wave modes (highest frequency modes, near ±c*k)
+    # These should agree well in cold plasma limit
+    filter_em = ω -> isfinite(ω) && abs(real(ω)) > 1.0e8
+    fluid_em = sort(filter(filter_em, ωs_fluid), by = ω -> real(ω))
+    kinetic_em = sort(filter(filter_em, ωs_kinetic), by = ω -> real(ω))
+
+    # Should have same number of EM modes (light waves)
+    @test length(fluid_em) == length(kinetic_em) == 4
+
+    # EM wave frequencies should match within 1e-6 relative error
+    @test fluid_em[1:2] ≈ kinetic_em[1:2] rtol = 1.0e-6
+end
 
 @testset "Astfalk 2017 firehose instability" begin
     using PlasmaBO
