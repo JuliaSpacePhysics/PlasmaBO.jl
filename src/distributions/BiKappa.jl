@@ -45,8 +45,8 @@ function _velocity_grid(vtx, vtz, vdx, vdz; dvx = nothing, dvz = nothing)
 end
 
 # Thermal velocities with kappa correction
-_vtp(s::BiKappa) = sqrt(2 * (1 - 1.5 / s.κ) * q * s.Tp / mass(s))
-_vtz(s::BiKappa) = sqrt(2 * (1 - 1.5 / s.κ) * q * s.Tz / mass(s))
+_vtp(s::BiKappa) = sqrt(2 * (1 - 1.5 / s.κ) * qe * s.Tp / s.m)
+_vtz(s::BiKappa) = sqrt(2 * (1 - 1.5 / s.κ) * qe * s.Tz / s.m)
 
 function gen_fv2d(s::BiKappa; dvx = nothing, dvz = nothing)
     κ = s.κ

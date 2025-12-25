@@ -25,3 +25,7 @@ gyrofrequency(B, s) = gyrofrequency(_charge(s), B, _mass(s))
 
 include("Maxwellian.jl")
 include("BiKappa.jl")
+
+for f in (:Maxwellian, :BiKappa, :BiKappa2)
+    @eval $f(p::ParticleLike, args...; kw...) = $f(args...; particle = p, kw...)
+end

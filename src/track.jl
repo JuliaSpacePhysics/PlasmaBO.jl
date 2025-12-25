@@ -37,7 +37,7 @@ struct SeedByAbs <: AbstractSeedLocator end
 (::SeedByImag)(xs, x0) = argmin(x -> abs(imag(x) - imag(x0)), xs)
 (::SeedByAbs)(xs, x0) = argmin(x -> abs(x - x0), xs)
 
-_default_seed_locator(ω::Complex) =
+_default_seed_locator(ω) =
     iszero(imag(ω)) ? SeedByReal() : (iszero(real(ω)) ? SeedByImag() : SeedByAbs())
 
 BranchPoint(k, ω) = BranchPoint(k, ω, _default_seed_locator(ω))

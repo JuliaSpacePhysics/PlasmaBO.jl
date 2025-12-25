@@ -37,25 +37,32 @@ const LABEL_REAL = L"ω_r \; / \; ω_n"
 const LABEL_IMAG = L"ω_i \; / \; ω_n"
 
 function plot_1d(solution, kn, ωn; color = Cycled(1), xlabel = XLABEL, kwargs...)
-
-    fig = Figure()
-    ax1 = Axis(fig[1, 1]; xlabel, ylabel = LABEL_REAL)
-    ax2 = Axis(fig[1, 2]; xlabel, ylabel = LABEL_IMAG)
-
-    for (k, ωs) in zip(solution.ks, solution.ωs)
-        k_norm = fill(k / kn, length(ωs))
-        scatter!(ax1, k_norm, real.(ωs) ./ ωn; markersize = 5, color = color, kwargs...)
-        scatter!(ax2, k_norm, imag.(ωs) ./ ωn; markersize = 5, color = color, kwargs...)
+    return with_2d_axes(; xlabel) do ax1, ax2
+        for (k, ωs) in zip(solution.ks, solution.ωs)
+            k_norm = fill(k / kn, length(ωs))
+            scatter!(ax1, k_norm, real.(ωs) ./ ωn; markersize = 5, color = color, kwargs...)
+            scatter!(ax2, k_norm, imag.(ωs) ./ ωn; markersize = 5, color = color, kwargs...)
+        end
     end
+end
 
+function with_2d_axes(func!, args...; xlabel = XLABEL, figure = (;), by_col = false)
+    layout = by_col ? ((1, 1), (1, 2)) : ((1, 1), (2, 1))
+    fig = Figure(; figure...)
+    ax1 = Axis(fig[layout[1]...]; xlabel, ylabel = LABEL_REAL)
+    ax2 = Axis(fig[layout[2]...]; xlabel, ylabel = LABEL_IMAG)
+    func!(ax1, ax2, args...)
+    !by_col && hidexdecorations!(ax1, grid = false)
     return FigureAxes(fig, (ax1, ax2))
 end
 
-function with_3d_axes(func!, args...; xlabel = XLABEL, ylabel = "θ (rad)", figure = (;))
+function with_3d_axes(func!, args...; xlabel = XLABEL, ylabel = "θ (rad)", figure = (;), by_col = false)
+    layout = by_col ? ((1, 1), (1, 2)) : ((1, 1), (2, 1))
     fig = Figure(; figure...)
-    ax1 = Axis3(fig[1, 1]; xlabel, ylabel, zlabel = LABEL_REAL)
-    ax2 = Axis3(fig[1, 2]; xlabel, ylabel, zlabel = LABEL_IMAG)
+    ax1 = Axis3(fig[layout[1]...]; xlabel, ylabel, zlabel = LABEL_REAL)
+    ax2 = Axis3(fig[layout[2]...]; xlabel, ylabel, zlabel = LABEL_IMAG)
     func!(ax1, ax2, args...)
+    !by_col && hidexdecorations!(ax1, grid = false)
     return FigureAxes(fig, (ax1, ax2))
 end
 
@@ -87,15 +94,13 @@ function PlasmaBO.plot_branches(branches, args...; kwargs...)
     return f(branches, args...; kwargs...)
 end
 
-function _plot_branches_1d(branches, kn, ωn; xlabel = XLABEL, kwargs...)
-    fig = Figure()
-    ax1 = Axis(fig[1, 1]; xlabel, ylabel = LABEL_REAL)
-    ax2 = Axis(fig[1, 2]; xlabel, ylabel = LABEL_IMAG)
-    for (i, (k, ω)) in enumerate(branches)
-        lines!(ax1, k ./ kn, real.(ω) ./ ωn; label = "Branch $i", kwargs...)
-        lines!(ax2, k ./ kn, imag.(ω) ./ ωn; kwargs...)
+function _plot_branches_1d(branches, kn, ωn; figure = (;), xlabel = XLABEL, kwargs...)
+    return with_2d_axes(; figure, xlabel) do ax1, ax2
+        for (i, (k, ω)) in enumerate(branches)
+            lines!(ax1, k ./ kn, real.(ω) ./ ωn; label = "Branch $i", kwargs...)
+            lines!(ax2, k ./ kn, imag.(ω) ./ ωn; kwargs...)
+        end
     end
-    return FigureAxes(fig, (ax1, ax2))
 end
 
 function _plot_branches_2d(branches, kn, ωn; figure = (;), kwargs...)

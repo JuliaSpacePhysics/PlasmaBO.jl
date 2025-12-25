@@ -14,6 +14,7 @@ makedocs(;
     ),
     pages = [
         "Home" => "index.md",
+        "R/L/P modes (Cattaert 2007)" => "rlp_Cattaert07.md",
         "Ring beam instability" => "ringbeam_Umeda12.md",
         "Firehose instability" => "firehose_Astfalk17.md",
         "Mirror mode" => "mirror_mode.md",

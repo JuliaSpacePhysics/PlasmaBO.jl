@@ -14,6 +14,3 @@ function Maxwellian(n, Tz, Tp = Tz; vdz = 0.0, vdr = 0.0, Z = nothing, A = nothi
     q, m = _charge_mass(particle, Z, A, q, m)
     return Maxwellian(promote(n, _T(Tz), _T(Tp), vdz, vdr, q, m)...)
 end
-
-
-Maxwellian(p::ParticleLike, args...; kw...) = Maxwellian(args...; particle = p, kw...)
