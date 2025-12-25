@@ -28,7 +28,7 @@ k = kn / 4
 wci = proton_param.wc
 species = (proton_param, electron)
 
-ωs = solve_kinetic_dispersion(species, B0, k .* sincos(θ)...; N = 2, J = 24)
+ωs = solve(species, B0, k .* sincos(θ)...; N = 2, J = 24)
 ω_unstable = filter(ω -> isfinite(ω) && imag(ω) > 0.001 * wci, ωs)
 println("Unstable modes (ω/ωci): ", ω_unstable ./ wci)
 ```
@@ -37,7 +37,7 @@ println("Unstable modes (ω/ωci): ", ω_unstable ./ wci)
 
 ```@repl firehose
 k_ranges = (0.05:0.02:0.5) .* kn;
-sol = solve_kinetic_dispersion(species, B0, k_ranges, θ; N = 2, J = 24);
+sol = solve(species, B0, k_ranges, θ; N = 2, J = 24);
 ```
 
 ```@example firehose

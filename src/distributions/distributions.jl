@@ -1,5 +1,11 @@
 abstract type AbstractDistribution end
 
+function Base.getproperty(d::AbstractDistribution, f::Symbol)
+    f == :vtp && return _vtp(d)
+    f == :vtz && return _vtz(d)
+    return getfield(d, f)
+end
+
 const PARTICLE_TYPE = Union{Symbol}
 
 function _charge_mass(p, Z, A, q, m)

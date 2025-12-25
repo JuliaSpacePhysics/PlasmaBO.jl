@@ -9,3 +9,16 @@ function solve_with_threads(f, nthreads)
         BLAS.set_num_threads(old)
     end
 end
+
+function with_progress(f, prob; desc = "Solving dispersion (k, θ)...")
+    θs = prob.θs
+    ks = prob.ks
+    carts = CartesianIndices((length(ks), length(θs)))
+    return @showprogress desc = desc for id in carts
+        ik, iθ = Tuple(id)
+        k = ks[ik]
+        θ = θs[iθ]
+        kx, kz = k .* sincos(θ)
+        f(ik, iθ, kx, kz)
+    end
+end

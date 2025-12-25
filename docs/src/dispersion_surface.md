@@ -37,7 +37,7 @@ using CairoMakie
 
 θ = deg2rad(45);
 k_ranges = (0.01:1:100) .* kn;
-results = solve_kinetic_dispersion(species, B0, k_ranges, θ; N)
+results = solve(species, B0, k_ranges, θ; N)
 ```
 
 ```@example surface
@@ -60,7 +60,7 @@ f
 ```@repl surface
 ks = (0.1:10:100.0) .* kn;
 θs = deg2rad.(10.0:10.0:90.0);
-res2d = solve_kinetic_dispersion(species, B0, ks, θs; N)
+res2d = solve(species, B0, ks, θs; N)
 ```
 
 ```@example surface

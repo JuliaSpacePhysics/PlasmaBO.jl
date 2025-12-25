@@ -32,7 +32,7 @@ include("test_track.jl")
 
     # Solve using matrix eigenvalue method
     # J=12 provides good accuracy (J-pole approximation order)
-    ωs = solve_kinetic_dispersion(species, B0, kx, kz; N = 6, J = 12)
+    ωs = solve(species, B0, kx, kz; N = 6, J = 12)
     @test filter(ω -> isfinite(ω) && imag(ω) > 0.001 * wce, ωs) ./ wce ≈ [0.6229290799953453 + 0.15687749193741884im]
 end
 
@@ -52,11 +52,11 @@ end
     # Kinetic solver with cold Maxwellian
     e_vdf = Maxwellian(:e, n, T)
     kinetic_species = [e_vdf, Maxwellian(:p, n, T)]
-    ωs_kinetic = solve_kinetic_dispersion(kinetic_species, B0, kx, kz; N = 2, J = 8)
+    ωs_kinetic = solve(kinetic_species, B0, kx, kz; N = 2, J = 8)
 
     # Fluid solver
     fluid_species = [e_vdf, FluidSpecies(:p, n, T)]
-    ωs_fluid = solve_fluid_dispersion(fluid_species, B0, kx, kz)
+    ωs_fluid = solve(fluid_species, B0, kx, kz, BOFluid)
 
     # Compare electromagnetic wave modes (highest frequency modes, near ±c*k)
     # These should agree well in cold plasma limit
@@ -99,7 +99,7 @@ end
     k = kn / 4
     wci = proton_param.wc
     species = (proton_param, electron)
-    ωs = solve_kinetic_dispersion(species, B0, k .* sincos(θ)...; N = 2, J = 24)
+    ωs = solve(species, B0, k .* sincos(θ)...; N = 2, J = 24)
     ω_unstable = filter(ω -> isfinite(ω) && imag(ω) > 0.001 * wci, ωs)
     @test imag.(ω_unstable ./ wci) ≈ [0.062373877285804444] rtol = 1.0e-3
 end

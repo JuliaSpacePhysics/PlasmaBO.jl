@@ -27,7 +27,17 @@ The matrix eigenvalue method ([xieEfficientFrameworkSolving2025](@citet), [xiePD
 
 This approach is more efficient to find multiple modes at once, and doesn't require initial guesses for the root finder.
 
-Check out the [ring beam instability example](ringbeam_Umeda12.md) for detailed usage instructions, also see [firehose instability example](firehose_Astfalk17.md) for using with arbitrary velocity distributions, [cold plasma example](cold_plasma.md) for comparing kinetic and fluid solvers, and [dispersion surface tracking example](dispersion_surface.md) for 2D scanning and mode tracking.
+Check out the [ring beam instability example](ringbeam_Umeda12.md) for detailed usage instructions, also see [firehose instability example](firehose_Astfalk17.md) for using with arbitrary velocity distributions, [BO-PBK example](rlp_Cattaert07.md) for using with kappa distributions (BO-PBK), [cold plasma example](cold_plasma.md) for comparing kinetic and fluid solvers, and [dispersion surface tracking example](dispersion_surface.md) for 2D scanning and mode tracking.
+
+### Solvers
+
+BO-PBK (`BOPBK`) is an analytic, distribution-aware eigen-solver optimized for kappa plasmas, whereas BO-Arbitrary (`BOHH`) is a universal but numerically heavier framework that approximates any distribution at the cost of efficiency and low-κ accuracy.
+
+```@docs; canonical = false
+BOPBK
+BOHH
+BOFluid
+```
 
 ## Notation & Assumptions
 

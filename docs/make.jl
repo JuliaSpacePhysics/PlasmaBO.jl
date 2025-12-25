@@ -14,11 +14,11 @@ makedocs(;
     ),
     pages = [
         "Home" => "index.md",
-        "R/L/P modes (Cattaert 2007)" => "rlp_Cattaert07.md",
         "Ring beam instability" => "ringbeam_Umeda12.md",
         "Firehose instability" => "firehose_Astfalk17.md",
         "Mirror mode" => "mirror_mode.md",
         "Ion cyclotron emission" => "ice_Irvine18.md",
+        "R/L/P modes (PBK solver)" => "rlp_Cattaert07.md",
         "Cold plasma (fluid vs kinetic solver)" => "cold_plasma.md",
         "Dispersion surface tracking" => "dispersion_surface.md",
     ],

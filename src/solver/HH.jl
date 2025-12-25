@@ -13,7 +13,11 @@ end
 HHSolverParam(param::HHSolverParam, B0) = param
 
 # The coefficients a_{s,lm}
-_alm(s) = ones(eltype(s), 1, 1)
+_alm(s::Maxwellian) = ones(eltype(s), 1, 1)
+function _alm(vdf::BiKappa2)
+    data = gen_fv2d(vdf)
+    return hermite_expansion(data.fv, data.vz, data.vx, data.vtz, data.vtx).alm
+end
 
 _vtz(s) = sqrt(2 * kb * temperature(s.Tz) / s.m)
 _vtp(s) = sqrt(2 * kb * temperature(s.Tp) / s.m)
@@ -236,7 +240,7 @@ function _assemble_species!(
 end
 
 """
-    solve_dispersion_matrix(params, kx, kz; J=8)
+    solve_dispersion_matrix(params, kx, kz; N=2, J=8)
 
 Solve the kinetic dispersion relation using the matrix eigenvalue method.
 
@@ -354,32 +358,4 @@ function solve_dispersion_matrix!(M, args...; kw...)
     return solve_with_threads(6) do
         eigvals!(M)
     end
-end
-
-function solve_kinetic_dispersion(species, B0, kx, kz; kw...)
-    params = HHSolverParam.(species, B0)
-    return solve_dispersion_matrix(params, kx, kz; kw...)
-end
-
-function solve_kinetic_dispersion(species, B0, ks::AbstractVector, θ; N = 2, J = 8, kw...)
-    M = _zeros(species, N, J)
-    params = HHSolverParam.(species, B0)
-    ωs = @showprogress desc = "Solving dispersion..." map(ks) do k
-        kx, kz = k .* sincos(θ)
-        solve_dispersion_matrix!(M, params, kx, kz; N, J, kw...)
-    end
-    return DispersionSolution(ks, ωs)
-end
-
-function solve_kinetic_dispersion(species, B0, ks::AbstractVector, θs::AbstractVector; N = 2, J = 8, kw...)
-    M = _zeros(species, N, J)
-    params = HHSolverParam.(species, B0)
-    ωs = Matrix{Vector{ComplexF64}}(undef, length(ks), length(θs))
-    @showprogress desc = "Solving dispersion (k, θ)..." for (iθ, θ) in enumerate(θs)
-        for (ik, k) in enumerate(ks)
-            kx, kz = k .* sincos(θ)
-            ωs[ik, iθ] = solve_dispersion_matrix!(M, params, kx, kz; N, J, kw...)
-        end
-    end
-    return DispersionSolution(ks, θs, ωs)
 end

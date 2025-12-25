@@ -1,6 +1,6 @@
 # Case: Cold plasma (kinetic vs fluid)
 
-This page demonstrates a typical cold plasma configuration (electron–proton plasma) and compares the eigenmodes computed by the kinetic solver (`solve_kinetic_dispersion`) and the multi-fluid solver (`solve_fluid_dispersion`).
+This page demonstrates a typical cold plasma configuration (electron–proton plasma) and compares the eigenmodes computed by the kinetic solver (`solve`) and the multi-fluid solver (`solve` with `BOFluid`).
 
 The input parameters correspond to the following species table:
 
@@ -37,8 +37,8 @@ kn = wpi / c0
 ```@repl coldplasma
 kn_scan = 0.01:2.0:100.0;
 ks = kn_scan .* kn;
-kinetic = solve_kinetic_dispersion(species, B0, ks, θ);
-fluid_ωs = solve_fluid_dispersion(species, B0, ks, θ);
+kinetic = solve(species, B0, ks, θ);
+fluid_ωs = solve(species, B0, ks, θ, BOFluid);
 ```
 
 ```@example coldplasma
