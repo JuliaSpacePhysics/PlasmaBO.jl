@@ -16,10 +16,17 @@ SpecialFunctions = "276daf66-3868-5448-9aa4-cd146d93841b"
 Tullio = "bc48ee85-29a4-5162-ae0b-a64e1601d4bc"
 Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 
+[weakdeps]
+Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
+
+[extensions]
+PlasmaBOMakieExt = "Makie"
+
 [compat]
 ChargedParticles = "0.3.1"
 DataInterpolations = "8"
 LinearAlgebra = "1"
+Makie = "0.23, 0.24"
 ProgressMeter = "1"
 QuadGK = "2"
 SpecialFunctions = "2"

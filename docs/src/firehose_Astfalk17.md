@@ -37,25 +37,14 @@ println("Unstable modes (ω/ωci): ", ω_unstable ./ wci)
 
 ```@repl firehose
 k_ranges = (0.05:0.02:0.5) .* kn;
-results = solve_kinetic_dispersion(species, B0, k_ranges, θ; N = 2, J = 24);
+sol = solve_kinetic_dispersion(species, B0, k_ranges, θ; N = 2, J = 24);
 ```
 
 ```@example firehose
 using CairoMakie
 
-function plot_results(results, kn, wn)
-    f = Figure()
-    ax = Axis(f[1, 1], xlabel = "k [k_n]", ylabel = "ω [ω_ci]")
-    ax2 = Axis(f[1, 2], xlabel = "k [k_n]", ylabel = "Im(ω) [ω_ci]")
-    for (k, ωs) in zip(results.ks, results.ωs)
-        k_temp = fill(k / kn, length(ωs))
-        scatter!(ax, k_temp, real.(ωs) ./ wn, color = :blue, markersize = 5)
-        scatter!(ax2, k_temp, imag.(ωs) ./ wn, color = :red, markersize = 5)
-    end
-    return f, (ax, ax2)
-end
 let
-    f, (ax, ax2) = plot_results(results, kn, wci)
+    f, (ax, ax2) = plot(sol, kn, wci)
     ylims!(ax, [0, 1])
     ylims!(ax2, [-0.1, 0.1])
     f

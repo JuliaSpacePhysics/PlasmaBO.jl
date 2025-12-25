@@ -16,7 +16,7 @@ export BiKappa, BiKappa2
 export gen_fv2d
 export HHSolverParam
 export FluidSpecies, solve_fluid_dispersion
-export BranchPoint, track_dispersion_branch, track_dispersion_branches
+export BranchPoint, SurfaceBranchPoint, track
 export hermite_expansion
 
 include("types.jl")
@@ -29,6 +29,10 @@ include("integral.jl")
 include("hermite_expansion.jl")
 include("matrix_solver.jl")
 include("fluid_solver.jl")
-include("eigenvalue_filtering.jl")
+include("track.jl")
+
+function plot_branches end
+
+export plot_branches
 
 end

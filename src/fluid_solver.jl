@@ -155,3 +155,16 @@ function solve_fluid_dispersion(species, B0, ks::AbstractVector, θ)
     end
     return DispersionSolution(ks, ωs)
 end
+
+function solve_fluid_dispersion(species, B0, ks::AbstractVector, θs::AbstractVector)
+    NN = _fluid_size(species)
+    M = zeros(ComplexF64, NN, NN)
+    ωs = Matrix{Vector{ComplexF64}}(undef, length(ks), length(θs))
+    @showprogress desc = "Solving fluid dispersion (k, θ)..." for (iθ, θ) in enumerate(θs)
+        for (ik, k) in enumerate(ks)
+            kx, kz = k .* sincos(θ)
+            ωs[ik, iθ] = solve_fluid_dispersion!(M, species, kx, kz, B0)
+        end
+    end
+    return DispersionSolution(ks, θs, ωs)
+end

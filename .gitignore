@@ -7,3 +7,4 @@
 *.mat
 !.test/*fvceff1.mat
 lib/boarbitrary
+docs/bonito
