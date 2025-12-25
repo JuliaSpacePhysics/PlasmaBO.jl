@@ -98,7 +98,7 @@ Solving the kinetic dispersion relation is traditionally challenging because:
 
 Check out the [ring beam instability example](ringbeam_Umeda12.md) for detailed usage instructions, also see [firehose instability example](firehose_Astfalk17.md) for using with arbitrary velocity distributions, [BO-PBK example](rlp_Cattaert07.md) for using with kappa distributions (BO-PBK), [cold plasma example](cold_plasma.md) for comparing kinetic and fluid solvers, [dispersion surface tracking example](dispersion_surface.md) for 2D scanning and mode tracking, and [wave polarization and handedness example](demo_polarization.md) for analyzing wave modes in cold plasma.
 
-### Solvers
+## Solvers
 
 ```@docs; canonical = false
 solve
@@ -106,11 +106,33 @@ solve
 
 BO-PBK ([`BOPBK`](@ref)) is an analytic, distribution-aware eigen-solver optimized for kappa plasmas, whereas BO-Arbitrary ([`BOHH`](@ref)) is a universal but numerically heavier framework that approximates any distribution at the cost of efficiency and low-κ accuracy.
 
+`BO-PBK` assumes **product-bi-kappa (PBK)** structure from the start:
+
+```math
+f(v_\parallel, v_\perp)=f_\parallel^{\kappa_\parallel}(v_\parallel) f_\perp^{\kappa_\perp}(v_\perp)
+```
+
+and uses exact modified plasma dispersion functions $Z_{\kappa}$ and their closed-form rational expansions. Loss-cone, drift, anisotropy are built in analytically.
+
+`BOHH` expands the distribution as
+
+```math
+f_s(v_\parallel,v_\perp)=\sum_{l,m} a_{lm} \rho_l(v_\parallel) u_m(v_\perp)
+```
+
+using Hermite–Hermite (HH) bases. Hermite bases are Maxwellian-centered and accuracy degrades notably for **low κ (strong suprathermal tails)**.
+
 ```@docs; canonical = false
 BOPBK
 BOHH
 BOFluid
 ```
+
+### When should you use each?
+
+Use **BO-PBK** if the plasma is reasonably described by PBK and you care about κ-dependent instability thresholds, loss-cone physics, and you want **speed + robustness**.
+
+Use **BO-Arbitrary** if the distribution is numerical (e.g., from spacecraft data) and cannot be parameterized analytically (e.g., has plateaus, shoulders, or holes). You are willing to trade efficiency for **universality**.
 
 ## References
 

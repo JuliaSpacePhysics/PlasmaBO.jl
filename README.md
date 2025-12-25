@@ -16,7 +16,7 @@ using PlasmaBO
 
 B0 = 100e-9                       # background field [T]
 n, T = 8.7e6, 2.857e-3            # density [m^-3], temperature [eV]
-species = (Maxwellian(:p, n, T), Maxwellian(:e, n, T))
+species = (Maxwellian(:p, n, T), Maxwellian(:e, n, T)) # :p for protons, :e for electrons
 
 # Single (kx, kz): returns Vector{ComplexF64} of all ω roots
 kx, kz = 0.0, 1e-6
