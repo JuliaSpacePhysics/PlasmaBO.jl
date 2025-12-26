@@ -4,13 +4,16 @@ CurrentModule = PlasmaBO
 
 # PlasmaBO
 
+[![DOI](https://zenodo.org/badge/1120953450.svg)](https://doi.org/10.5281/zenodo.18058843)
+[![version](https://juliahub.com/docs/General/PlasmaBO/stable/version.svg)](https://juliahub.com/ui/Packages/General/PlasmaBO)
+
 Documentation for [PlasmaBO](https://github.com/JuliaSpacePhysics/PlasmaBO.jl).
 
 ## Installation
 
 ```julia
 using Pkg
-Pkg.add(url="https://github.com/JuliaSpacePhysics/PlasmaBO.jl")
+Pkg.add("PlasmaBO")
 ```
 
 ## Features
