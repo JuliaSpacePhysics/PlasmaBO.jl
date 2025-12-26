@@ -64,12 +64,12 @@ res2d = solve_kinetic_dispersion(species, B0, ks, θs; N)
 ```
 
 ```@example surface
-plot(res2d, kn, wn; figure=(; size=(800, 300)))
+plot(res2d, kn, wn)
 ```
 
 ```@example surface
 # Choose a reference angle and reference k for seeding the tracked mode
 seed = (90.5 * kn, deg2rad(20), (1000 - 3000im) * wn)
 branch = track(res2d, seed)
-plot_branches((branch,), kn, wn; figure=(; size=(800, 300)))
+plot_branches((branch,), kn, wn)
 ```
