@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Mirror mode · PlasmaBO.jl</title><meta name="title" content="Mirror mode · PlasmaBO.jl"/><meta property="og:title" content="Mirror mode · PlasmaBO.jl"/><meta property="twitter:title" content="Mirror mode · PlasmaBO.jl"/><meta name="description" content="Documentation for PlasmaBO.jl."/><meta property="og:description" content="Documentation for PlasmaBO.jl."/><meta property="twitter:description" content="Documentation for PlasmaBO.jl."/><meta property="og:url" content="https://JuliaSpacePhysics.github.io/PlasmaBO.jl/mirror_mode/"/><meta property="twitter:url" content="https://JuliaSpacePhysics.github.io/PlasmaBO.jl/mirror_mode/"/><link rel="canonical" href="https://JuliaSpacePhysics.github.io/PlasmaBO.jl/mirror_mode/"/><script data-outdated-warner src="../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../search_index.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../">PlasmaBO.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../">Home</a></li><li><a class="tocitem" href="../ringbeam_Umeda12/">Ring beam instability</a></li><li><a class="tocitem" href="../firehose_Astfalk17/">Firehose instability</a></li><li class="is-active"><a class="tocitem" href>Mirror mode</a></li><li><a class="tocitem" href="../ice_Irvine18/">Ion cyclotron emission</a></li><li><a class="tocitem" href="../rlp_Cattaert07/">R/L/P modes (PBK solver)</a></li><li><a class="tocitem" href="../cold_plasma/">Cold plasma (fluid vs kinetic solver)</a></li><li><a class="tocitem" href="../dispersion_surface/">Dispersion surface tracking</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Mirror mode</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Mirror mode</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/JuliaSpacePhysics/PlasmaBO.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/JuliaSpacePhysics/PlasmaBO.jl/blob/main/docs/src/mirror_mode.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Case:-Mirror-mode"><a class="docs-heading-anchor" href="#Case:-Mirror-mode">Case: Mirror mode</a><a id="Case:-Mirror-mode-1"></a><a class="docs-heading-anchor-permalink" href="#Case:-Mirror-mode" title="Permalink"></a></h1><p>The benchmark is based on Gary (1993), p131, Fig.7.4, with</p><ul><li><p><strong>Propagation angle</strong>: θ = 71°</p></li><li><p><strong>Beta ratio</strong>: <span>$β_{i,∥}/β_{e,∥} = 1$</span></p></li><li><p><strong>Temperature anisotropy</strong>:</p><ul><li>ions: <span>$T_{i,⊥}/T_{i,∥} = 2$</span></li><li>electrons: <span>$T_{e,⊥}/T_{e,∥} = 1$</span></li></ul></li><li><p><strong>Magnetic field</strong>: <span>$B_0 = 100e-9 T$</span></p></li><li><p><strong>Species</strong>:</p><ul><li>q = -1, m = 1/1836, n = 1e6, T∥ = 24840 eV, T⊥ = 24840 eV, v0 = 0</li><li>q = +1, m = 1, n = 1e6, T∥ = 24840 eV, T⊥ = 49680 eV, v0 = 0</li></ul></li></ul><pre><code class="language-julia hljs">using PlasmaBO
+
+B0 = 100e-9
+θ = deg2rad(71)
+
+n = 1e6
+me_mp = 1 / 1836
+
+electron = Maxwellian(:e, n, 24840.0)
+proton   = Maxwellian(n, 24840.0, 49680.0)
+
+species = (proton, electron)
+params = HHSolverParam.(species, B0)
+ρᵢ = params[1].ρc
+ωₙ = params[1].wc
+ks = (0.005:0.04:0.7) ./ ρᵢ
+
+sol = solve(species, B0, ks, θ)
+
+# Extract the most unstable mode at each k (by growth rate)
+ωmax = vec(argmax.(imag, sol.ωs))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">18-element Vector{ComplexF64}:
+  2.4746098961454454e-10 + 0.0017337170547183478im
+  5.7387849905275724e-11 + 0.015523556105815954im
+ -2.4949938238980012e-11 + 0.028929069367337995im
+ -2.5276500584763593e-11 + 0.041604905107330475im
+   5.301559873385008e-12 + 0.053198854270879295im
+   5.784263977338675e-11 + 0.06334868242075466im
+  2.5728614578461942e-11 + 0.07167903068456492im
+  2.6563207347542367e-11 + 0.07779841958825619im
+  -3.109016516456009e-12 + 0.08129639533373137im
+ -2.2496644939303017e-11 + 0.08174088193675501im
+   4.666433905953227e-12 + 0.07867581919310403im
+   4.511955392638711e-11 + 0.07161920017561207im
+   7.360647760921102e-11 + 0.06006163274041975im
+   3.890884175666716e-11 + 0.04346559778572855im
+   2.744321263292715e-12 + 0.021265572589007395im
+    1.767972771963032e-5 + 6.829061897633627e-7im
+  -2.2616872804293147e-6 + 2.688081833893754e-6im
+   -5.073158105359251e-8 + 3.585609696092792e-6im</code></pre><pre><code class="language-julia hljs">using CairoMakie
+
+let fig = Figure()
+    ax1 = Axis(fig[1,1]; xlabel = &quot;k*λD&quot;, ylabel = &quot;ωᵣ / ωₙ&quot;)
+    ax2 = Axis(fig[1,2]; xlabel = &quot;k*λD&quot;, ylabel = &quot;γ / ωₙ&quot;)
+    scatterlines!(ax1, sol.ks .* ρᵢ, real.(ωmax)./ ωₙ)
+    scatterlines!(ax2, sol.ks .* ρᵢ, imag.(ωmax)./ ωₙ)
+    fig
+end</code></pre><img src="903fed04.png" alt="Example block output"/></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../firehose_Astfalk17/">« Firehose instability</a><a class="docs-footer-nextpage" href="../ice_Irvine18/">Ion cyclotron emission »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.16.1 on <span class="colophon-date" title="Friday 26 December 2025 21:07">Friday 26 December 2025</span>. Using Julia version 1.12.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
