@@ -18,11 +18,11 @@ Pkg.add("PlasmaBO")
 
 ## Features
 
-- Hermite-Hermite (HH) expansion for arbitrary/analytic distributions
+- Hermite-Hermite (BO-HH) expansion solver for arbitrary/analytic distributions
     - Maxwellian / BiMaxwellian
-    - Kappa / BiKappa / product Bikappa
-- Integration with [`ChargedParticles.jl`](https://juliaplasma.github.io/ChargedParticles.jl/dev/)
+- Analytic PBK (BO-PBK) solver for kappa distributions
 - Multi-fluid solver
+- Integration with [`ChargedParticles.jl`](https://juliaplasma.github.io/ChargedParticles.jl/dev/)
 
 ## Usage Examples
 
@@ -34,7 +34,7 @@ Check out the [ring beam instability example](ringbeam_Umeda12.md) for detailed 
 
 ### Solvers
 
-BO-PBK (`BOPBK`) is an analytic, distribution-aware eigen-solver optimized for kappa plasmas, whereas BO-Arbitrary (`BOHH`) is a universal but numerically heavier framework that approximates any distribution at the cost of efficiency and low-κ accuracy.
+BO-PBK ([`BOPBK`](@ref)) is an analytic, distribution-aware eigen-solver optimized for kappa plasmas, whereas BO-Arbitrary ([`BOHH`](@ref)) is a universal but numerically heavier framework that approximates any distribution at the cost of efficiency and low-κ accuracy.
 
 ```@docs; canonical = false
 BOPBK

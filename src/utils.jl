@@ -10,11 +10,11 @@ function solve_with_threads(f, nthreads)
     end
 end
 
-function with_progress(f, prob; desc = "Solving dispersion (k, θ)...")
+function with_progress(f, prob; desc = "Solving dispersion (k, θ)...", dt = 1)
     θs = prob.θs
     ks = prob.ks
     carts = CartesianIndices((length(ks), length(θs)))
-    return @showprogress desc = desc for id in carts
+    return @showprogress dt = dt desc = desc for id in carts
         ik, iθ = Tuple(id)
         k = ks[ik]
         θ = θs[iθ]

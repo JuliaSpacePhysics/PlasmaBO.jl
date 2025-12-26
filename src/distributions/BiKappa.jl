@@ -30,7 +30,7 @@ end
 
 function BiKappa2(n, κz, κx, Tz, Tp = Tz; vdz = 0.0, vdr = 0.0, sigma = 0.0, Z = nothing, A = nothing, q = nothing, m = nothing, particle = :p)
     q, m = _charge_mass(particle, Z, A, q, m)
-    return BiKappa2(promote(n, κz, κx, Tz, Tp, vdz, vdr, sigma, q, m)...)
+    return BiKappa2(promote(_n(n), κz, κx, _T(Tz), _T(Tp), vdz, vdr, sigma, q, m)...)
 end
 
 Base.eltype(::BiKappa2{T}) where {T} = T
