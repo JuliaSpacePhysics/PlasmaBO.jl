@@ -31,7 +31,7 @@ kx = k * sin(θ)
 kz = k * cos(θ)
 
 # J=12 provides good accuracy (J-pole approximation order)
-ωs = solve_kinetic_dispersion(species, B0, kx, kz; N=6, J=12)
+ωs = solve(species, B0, kx, kz; N=6, J=12)
 
 # Filter for unstable modes (ω/ωce) with positive growth rate
 ω_unstable = filter(ω -> isfinite(ω) && imag(ω) > 0.001*wce, ωs)[1] ./wce
@@ -43,7 +43,7 @@ Scan k*λD from 0.01 to 0.3
 
 ```@repl matrix
 k_ranges = (0.01:0.005:0.3) .* kn;
-sol = solve_kinetic_dispersion(species, B0, k_ranges, θ; N=6)
+sol = solve(species, B0, k_ranges, θ; N=6)
 ```
 
 ```@example matrix

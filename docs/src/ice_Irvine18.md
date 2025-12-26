@@ -33,7 +33,7 @@ vA = Alfven_speed(B0, species)
 kn = ωn / vA
 
 ks = (9.5:0.025:11.5) .* kn
-results = solve_kinetic_dispersion(species, B0, ks, θ; N = 12, J = 4)
+results = solve(species, B0, ks, θ; N = 12, J = 4)
 ```
 
 ```@example ice

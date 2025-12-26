@@ -32,10 +32,10 @@ params = HHSolverParam.(species, B0)
 ωₙ = params[1].wc
 ks = (0.005:0.04:0.7) ./ ρᵢ
 
-sol = solve_kinetic_dispersion(species, B0, ks, θ)
+sol = solve(species, B0, ks, θ)
 
 # Extract the most unstable mode at each k (by growth rate)
-ωmax = argmax.(imag, sol.ωs)
+ωmax = vec(argmax.(imag, sol.ωs))
 ```
 
 ```@example mirror

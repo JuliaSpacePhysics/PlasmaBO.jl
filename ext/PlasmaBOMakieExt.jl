@@ -28,7 +28,7 @@ For 2D solutions (k, θ), creates surface plots.
 - Additional keyword arguments are passed to the plotting functions
 """
 function Makie.plot(sol::DispersionSolution, args...; kwargs...)
-    pf = isnothing(sol.θs) ? plot_1d : plot_2d
+    pf = sol.θs isa Number ? plot_1d : plot_2d
     return pf(sol, args...; kwargs...)
 end
 
@@ -56,7 +56,7 @@ function with_2d_axes(func!, args...; xlabel = XLABEL, figure = (;), by_col = fa
     return FigureAxes(fig, (ax1, ax2))
 end
 
-function with_3d_axes(func!, args...; xlabel = XLABEL, ylabel = "θ (rad)", figure = (;), by_col = false)
+function with_3d_axes(func!, args...; xlabel = XLABEL, ylabel = "θ (rad)", figure = (;), by_col = true)
     layout = by_col ? ((1, 1), (1, 2)) : ((1, 1), (2, 1))
     fig = Figure(; figure...)
     ax1 = Axis3(fig[layout[1]...]; xlabel, ylabel, zlabel = LABEL_REAL)

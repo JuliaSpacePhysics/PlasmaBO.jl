@@ -23,14 +23,17 @@ struct BiKappa2{T <: Number} <: AbstractDistribution
     Tp::T
     vdz::T
     vdr::T
+    sigma::T
     q::T
     m::T
 end
 
-function BiKappa2(n, κz, κx, Tz, Tp = Tz; vdz = 0.0, vdr = 0.0, Z = nothing, A = nothing, q = nothing, m = nothing, particle = :p)
+function BiKappa2(n, κz, κx, Tz, Tp = Tz; vdz = 0.0, vdr = 0.0, sigma = 0.0, Z = nothing, A = nothing, q = nothing, m = nothing, particle = :p)
     q, m = _charge_mass(particle, Z, A, q, m)
-    return BiKappa2(promote(n, κz, κx, Tz, Tp, vdz, vdr, q, m)...)
+    return BiKappa2(promote(n, κz, κx, Tz, Tp, vdz, vdr, sigma, q, m)...)
 end
+
+Base.eltype(::BiKappa2{T}) where {T} = T
 
 function _velocity_grid(vtx, vtz, vdx, vdz; dvx = nothing, dvz = nothing)
     dvx = @something dvx 0.05 * vtx
