@@ -7,8 +7,6 @@ CurrentModule = PlasmaBO
 [![DOI](https://zenodo.org/badge/1120953450.svg)](https://doi.org/10.5281/zenodo.18058843)
 [![version](https://juliahub.com/docs/General/PlasmaBO/stable/version.svg)](https://juliahub.com/ui/Packages/General/PlasmaBO)
 
-Documentation for [PlasmaBO](https://github.com/JuliaSpacePhysics/PlasmaBO.jl).
-
 ## Installation
 
 ```julia
@@ -20,7 +18,7 @@ Pkg.add("PlasmaBO")
 
 - Hermite-Hermite (BO-HH) expansion solver for arbitrary/analytic distributions
     - Maxwellian / BiMaxwellian
-- Analytic PBK (BO-PBK) solver for kappa distributions
+- Analytic Product-Bi-Kappa (BO-PBK) solver
 - Multi-fluid solver
 - Integration with [`ChargedParticles.jl`](https://juliaplasma.github.io/ChargedParticles.jl/dev/)
 
@@ -59,7 +57,7 @@ The formulation (code) is valid for non-relativistic, arbitrary gyrotropic distr
 
 ## References
 
-[xieRapidComputationPlasma2024](@citet), [xieBO20Plasma2021](@citet), [xiePDRFGeneralDispersion2014](@citet), [xieGeneralizedPlasmaDispersion2013](@citet), 
+[xieBO20Plasma2021](@citet), [xiePDRFGeneralDispersion2014](@citet), [xieGeneralizedPlasmaDispersion2013](@citet), 
 
 ```@bibliography
 ```
