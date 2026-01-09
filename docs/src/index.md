@@ -20,7 +20,7 @@ Pkg.add("PlasmaBO")
     - Maxwellian / BiMaxwellian
 - Analytic Product-Bi-Kappa (BO-PBK) solver
 - Multi-fluid solver
-- Integration with [`ChargedParticles.jl`](https://juliaplasma.github.io/ChargedParticles.jl/dev/)
+- Integration with [`ChargedParticles.jl`](https://juliaplasma.github.io/ChargedParticles.jl/dev/) for specifying different species, e.g., `Maxwellian("O-18 3+", n, Tpara)`
 
 ## Usage Examples
 
@@ -31,6 +31,10 @@ This approach is more efficient to find multiple modes at once, and doesn't requ
 Check out the [ring beam instability example](ringbeam_Umeda12.md) for detailed usage instructions, also see [firehose instability example](firehose_Astfalk17.md) for using with arbitrary velocity distributions, [BO-PBK example](rlp_Cattaert07.md) for using with kappa distributions (BO-PBK), [cold plasma example](cold_plasma.md) for comparing kinetic and fluid solvers, and [dispersion surface tracking example](dispersion_surface.md) for 2D scanning and mode tracking.
 
 ### Solvers
+
+```@docs; canonical = false
+solve
+```
 
 BO-PBK ([`BOPBK`](@ref)) is an analytic, distribution-aware eigen-solver optimized for kappa plasmas, whereas BO-Arbitrary ([`BOHH`](@ref)) is a universal but numerically heavier framework that approximates any distribution at the cost of efficiency and low-κ accuracy.
 
@@ -57,7 +61,7 @@ The formulation (code) is valid for non-relativistic, arbitrary gyrotropic distr
 
 ## References
 
-[xieBO20Plasma2021](@citet), [xiePDRFGeneralDispersion2014](@citet), [xieGeneralizedPlasmaDispersion2013](@citet), 
+[xieBO20Plasma2021](@citet), [xiePDRFGeneralDispersion2014](@citet)
 
 ```@bibliography
 ```

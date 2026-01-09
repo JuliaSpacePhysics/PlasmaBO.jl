@@ -10,8 +10,8 @@ The benchmark is based on Gary (1993), p131, Fig.7.4, with
 - **Magnetic field**: $B_0 = 100e-9 T$
 
 - **Species**:
-  - q = -1, m = 1/1836, n = 1e6, T∥ = 24840 eV, T⊥ = 24840 eV, v0 = 0
-  - q = +1, m = 1, n = 1e6, T∥ = 24840 eV, T⊥ = 49680 eV, v0 = 0
+  - Electron: n = 1e6, T∥ = 24840 eV, T⊥ = 24840 eV
+  - Proton: n = 1e6, T∥ = 24840 eV, T⊥ = 49680 eV
 
 
 ```@example mirror
@@ -21,10 +21,11 @@ B0 = 100e-9
 θ = deg2rad(71)
 
 n = 1e6
-me_mp = 1 / 1836
+Tpara = 24840.0
+Tperp = 49680.0
 
-electron = Maxwellian(:e, n, 24840.0)
-proton   = Maxwellian(n, 24840.0, 49680.0)
+electron = Maxwellian(:e, n, Tpara)
+proton   = Maxwellian(n, Tpara, Tperp)
 
 species = (proton, electron)
 params = HHSolverParam.(species, B0)

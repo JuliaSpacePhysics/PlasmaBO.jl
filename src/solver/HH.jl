@@ -239,24 +239,6 @@ function _assemble_species!(
     )
 end
 
-"""
-    solve_dispersion_matrix(params, kx, kz; N=2, J=8)
-
-Solve the kinetic dispersion relation using the matrix eigenvalue method.
-
-Returns all eigenfrequencies ω(k) for the given wave vector (kx, kz).
-
-This method transforms the dispersion relation into a matrix eigenvalue problem
-using J-pole approximation for the plasma dispersion function, allowing
-simultaneous computation of all wave modes.
-
-- `kx`: Perpendicular wave vector component (m⁻¹)
-- `kz`: Parallel wave vector component (m⁻¹)
-- `J`: Number of poles for Z-function approximation (default: 8)
-
-See also: [`get_jpole_coefficients`](@ref)
-"""
-function solve_dispersion_matrix end
 
 # State Vector Organization
 # The state vector has this structure:
