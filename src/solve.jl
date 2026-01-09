@@ -20,8 +20,11 @@ end
 Dispersion solver using the Hermite-Hankel (HH) matrix formulation.
 
 `N` controls the truncation order of the cyclotron harmonic index.
-`J` controls the truncation order of the Hermite expansion used in the
-solver.
+`J` controls the truncation order of the number of poles for Z-function approximation
+
+This method transforms the dispersion relation into a matrix eigenvalue problem
+using J-pole approximation for the plasma dispersion function, allowing
+simultaneous computation of all wave modes.
 """
 @kwdef struct BOHH <: AbstractDispersionAlgorithm
     N::Int = 2
@@ -89,6 +92,19 @@ function solve(pb::EnsembleProblem, alg::BOPBK)
         end
     end
 end
+
+"""
+    solve(species, B0, kx, kz, alg = BOHH; kw...)
+    solve(species, B0, ks, θs, alg = BOHH; kw...)
+
+Convenience interface for solving a single wavevector `(kx, kz)` or
+    dispersion scan over multiple wavevectors `(ks, θs)`.
+
+Keyword arguments are passed to the algorithm constructor. Defaults to `BOHH` solver.
+
+See also: [`BOHH`](@ref), [`BOPBK`](@ref), [`BOFluid`](@ref)
+"""
+function solve end
 
 function solve(species, B0, kx::Number, kz::Number, alg = BOHH; kw...)
     return solve(DispersionProblem(species, B0, kx, kz), alg(; kw...))
