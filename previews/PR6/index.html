@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Home · PlasmaBO.jl</title><meta name="title" content="Home · PlasmaBO.jl"/><meta property="og:title" content="Home · PlasmaBO.jl"/><meta property="twitter:title" content="Home · PlasmaBO.jl"/><meta name="description" content="Documentation for PlasmaBO.jl."/><meta property="og:description" content="Documentation for PlasmaBO.jl."/><meta property="twitter:description" content="Documentation for PlasmaBO.jl."/><meta property="og:url" content="https://JuliaSpacePhysics.github.io/PlasmaBO.jl/"/><meta property="twitter:url" content="https://JuliaSpacePhysics.github.io/PlasmaBO.jl/"/><link rel="canonical" href="https://JuliaSpacePhysics.github.io/PlasmaBO.jl/"/><script data-outdated-warner src="assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="assets/documenter.js"></script><script src="search_index.js"></script><script src="siteinfo.js"></script><script src="../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="assets/themeswap.js"></script></head><body>
+<!-- NAVBAR START -->
+<style>
+    html {
+        scroll-padding-top: calc(55px + 1rem);
+    }
+
+    /* Documenter css tweaks */
+    .docs-sidebar {
+        margin-top: 3.75rem;
+    }
+
+    #documenter {
+        margin-top: 3.75rem;
+    }
+
+    .docs-version-selector {
+        margin-bottom: 60px !important;
+    }
+
+    @media screen and (max-width: 1056px) {
+        .docs-version-selector {
+            margin-bottom: 60px !important;
+        }
+
+        .docs-sidebar {
+            margin-top: 0 !important;
+        }
+    }
+    /* Documenter css tweaks ends here */
+
+    :root {
+        --heading-color: white;
+        --item-color: rgb(165, 165, 165);
+        --primary-bg: #f8f9fa;  /* Light gray to match Quarto's default navbar */
+        --navbar-text: #212529;  /* Dark text color for better contrast */
+        --hover-color: #e9ecef;  /* Slightly darker gray for hover state */
+        --deprecated-bg: #ff4d4d;
+        --deprecated-text: white;
+    }
+
+    .ext-navigation {
+        position: fixed;
+        height: 3.75rem;
+        top: 0;
+        width: 100%;
+        background-color: var(--primary-bg);
+        color: var(--navbar-text);
+        z-index: 1000;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        display: flex;
+        align-items: center;
+        padding: 0 1.0625rem;
+        transition: transform 0.3s;
+    }
+
+    .ext-navbar-logo {
+        margin-left: 0.625rem;
+    }
+
+    .ext-nav-links {
+        display: flex;
+        align-items: center;
+        list-style-type: none;
+        margin: 0;
+        padding: 0;
+        flex-grow: 1;
+    }
+
+    .ext-nav-links li {
+        margin-left: 1rem !important;
+    }
+
+    .ext-nav-link {
+        color: var(--navbar-text) !important;
+        text-decoration: none;
+        font-size: 1.0625rem !important;
+        transition: color 0.2s ease;
+        cursor: pointer;
+    }
+
+    .ext-nav-link:hover,
+    .ext-navbar-item-single a:hover {
+        color: var(--hover-color) !important;
+        text-decoration: none !important;
+    }
+    
+    .ext-navigation a {
+        text-decoration: none !important;
+    }
+
+    .ext-navbar-item-single a {
+        color: var(--navbar-text) !important;
+    }
+
+    .ext-menu-toggle {
+        display: none;
+        font-size: 1.5rem;
+        color: white;
+        cursor: pointer;
+    }
+
+    .ext-dropdown {
+        display: none;
+        grid-template-columns: 1fr 1fr 1fr 1fr;
+        grid-template-rows: auto auto auto;
+        padding: 1.875rem;
+        position: absolute;
+        width: 100%;
+        left: 0;
+        background-color: var(--primary-bg);
+        line-height: 1.875rem;
+        opacity: 0;
+        transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+        transform: translateY(-0.625rem);
+    }
+
+    #library-handler::after {
+        content: "▼";
+        font-size: 0.6875rem;
+        margin-left: 0.3125rem;
+        transition: transform 0.3s ease-in-out;
+    }
+
+    #library-handler.open::after {
+        content: "▲";
+    }
+
+    .ext-dropdown.show {
+        display: grid;
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    .ext-dropdown ul {
+        height: auto;
+        width: 12.5rem;
+        margin-bottom: 1.25rem;
+    }
+
+    .ext-dropdown ul li {
+        text-align: left;
+        display: flex;
+        align-items: center;
+    }
+
+    .navbar-sub-item {
+        list-style: none;
+    }
+
+    .ext-dropdown ul a li {
+        color: var(--item-color);
+        width: 15.625rem;
+        border-radius: 3px;
+        padding: 0.125rem 0.625rem;
+        transition: background-color 0.2s ease;
+        text-decoration: none !important;
+    }
+
+    .ext-dropdown ul a li:hover {
+        background-color: rgba(107, 107, 107, 0.5);
+    }
+
+    .ext-dropdown-item-heading {
+        /* color: var(--heading-color); */
+        text-align: center;
+    }
+
+    .deprecated-badge {
+        background-color: var(--deprecated-bg);
+        color: var(--deprecated-text);
+        font-size: 0.75rem;
+        padding: 0.125rem 0.375rem;
+        border-radius: 3px;
+        margin-left: 0.5rem;
+        line-height: 1;
+    }
+
+    /* Responsive styling */
+    @media (max-width: 966px) {
+        .ext-dropdown {
+            grid-template-columns: 1fr 1fr 1fr;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .ext-nav-links {
+            display: none;
+            flex-direction: column;
+            width: 100%;
+            background-color: var(--primary-bg);
+            position: absolute;
+            top: 3.75rem;
+            left: 0;
+            padding: 0.625rem 0;
+            height: auto;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: rgb(141, 141, 141) grey;
+        }
+
+        .ext-nav-links.show {
+            display: flex;
+        }
+
+        .ext-nav-links li {
+            margin: 0.625rem 0;
+            text-align: center;
+        }
+
+        .ext-menu-toggle {
+            display: block;
+            margin-left: auto;
+        }
+
+        .ext-navigation.hide {
+            transform: translateY(-3.75rem);
+        }
+
+        .ext-dropdown {
+            place-content: center;
+            text-align: center;
+            grid-template-columns: 1fr;
+            line-height: 1.25rem;
+            padding: 0.625rem;
+        }
+
+        .ext-dropdown ul {
+            width: 100%;
+            text-align: center;
+            margin-bottom: 0.3125rem;
+        }
+
+        .ext-dropdown ul li {
+            text-align: center;
+            /* justify-content: center; */
+        }
+
+        .ext-dropdown ul a li {
+            width: 100%;
+        }
+
+        .ext-dropdown ul a li:hover {
+            background-color: var(--primary-bg);
+            /* color: #fff; */
+        }
+
+        /* Modified scroll bar */
+        .ext-nav-links::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        .ext-nav-links::-webkit-scrollbar-track {
+            box-shadow: inset 0 0 5px grey;
+        }
+
+        .ext-nav-links::-webkit-scrollbar-thumb {
+            background: rgb(141, 141, 141);
+            border-radius: 3px;
+        }
+
+        .ext-nav-links::-webkit-scrollbar-thumb:hover {
+            background: #9b9b9b;
+        }
+    }
+</style>
+<nav class="ext-navigation">
+    <a href="https://juliaspacephysics.github.io"></a>
+    <a style="color: #212529 !important; font-size: 21.25px !important; margin-left: 10px;" href="https://juliaspacephysics.github.io">JuliaSpacePhysics</a>
+    <ul class="ext-nav-links">
+        <li>
+            <p class="ext-nav-link" id="library-handler">Ecosystem</p>
+            <div class="ext-dropdown" id="ext-dropdown-items">
+                <ul>
+                    <li class="ext-dropdown-item-heading">Core</li>
+                    <a href="https://juliaspacephysics.github.io/SPEDAS.jl"><li>SPEDAS.jl</li></a>
+                    <a href="https://juliaspacephysics.github.io/SpaceDataModel.jl"><li>SpaceDataModel.jl</li></a>
+                    <a href="https://juliaspacephysics.github.io/GeoCotrans.jl"><li>GeoCotrans.jl</li></a>
+                    <a href="https://henry2004y.github.io/TestParticle.jl/"><li>TestParticle.jl</li></a>
+                </ul>
+                <ul>
+                    <li class="ext-dropdown-item-heading">Data</li>
+                    <a href="https://juliaspacephysics.github.io/CDFDatasets.jl/"><li>CDFDatasets.jl</li></a>
+                    <a href="https://juliaspacephysics.github.io/CDAWeb.jl/"><li>CDAWeb.jl</li></a>
+                    <a href="https://sciqlop.github.io/Speasy.jl/"><li>Speasy.jl</li></a>
+                    <a href="https://juliaspacephysics.github.io/HAPIClient.jl/"><li>HAPIClient.jl</li></a>
+                    <a href="https://juliaspacephysics.github.io/Madrigal.jl/"><li>Madrigal.jl</li></a>
+                    <a href="https://github.com/JuliaSpacePhysics/PySPEDAS.jl"><li>PySPEDAS.jl</li></a>
+                    <a href="https://juliaspacephysics.github.io/CommonDataFormat.jl/"><li>CommonDataFormat.jl</li></a>
+                </ul>
+                <ul>
+                    <li class="ext-dropdown-item-heading">Domain</li>
+                    <a href="https://juliaspacephysics.github.io/SolarEnergeticParticle.jl/dev/"><li>SolarEnergeticParticle.jl (Helio)</li></a>
+                    <a href="https://juliaspacephysics.github.io/GeoAACGM.jl"><li>GeoAACGM.jl (ITM)</li></a>
+                    <a href="https://juliaspacephysics.github.io/IRBEM.jl"><li>IRBEM.jl (Magnetosphere)</li></a>
+                </ul>
+                <!-- Enable when more mission-specific packages are available -->
+                <ul>
+                    <li class="ext-dropdown-item-heading">Mission-specific</li>
+                    <a href="https://juliaspacephysics.github.io/EISCATData.jl"><li>EISCATData.jl</li></a>
+                    <a href="https://juliaspacephysics.github.io/ELFINData.jl"><li>ELFINData.jl</li></a>
+                    <a href="https://juliaspacephysics.github.io/DMSPData.jl"><li>DMSPData.jl</li></a>
+                </ul>
+               
+                <ul>
+                    <li class="ext-dropdown-item-heading">General Analysis</li>
+                    <a href="https://juliaplasma.github.io/PlasmaFormulary.jl"><li>JuliaPlasma/PlasmaFormulary.jl</li></a>
+                    <a href="https://juliaplasma.github.io/ChargedParticles.jl"><li>JuliaPlasma/ChargedParticles.jl</li></a>
+                    <a href="https://juliaspacephysics.github.io/VelocityDistributionFunctions.jl"><li>VelocityDistributionFunctions.jl</li></a>
+                    <a href="https://juliaspacephysics.github.io/PlasmaWaves.jl"><li>PlasmaWaves.jl</li></a>
+                    <a href="https://juliaspacephysics.github.io/PlasmaBO.jl"><li>PlasmaBO.jl</li></a>
+                    <a href="https://github.com/JuliaSpacePhysics/SpacePhysicsMakie.jl"><li>SpacePhysicsMakie.jl</li></a>
+                </ul>
+            </div>
+        </li>
+        <li><a href="https://juliaspacephysics.github.io/tutorials/">Tutorials</a></li>
+    </ul>
+    <a href="https://github.com/JuliaSpacePhysics">
+        <svg width="32px" height="32px" viewBox="-8.2 -8.2 36.40 36.40" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" fill="#000000">
+            <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+            <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+            <g id="SVGRepo_iconCarrier">
+                <title>github [#142]</title>
+                <desc>JuliaSpacePhysics</desc>
+                <defs></defs>
+                <g id="Page-1" stroke-width="0.0002" fill="none" fill-rule="evenodd">
+                    <g id="Dribbble-Light-Preview" transform="translate(-140.000000, -7559.000000)" fill="#ffffff">
+                        <g id="icons" transform="translate(56.000000, 160.000000)">
+                            <path
+                                d="M94,7399 C99.523,7399 104,7403.59 104,7409.253 C104,7413.782 101.138,7417.624 97.167,7418.981 C96.66,7419.082 96.48,7418.762 96.48,7418.489 C96.48,7418.151 96.492,7417.047 96.492,7415.675 C96.492,7414.719 96.172,7414.095 95.813,7413.777 C98.04,7413.523 100.38,7412.656 100.38,7408.718 C100.38,7407.598 99.992,7406.684 99.35,7405.966 C99.454,7405.707 99.797,7404.664 99.252,7403.252 C99.252,7403.252 98.414,7402.977 96.505,7404.303 C95.706,7404.076 94.85,7403.962 94,7403.958 C93.15,7403.962 92.295,7404.076 91.497,7404.303 C89.586,7402.977 88.746,7403.252 88.746,7403.252 C88.203,7404.664 88.546,7405.707 88.649,7405.966 C88.01,7406.684 87.619,7407.598 87.619,7408.718 C87.619,7412.646 89.954,7413.526 92.175,7413.785 C91.889,7414.041 91.63,7414.493 91.54,7415.156 C90.97,7415.418 89.522,7415.871 88.63,7414.304 C88.63,7414.304 88.101,7413.319 87.097,7413.247 C87.097,7413.247 86.122,7413.234 87.029,7413.87 C87.029,7413.87 87.684,7414.185 88.139,7415.37 C88.139,7415.37 88.726,7417.2 91.508,7416.58 C91.513,7417.437 91.522,7418.245 91.522,7418.489 C91.522,7418.76 91.338,7419.077 90.839,7418.982 C86.865,7417.627 84,7413.783 84,7409.253 C84,7403.59 88.478,7399 94,7399"
+                                id="github-[#142]">
+                            </path>
+                        </g>
+                    </g>
+                </g>
+            </g>
+        </svg>
+    </a>
+    <span class="ext-menu-toggle">&#9776;</span>
+</nav>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const menuToggle = document.querySelector(".ext-menu-toggle");
+        const navLinks = document.querySelector(".ext-nav-links");
+        const nav = document.querySelector(".ext-navigation");
+        const navigationHandler = document.getElementById("library-handler");
+        const navigationItemsContainer =
+            document.getElementById("ext-dropdown-items");
+        let lastScrollY = window.scrollY;
+
+        function setAppropriateHeight() {
+            if (window.innerWidth <= 768) {
+                const viewportHeight = window.innerHeight;
+                const navHeight = nav.offsetHeight;
+                navLinks.style.maxHeight = `${viewportHeight - navHeight}px`;
+                navLinks.style.overflowY = "auto";
+            } else {
+                navLinks.style.maxHeight = "";
+                navLinks.style.overflowY = "";
+            }
+        }
+
+        // Toggle main menu for mobile
+        menuToggle.addEventListener("click", () => {
+            navLinks.classList.toggle("show");
+            if (navLinks.classList.contains("show")) {
+                setAppropriateHeight();
+                // Ensure the dropdown is hidden when menu is first opened
+                navigationItemsContainer.style.display = "none";
+                navigationItemsContainer.classList.remove("show");
+            }
+        });
+
+        // Close menus if clicked outside
+        document.addEventListener("click", (event) => {
+            if (
+                !navLinks.contains(event.target) &&
+                !menuToggle.contains(event.target)
+            ) {
+                navLinks.classList.remove("show");
+                navigationItemsContainer.classList.remove("show");
+                navigationHandler.classList.remove("open");
+            }
+        });
+
+        // Hide navigation bar on scroll down in mobile view
+        window.addEventListener("scroll", () => {
+            if (window.innerWidth <= 768) {
+                nav.classList.toggle("hide", window.scrollY > lastScrollY);
+                lastScrollY = window.scrollY;
+            }
+        });
+
+        // Library API script
+        navigationHandler.addEventListener("click", (event) => {
+            event.preventDefault(); // Prevent default action of the link
+            if (navigationItemsContainer.classList.contains("show")) {
+                navigationItemsContainer.classList.remove("show");
+                navigationHandler.classList.remove("open");
+                setTimeout(() => {
+                    navigationItemsContainer.style.display = "none";
+                }, 500); // Match the timeout to the CSS transition duration
+            } else {
+                navigationItemsContainer.style.display = "grid";
+                navigationHandler.classList.add("open");
+                setTimeout(() => {
+                    navigationItemsContainer.classList.add("show");
+                }, 10); // Delay to ensure the display change takes effect before adding class
+            }
+            setAppropriateHeight(); // Recalculate height when dropdown changes
+        });
+
+        // Handle window resize
+        window.addEventListener("resize", setAppropriateHeight);
+
+        // Initial setup
+        setAppropriateHeight();
+    });
+</script>
+<!-- NAVBAR END -->
+
+<div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href>PlasmaBO.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li class="is-active"><a class="tocitem" href>Home</a><ul class="internal"><li><a class="tocitem" href="#Reference"><span>Reference</span></a></li><li><a class="tocitem" href="#API-Reference"><span>API Reference</span></a></li></ul></li><li><a class="tocitem" href="examples/">Examples</a></li><li><a class="tocitem" href="firehose_Astfalk17/">Firehose instability</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Home</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Home</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/JuliaSpacePhysics/PlasmaBO.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/JuliaSpacePhysics/PlasmaBO.jl/blob/main/docs/src/index.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="PlasmaBO"><a class="docs-heading-anchor" href="#PlasmaBO">PlasmaBO</a><a id="PlasmaBO-1"></a><a class="docs-heading-anchor-permalink" href="#PlasmaBO" title="Permalink"></a></h1><p>Documentation for <a href="https://github.com/JuliaSpacePhysics/PlasmaBO.jl">PlasmaBO</a>.</p><ul><li><a href="#PlasmaBO.BranchPoint"><code>PlasmaBO.BranchPoint</code></a></li><li><a href="#PlasmaBO.FluidSolverParams"><code>PlasmaBO.FluidSolverParams</code></a></li><li><a href="#PlasmaBO.FluidSpecies"><code>PlasmaBO.FluidSpecies</code></a></li><li><a href="#PlasmaBO.FluidSpecies"><code>PlasmaBO.FluidSpecies</code></a></li><li><a href="#PlasmaBO.JPoleCoefficients"><code>PlasmaBO.JPoleCoefficients</code></a></li><li><a href="#PlasmaBO.create_fluid_params-Tuple{Any, Any}"><code>PlasmaBO.create_fluid_params</code></a></li><li><a href="#PlasmaBO.funAn-NTuple{5, Any}"><code>PlasmaBO.funAn</code></a></li><li><a href="#PlasmaBO.funBn-NTuple{5, Any}"><code>PlasmaBO.funBn</code></a></li><li><a href="#PlasmaBO.funCn-NTuple{5, Any}"><code>PlasmaBO.funCn</code></a></li><li><a href="#PlasmaBO.funIn-Tuple{Any}"><code>PlasmaBO.funIn</code></a></li><li><a href="#PlasmaBO.get_jpole_coefficients"><code>PlasmaBO.get_jpole_coefficients</code></a></li><li><a href="#PlasmaBO.solve_dispersion_matrix"><code>PlasmaBO.solve_dispersion_matrix</code></a></li><li><a href="#PlasmaBO.solve_fluid_dispersion-Tuple{FluidSolverParams, Any, Any}"><code>PlasmaBO.solve_fluid_dispersion</code></a></li><li><a href="#PlasmaBO.solve_with_threads-Tuple{Any, Any}"><code>PlasmaBO.solve_with_threads</code></a></li><li><a href="#PlasmaBO.track_dispersion_branch-Tuple{Any, Any, Any}"><code>PlasmaBO.track_dispersion_branch</code></a></li><li><a href="#PlasmaBO.track_dispersion_branches-Tuple{Any, Any, Any}"><code>PlasmaBO.track_dispersion_branches</code></a></li></ul><h2 id="Reference"><a class="docs-heading-anchor" href="#Reference">Reference</a><a id="Reference-1"></a><a class="docs-heading-anchor-permalink" href="#Reference" title="Permalink"></a></h2><p><a href="#xieEfficientFrameworkSolving2025">Xie [1]</a>, <a href="#xieRapidComputationPlasma2024">Xie [2]</a>, <a href="#xieBO20Plasma2021">Xie <em>et al.</em> [3]</a>, <a href="#xiePDRKGeneralKinetic2016">Xie and Xiao [4]</a>, <a href="#xiePDRFGeneralDispersion2014">Xie [5]</a>, <a href="#xieGeneralizedPlasmaDispersion2013">Xie [6]</a>, </p><div class="citation canonical"><dl><dt>[1]</dt><dd><div id="xieEfficientFrameworkSolving2025">H. Xie. <em>Efficient Framework for Solving Plasma Waves with Arbitrary Distributions</em>. <a href="https://doi.org/10.1063/5.0275307">Physics of Plasmas <strong>32</strong>, 60702</a> (2025).</div></dd><dt>[2]</dt><dd><div id="xieRapidComputationPlasma2024">H. Xie. <em>Rapid Computation of the Plasma Dispersion Function: Rational and Multi-Pole Approximation, and Improved Accuracy</em>. <a href="https://doi.org/10.1063/5.0216433">AIP Advances <strong>14</strong>, 75007</a> (2024).</div></dd><dt>[3]</dt><dd><div id="xieBO20Plasma2021">H.-s. Xie, R. Denton, J.-s. Zhao and W. Liu. <a href="https://doi.org/10.48550/arXiv.2103.16014"><em>BO 2.0: Plasma Wave and Instability Analysis with Enhanced Polarization Calculations</em></a> (Mar 2021), <a href="https://arxiv.org/abs/2103.16014">arXiv:2103.16014 [physics]</a>.</div></dd><dt>[4]</dt><dd><div id="xiePDRKGeneralKinetic2016">H. Xie and Y. Xiao. PDRK: A General Kinetic Dispersion Relation Solver for Magnetized Plasma*. <a href="https://doi.org/10.1088/1009-0630/18/2/01">Plasma Science and Technology <strong>18</strong>, 97</a> (2016).</div></dd><dt>[5]</dt><dd><div id="xiePDRFGeneralDispersion2014">H.-s. Xie. <em>PDRF: A General Dispersion Relation Solver for Magnetized Multi-Fluid Plasma</em>. <a href="https://doi.org/10.1016/j.cpc.2013.10.012">Computer Physics Communications <strong>185</strong>, 670–675</a> (2014).</div></dd><dt>[6]</dt><dd><div id="xieGeneralizedPlasmaDispersion2013">H.-S. (. Xie. <em>Generalized Plasma Dispersion Function: One-Solve-All Treatment, Visualizations, and Application to Landau Damping</em>. <a href="https://doi.org/10.1063/1.4822332">Physics of Plasmas <strong>20</strong>, 92125</a> (2013).</div></dd><dt>[7]</dt><dd><div id="umedaNumericalElectromagneticLinear2012">T. Umeda, S. Matsukiyo, T. Amano and Y. Miyoshi. <em>A Numerical Electromagnetic Linear Dispersion Relation for Maxwellian Ring-Beam Velocity Distributions</em>. <a href="https://doi.org/10.1063/1.4736848">Physics of Plasmas <strong>19</strong>, 72107</a> (2012).</div></dd></dl></div><h2 id="API-Reference"><a class="docs-heading-anchor" href="#API-Reference">API Reference</a><a id="API-Reference-1"></a><a class="docs-heading-anchor-permalink" href="#API-Reference" title="Permalink"></a></h2><article><details class="docstring" open="true"><summary id="PlasmaBO.BranchPoint"><a class="docstring-binding" href="#PlasmaBO.BranchPoint"><code>PlasmaBO.BranchPoint</code></a> — <span class="docstring-category">Type</span></summary><section><div><pre><code class="language-julia hljs">BranchPoint{T}
+BranchPoint(k, ω)</code></pre><p>Initial point specification for dispersion branch tracking.</p><p><strong>Fields</strong></p><ul><li><code>k</code>: Wave vector at initial point</li><li><code>ω</code>: Frequency at initial point</li></ul><p>Optional field:</p><ul><li><code>track_by_real</code>: If true, use Re(ω) for initial point search; if false, use Im(ω), default is true if Re(ω) != 0.</li></ul><p><strong>Example</strong></p><pre><code class="language-julia hljs"># Track unstable branch starting at k=0.03 with γ=0.1721
+point1 = BranchPoint(0.03, 0.1721im)     # Auto: track by Im
+
+# Track real frequency mode at k=0.5 with ωᵣ=2.5
+point2 = BranchPoint(0.5, 2.5)  # Auto: track by Re</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/JuliaSpacePhysics/PlasmaBO.jl/blob/4fcf602b2a6dcef190b8fcccc7fd455b9bf0e51e/src/eigenvalue_filtering.jl#L4-L25">source</a></section></details></article><article><details class="docstring" open="true"><summary id="PlasmaBO.FluidSolverParams"><a class="docstring-binding" href="#PlasmaBO.FluidSolverParams"><code>PlasmaBO.FluidSolverParams</code></a> — <span class="docstring-category">Type</span></summary><section><div><pre><code class="language-julia hljs">FluidSolverParams{T}</code></pre><p>Parameters for the fluid dispersion relation solver.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/JuliaSpacePhysics/PlasmaBO.jl/blob/4fcf602b2a6dcef190b8fcccc7fd455b9bf0e51e/src/fluid_solver.jl#L61-L65">source</a></section></details></article><article><details class="docstring" open="true"><summary id="PlasmaBO.FluidSpecies"><a class="docstring-binding" href="#PlasmaBO.FluidSpecies"><code>PlasmaBO.FluidSpecies</code></a> — <span class="docstring-category">Type</span></summary><section><div><pre><code class="language-julia hljs">FluidSpecies(q, m, n, Tz, Tp; vdz=0.0, gamma_z=1.0, gamma_p=1.0)</code></pre><p>Create a FluidSpecies with specified parameters.</p><p><strong>Arguments</strong></p><ul><li><code>q</code>: Charge in units of e (-1 for electron, 1 for proton)</li><li><code>m</code>: Mass in units of proton mass</li><li><code>n</code>: Number density (m⁻³)</li><li><code>Tz</code>: Parallel temperature (eV)</li><li><code>Tp</code>: Perpendicular temperature (eV)</li><li><code>vdz</code>: Parallel drift velocity in units of c (default: 0)</li><li><code>gamma_z</code>: Parallel polytrope exponent (default: 1.0, isothermal)</li><li><code>gamma_p</code>: Perpendicular polytrope exponent (default: 1.0, isothermal)</li></ul><p><strong>Fluid Closure Models</strong></p><ul><li><code>gamma_z = gamma_p = 1.0</code>: Isothermal</li><li><code>gamma_z = 3.0, gamma_p = 2.0</code>: CGL (Chew-Goldberger-Low) model</li></ul><p>See also: <a href="#PlasmaBO.solve_fluid_dispersion-Tuple{FluidSolverParams, Any, Any}"><code>solve_fluid_dispersion</code></a></p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/JuliaSpacePhysics/PlasmaBO.jl/blob/4fcf602b2a6dcef190b8fcccc7fd455b9bf0e51e/src/fluid_solver.jl#L32-L52">source</a></section></details></article><article><details class="docstring" open="true"><summary id="PlasmaBO.FluidSpecies"><a class="docstring-binding" href="#PlasmaBO.FluidSpecies"><code>PlasmaBO.FluidSpecies</code></a> — <span class="docstring-category">Type</span></summary><section><div><pre><code class="language-julia hljs">FluidSpecies{T}</code></pre><p>Fluid species parameters for the multi-fluid dispersion relation solver.</p><p><strong>Fields</strong></p><ul><li><code>q</code>: Charge in units of electron charge</li><li><code>m</code>: Mass in units of proton mass</li><li><code>n</code>: Number density (m⁻³)</li><li><code>Tz</code>: Parallel temperature (eV)</li><li><code>Tp</code>: Perpendicular temperature (eV)</li><li><code>vdz</code>: Parallel drift velocity (in units of c)</li><li><code>gamma_z</code>: Parallel polytrope exponent (default: 1.0 for isothermal)</li><li><code>gamma_p</code>: Perpendicular polytrope exponent (default: 1.0 for isothermal)</li></ul></div><a class="docs-sourcelink" target="_blank" href="https://github.com/JuliaSpacePhysics/PlasmaBO.jl/blob/4fcf602b2a6dcef190b8fcccc7fd455b9bf0e51e/src/fluid_solver.jl#L3-L17">source</a></section></details></article><article><details class="docstring" open="true"><summary id="PlasmaBO.JPoleCoefficients"><a class="docstring-binding" href="#PlasmaBO.JPoleCoefficients"><code>PlasmaBO.JPoleCoefficients</code></a> — <span class="docstring-category">Type</span></summary><section><div><pre><code class="language-julia hljs">JPoleCoefficients{T}</code></pre><p>J-pole approximation coefficients for the plasma dispersion function. Z(ζ) ≈ Σⱼ bⱼ/(ζ - cⱼ)</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/JuliaSpacePhysics/PlasmaBO.jl/blob/4fcf602b2a6dcef190b8fcccc7fd455b9bf0e51e/src/Jpole.jl#L1-L6">source</a></section></details></article><article><details class="docstring" open="true"><summary id="PlasmaBO.create_fluid_params-Tuple{Any, Any}"><a class="docstring-binding" href="#PlasmaBO.create_fluid_params-Tuple{Any, Any}"><code>PlasmaBO.create_fluid_params</code></a> — <span class="docstring-category">Method</span></summary><section><div><pre><code class="language-julia hljs">create_fluid_params(species::Vector{&lt;:FluidSpecies}, B0)</code></pre><p>Create FluidSolverParams from a list of FluidSpecies.</p><p><strong>Arguments</strong></p><ul><li><code>species</code>: Vector of FluidSpecies objects</li><li><code>B0</code>: Magnetic field strength (Tesla)</li></ul></div><a class="docs-sourcelink" target="_blank" href="https://github.com/JuliaSpacePhysics/PlasmaBO.jl/blob/4fcf602b2a6dcef190b8fcccc7fd455b9bf0e51e/src/fluid_solver.jl#L78-L86">source</a></section></details></article><article><details class="docstring" open="true"><summary id="PlasmaBO.funAn-NTuple{5, Any}"><a class="docstring-binding" href="#PlasmaBO.funAn-NTuple{5, Any}"><code>PlasmaBO.funAn</code></a> — <span class="docstring-category">Method</span></summary><section><div><pre><code class="language-julia hljs">funAn(n, a, d, m, p)</code></pre><p>Perpendicular integral for J<em>n²: ∫ J</em>n²(ay) exp(-(y-d)²) (y-d)^m y^p dy.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/JuliaSpacePhysics/PlasmaBO.jl/blob/4fcf602b2a6dcef190b8fcccc7fd455b9bf0e51e/src/integral.jl#L1-L5">source</a></section></details></article><article><details class="docstring" open="true"><summary id="PlasmaBO.funBn-NTuple{5, Any}"><a class="docstring-binding" href="#PlasmaBO.funBn-NTuple{5, Any}"><code>PlasmaBO.funBn</code></a> — <span class="docstring-category">Method</span></summary><section><div><pre><code class="language-julia hljs">funBn(n, a, d, m, p)</code></pre><p>Perpendicular integral for J<em>n·J</em>n&#39;: ∫ J<em>n(ay) J</em>n&#39;(ay) exp(-(y-d)²) (y-d)^m y^p dy.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/JuliaSpacePhysics/PlasmaBO.jl/blob/4fcf602b2a6dcef190b8fcccc7fd455b9bf0e51e/src/integral.jl#L18-L22">source</a></section></details></article><article><details class="docstring" open="true"><summary id="PlasmaBO.funCn-NTuple{5, Any}"><a class="docstring-binding" href="#PlasmaBO.funCn-NTuple{5, Any}"><code>PlasmaBO.funCn</code></a> — <span class="docstring-category">Method</span></summary><section><div><pre><code class="language-julia hljs">funCn(n, a, d, m, p)</code></pre><p>Perpendicular integral for (J<em>n&#39;)²: ∫ [J</em>n&#39;(ay)]² exp(-(y-d)²) (y-d)^m y^p dy.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/JuliaSpacePhysics/PlasmaBO.jl/blob/4fcf602b2a6dcef190b8fcccc7fd455b9bf0e51e/src/integral.jl#L39-L43">source</a></section></details></article><article><details class="docstring" open="true"><summary id="PlasmaBO.funIn-Tuple{Any}"><a class="docstring-binding" href="#PlasmaBO.funIn-Tuple{Any}"><code>PlasmaBO.funIn</code></a> — <span class="docstring-category">Method</span></summary><section><div><pre><code class="language-julia hljs">funIn(n)</code></pre><p>Normalization integral I_n = ∫ v^n exp(-v²) dv / √π.</p><p>Returns Γ((n+1)/2)/√π for even n, 0 for odd n.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/JuliaSpacePhysics/PlasmaBO.jl/blob/4fcf602b2a6dcef190b8fcccc7fd455b9bf0e51e/src/integral.jl#L60-L66">source</a></section></details></article><article><details class="docstring" open="true"><summary id="PlasmaBO.get_jpole_coefficients"><a class="docstring-binding" href="#PlasmaBO.get_jpole_coefficients"><code>PlasmaBO.get_jpole_coefficients</code></a> — <span class="docstring-category">Function</span></summary><section><div><pre><code class="language-julia hljs">get_jpole_coefficients(J=8)</code></pre><p>Get J-pole approximation coefficients for the plasma dispersion function.</p><p>Supported values: J ∈ {4, 6, 8, 10, 12, 16, 20, 24, 28, 32}</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/JuliaSpacePhysics/PlasmaBO.jl/blob/4fcf602b2a6dcef190b8fcccc7fd455b9bf0e51e/src/Jpole.jl#L13-L19">source</a></section></details></article><article><details class="docstring" open="true"><summary id="PlasmaBO.solve_dispersion_matrix"><a class="docstring-binding" href="#PlasmaBO.solve_dispersion_matrix"><code>PlasmaBO.solve_dispersion_matrix</code></a> — <span class="docstring-category">Function</span></summary><section><div><pre><code class="language-julia hljs">solve_dispersion_matrix(params, kx, kz; J=8)</code></pre><p>Solve the kinetic dispersion relation using the matrix eigenvalue method.</p><p>Returns all eigenfrequencies ω(k) for the given wave vector (kx, kz).</p><p>This method transforms the dispersion relation into a matrix eigenvalue problem using J-pole approximation for the plasma dispersion function, allowing simultaneous computation of all wave modes.</p><ul><li><code>kx</code>: Perpendicular wave vector component (m⁻¹)</li><li><code>kz</code>: Parallel wave vector component (m⁻¹)</li><li><code>J</code>: Number of poles for Z-function approximation (default: 8)</li></ul><p>See also: <a href="#PlasmaBO.get_jpole_coefficients"><code>get_jpole_coefficients</code></a></p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/JuliaSpacePhysics/PlasmaBO.jl/blob/4fcf602b2a6dcef190b8fcccc7fd455b9bf0e51e/src/matrix_solver.jl#L222-L238">source</a></section></details></article><article><details class="docstring" open="true"><summary id="PlasmaBO.solve_fluid_dispersion-Tuple{FluidSolverParams, Any, Any}"><a class="docstring-binding" href="#PlasmaBO.solve_fluid_dispersion-Tuple{FluidSolverParams, Any, Any}"><code>PlasmaBO.solve_fluid_dispersion</code></a> — <span class="docstring-category">Method</span></summary><section><div><pre><code class="language-julia hljs">solve_fluid_dispersion(params::FluidSolverParams, kx, kz)</code></pre><p>Solve the multi-fluid electromagnetic dispersion relation using matrix eigenvalue method.</p><p>Returns all eigenfrequencies ω(k) for the given wave vector (kx, kz).</p><p>The fluid model includes:</p><ul><li>Continuity equation: ∂n/∂t + ∇·(nv) = 0</li><li>Momentum equation: m(∂v/∂t + v·∇v) = q(E + v×B) - ∇P/n</li><li>Maxwell&#39;s equations for E and B</li></ul><p><strong>Arguments</strong></p><ul><li><code>params</code>: FluidSolverParams with plasma parameters</li><li><code>kx</code>: Perpendicular wave vector component (m⁻¹)</li><li><code>kz</code>: Parallel wave vector component (m⁻¹)</li></ul><p><strong>Returns</strong></p><ul><li>Vector of complex eigenfrequencies ω (rad/s)</li></ul><p>See also: <a href="#PlasmaBO.FluidSpecies"><code>FluidSpecies</code></a>, <a href="#PlasmaBO.create_fluid_params-Tuple{Any, Any}"><code>create_fluid_params</code></a></p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/JuliaSpacePhysics/PlasmaBO.jl/blob/4fcf602b2a6dcef190b8fcccc7fd455b9bf0e51e/src/fluid_solver.jl#L115-L136">source</a></section></details></article><article><details class="docstring" open="true"><summary id="PlasmaBO.solve_with_threads-Tuple{Any, Any}"><a class="docstring-binding" href="#PlasmaBO.solve_with_threads-Tuple{Any, Any}"><code>PlasmaBO.solve_with_threads</code></a> — <span class="docstring-category">Method</span></summary><section><div><pre><code class="language-julia hljs">solve_with_threads(f, nthreads)</code></pre><p>Execute function <code>f</code> with specified BLAS thread count, restoring previous setting afterward.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/JuliaSpacePhysics/PlasmaBO.jl/blob/4fcf602b2a6dcef190b8fcccc7fd455b9bf0e51e/src/utils.jl#L1-L5">source</a></section></details></article><article><details class="docstring" open="true"><summary id="PlasmaBO.track_dispersion_branch-Tuple{Any, Any, Any}"><a class="docstring-binding" href="#PlasmaBO.track_dispersion_branch-Tuple{Any, Any, Any}"><code>PlasmaBO.track_dispersion_branch</code></a> — <span class="docstring-category">Method</span></summary><section><div><pre><code class="language-julia hljs">track_dispersion_branch(ks, ωs, point)</code></pre><p>Track a single dispersion branch across parameter space from initial <code>point</code> using interpolation given wave vectors <code>ks</code> and a collection of eigenvalues <code>ωs</code>.</p><p>Returns parameter values and eigenvalues along the branch</p><p>The branch tracking algorithm is implemented as follows:</p><ol><li>Start with initial point (k₀, ω₀)</li><li>Use interpolation to predict ω at next k</li><li>Find nearest eigenvalue to prediction</li><li>Continue building the branch</li></ol><p><strong>Example</strong></p><pre><code class="language-julia hljs">initial = BranchPoint(0.03, 0.1721im)
+k_branch, ω_branch = track_dispersion_branch(k_scan, ω_all, initial)</code></pre><p>See also: <a href="#PlasmaBO.BranchPoint"><code>BranchPoint</code></a>, <a href="#PlasmaBO.track_dispersion_branches-Tuple{Any, Any, Any}"><code>track_dispersion_branches</code></a></p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/JuliaSpacePhysics/PlasmaBO.jl/blob/4fcf602b2a6dcef190b8fcccc7fd455b9bf0e51e/src/eigenvalue_filtering.jl#L38-L58">source</a></section></details></article><article><details class="docstring" open="true"><summary id="PlasmaBO.track_dispersion_branches-Tuple{Any, Any, Any}"><a class="docstring-binding" href="#PlasmaBO.track_dispersion_branches-Tuple{Any, Any, Any}"><code>PlasmaBO.track_dispersion_branches</code></a> — <span class="docstring-category">Method</span></summary><section><div><pre><code class="language-julia hljs">track_dispersion_branches(ks, eigenvalues, points)</code></pre><p>Track multiple dispersion branches from initial <code>points</code> simultaneously given <code>ks</code> and <code>eigenvalues</code>.</p><p>Returns a vector of (k<em>branch, ω</em>branch) tuples, one per branch</p><p>See also: <a href="#PlasmaBO.track_dispersion_branch-Tuple{Any, Any, Any}"><code>track_dispersion_branch</code></a>, <a href="#PlasmaBO.BranchPoint"><code>BranchPoint</code></a></p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/JuliaSpacePhysics/PlasmaBO.jl/blob/4fcf602b2a6dcef190b8fcccc7fd455b9bf0e51e/src/eigenvalue_filtering.jl#L166-L174">source</a></section></details></article></article><nav class="docs-footer"><a class="docs-footer-nextpage" href="examples/">Examples »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.16.1 on <span class="colophon-date" title="Wednesday 24 December 2025 00:00">Wednesday 24 December 2025</span>. Using Julia version 1.12.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

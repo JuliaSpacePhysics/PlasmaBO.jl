@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Ring beam instability · PlasmaBO.jl</title><meta name="title" content="Ring beam instability · PlasmaBO.jl"/><meta property="og:title" content="Ring beam instability · PlasmaBO.jl"/><meta property="twitter:title" content="Ring beam instability · PlasmaBO.jl"/><meta name="description" content="Documentation for PlasmaBO.jl."/><meta property="og:description" content="Documentation for PlasmaBO.jl."/><meta property="twitter:description" content="Documentation for PlasmaBO.jl."/><meta property="og:url" content="https://JuliaSpacePhysics.github.io/PlasmaBO.jl/ringbeam_Umeda12/"/><meta property="twitter:url" content="https://JuliaSpacePhysics.github.io/PlasmaBO.jl/ringbeam_Umeda12/"/><link rel="canonical" href="https://JuliaSpacePhysics.github.io/PlasmaBO.jl/ringbeam_Umeda12/"/><script data-outdated-warner src="../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../search_index.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script></head><body>
+<!-- NAVBAR START -->
+<style>
+    html {
+        scroll-padding-top: calc(55px + 1rem);
+    }
+
+    /* Documenter css tweaks */
+    .docs-sidebar {
+        margin-top: 3.75rem;
+    }
+
+    #documenter {
+        margin-top: 3.75rem;
+    }
+
+    .docs-version-selector {
+        margin-bottom: 60px !important;
+    }
+
+    @media screen and (max-width: 1056px) {
+        .docs-version-selector {
+            margin-bottom: 60px !important;
+        }
+
+        .docs-sidebar {
+            margin-top: 0 !important;
+        }
+    }
+    /* Documenter css tweaks ends here */
+
+    :root {
+        --heading-color: white;
+        --item-color: rgb(165, 165, 165);
+        --primary-bg: #f8f9fa;  /* Light gray to match Quarto's default navbar */
+        --navbar-text: #212529;  /* Dark text color for better contrast */
+        --hover-color: #e9ecef;  /* Slightly darker gray for hover state */
+        --deprecated-bg: #ff4d4d;
+        --deprecated-text: white;
+    }
+
+    .ext-navigation {
+        position: fixed;
+        height: 3.75rem;
+        top: 0;
+        width: 100%;
+        background-color: var(--primary-bg);
+        color: var(--navbar-text);
+        z-index: 1000;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        display: flex;
+        align-items: center;
+        padding: 0 1.0625rem;
+        transition: transform 0.3s;
+    }
+
+    .ext-navbar-logo {
+        margin-left: 0.625rem;
+    }
+
+    .ext-nav-links {
+        display: flex;
+        align-items: center;
+        list-style-type: none;
+        margin: 0;
+        padding: 0;
+        flex-grow: 1;
+    }
+
+    .ext-nav-links li {
+        margin-left: 1rem !important;
+    }
+
+    .ext-nav-link {
+        color: var(--navbar-text) !important;
+        text-decoration: none;
+        font-size: 1.0625rem !important;
+        transition: color 0.2s ease;
+        cursor: pointer;
+    }
+
+    .ext-nav-link:hover,
+    .ext-navbar-item-single a:hover {
+        color: var(--hover-color) !important;
+        text-decoration: none !important;
+    }
+    
+    .ext-navigation a {
+        text-decoration: none !important;
+    }
+
+    .ext-navbar-item-single a {
+        color: var(--navbar-text) !important;
+    }
+
+    .ext-menu-toggle {
+        display: none;
+        font-size: 1.5rem;
+        color: white;
+        cursor: pointer;
+    }
+
+    .ext-dropdown {
+        display: none;
+        grid-template-columns: 1fr 1fr 1fr 1fr;
+        grid-template-rows: auto auto auto;
+        padding: 1.875rem;
+        position: absolute;
+        width: 100%;
+        left: 0;
+        background-color: var(--primary-bg);
+        line-height: 1.875rem;
+        opacity: 0;
+        transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+        transform: translateY(-0.625rem);
+    }
+
+    #library-handler::after {
+        content: "▼";
+        font-size: 0.6875rem;
+        margin-left: 0.3125rem;
+        transition: transform 0.3s ease-in-out;
+    }
+
+    #library-handler.open::after {
+        content: "▲";
+    }
+
+    .ext-dropdown.show {
+        display: grid;
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    .ext-dropdown ul {
+        height: auto;
+        width: 12.5rem;
+        margin-bottom: 1.25rem;
+    }
+
+    .ext-dropdown ul li {
+        text-align: left;
+        display: flex;
+        align-items: center;
+    }
+
+    .navbar-sub-item {
+        list-style: none;
+    }
+
+    .ext-dropdown ul a li {
+        color: var(--item-color);
+        width: 15.625rem;
+        border-radius: 3px;
+        padding: 0.125rem 0.625rem;
+        transition: background-color 0.2s ease;
+        text-decoration: none !important;
+    }
+
+    .ext-dropdown ul a li:hover {
+        background-color: rgba(107, 107, 107, 0.5);
+    }
+
+    .ext-dropdown-item-heading {
+        /* color: var(--heading-color); */
+        text-align: center;
+    }
+
+    .deprecated-badge {
+        background-color: var(--deprecated-bg);
+        color: var(--deprecated-text);
+        font-size: 0.75rem;
+        padding: 0.125rem 0.375rem;
+        border-radius: 3px;
+        margin-left: 0.5rem;
+        line-height: 1;
+    }
+
+    /* Responsive styling */
+    @media (max-width: 966px) {
+        .ext-dropdown {
+            grid-template-columns: 1fr 1fr 1fr;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .ext-nav-links {
+            display: none;
+            flex-direction: column;
+            width: 100%;
+            background-color: var(--primary-bg);
+            position: absolute;
+            top: 3.75rem;
+            left: 0;
+            padding: 0.625rem 0;
+            height: auto;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: rgb(141, 141, 141) grey;
+        }
+
+        .ext-nav-links.show {
+            display: flex;
+        }
+
+        .ext-nav-links li {
+            margin: 0.625rem 0;
+            text-align: center;
+        }
+
+        .ext-menu-toggle {
+            display: block;
+            margin-left: auto;
+        }
+
+        .ext-navigation.hide {
+            transform: translateY(-3.75rem);
+        }
+
+        .ext-dropdown {
+            place-content: center;
+            text-align: center;
+            grid-template-columns: 1fr;
+            line-height: 1.25rem;
+            padding: 0.625rem;
+        }
+
+        .ext-dropdown ul {
+            width: 100%;
+            text-align: center;
+            margin-bottom: 0.3125rem;
+        }
+
+        .ext-dropdown ul li {
+            text-align: center;
+            /* justify-content: center; */
+        }
+
+        .ext-dropdown ul a li {
+            width: 100%;
+        }
+
+        .ext-dropdown ul a li:hover {
+            background-color: var(--primary-bg);
+            /* color: #fff; */
+        }
+
+        /* Modified scroll bar */
+        .ext-nav-links::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        .ext-nav-links::-webkit-scrollbar-track {
+            box-shadow: inset 0 0 5px grey;
+        }
+
+        .ext-nav-links::-webkit-scrollbar-thumb {
+            background: rgb(141, 141, 141);
+            border-radius: 3px;
+        }
+
+        .ext-nav-links::-webkit-scrollbar-thumb:hover {
+            background: #9b9b9b;
+        }
+    }
+</style>
+<nav class="ext-navigation">
+    <a href="https://juliaspacephysics.github.io"></a>
+    <a style="color: #212529 !important; font-size: 21.25px !important; margin-left: 10px;" href="https://juliaspacephysics.github.io">JuliaSpacePhysics</a>
+    <ul class="ext-nav-links">
+        <li>
+            <p class="ext-nav-link" id="library-handler">Ecosystem</p>
+            <div class="ext-dropdown" id="ext-dropdown-items">
+                <ul>
+                    <li class="ext-dropdown-item-heading">Core</li>
+                    <a href="https://juliaspacephysics.github.io/SPEDAS.jl"><li>SPEDAS.jl</li></a>
+                    <a href="https://juliaspacephysics.github.io/SpaceDataModel.jl"><li>SpaceDataModel.jl</li></a>
+                    <a href="https://juliaspacephysics.github.io/GeoCotrans.jl"><li>GeoCotrans.jl</li></a>
+                    <a href="https://henry2004y.github.io/TestParticle.jl/"><li>TestParticle.jl</li></a>
+                </ul>
+                <ul>
+                    <li class="ext-dropdown-item-heading">Data</li>
+                    <a href="https://juliaspacephysics.github.io/CDFDatasets.jl/"><li>CDFDatasets.jl</li></a>
+                    <a href="https://juliaspacephysics.github.io/CDAWeb.jl/"><li>CDAWeb.jl</li></a>
+                    <a href="https://sciqlop.github.io/Speasy.jl/"><li>Speasy.jl</li></a>
+                    <a href="https://juliaspacephysics.github.io/HAPIClient.jl/"><li>HAPIClient.jl</li></a>
+                    <a href="https://juliaspacephysics.github.io/Madrigal.jl/"><li>Madrigal.jl</li></a>
+                    <a href="https://github.com/JuliaSpacePhysics/PySPEDAS.jl"><li>PySPEDAS.jl</li></a>
+                    <a href="https://juliaspacephysics.github.io/CommonDataFormat.jl/"><li>CommonDataFormat.jl</li></a>
+                </ul>
+                <ul>
+                    <li class="ext-dropdown-item-heading">Domain</li>
+                    <a href="https://juliaspacephysics.github.io/SolarEnergeticParticle.jl/dev/"><li>SolarEnergeticParticle.jl (Helio)</li></a>
+                    <a href="https://juliaspacephysics.github.io/GeoAACGM.jl"><li>GeoAACGM.jl (ITM)</li></a>
+                    <a href="https://juliaspacephysics.github.io/IRBEM.jl"><li>IRBEM.jl (Magnetosphere)</li></a>
+                </ul>
+                <!-- Enable when more mission-specific packages are available -->
+                <ul>
+                    <li class="ext-dropdown-item-heading">Mission-specific</li>
+                    <a href="https://juliaspacephysics.github.io/EISCATData.jl"><li>EISCATData.jl</li></a>
+                    <a href="https://juliaspacephysics.github.io/ELFINData.jl"><li>ELFINData.jl</li></a>
+                    <a href="https://juliaspacephysics.github.io/DMSPData.jl"><li>DMSPData.jl</li></a>
+                </ul>
+               
+                <ul>
+                    <li class="ext-dropdown-item-heading">General Analysis</li>
+                    <a href="https://juliaplasma.github.io/PlasmaFormulary.jl"><li>JuliaPlasma/PlasmaFormulary.jl</li></a>
+                    <a href="https://juliaplasma.github.io/ChargedParticles.jl"><li>JuliaPlasma/ChargedParticles.jl</li></a>
+                    <a href="https://juliaspacephysics.github.io/VelocityDistributionFunctions.jl"><li>VelocityDistributionFunctions.jl</li></a>
+                    <a href="https://juliaspacephysics.github.io/PlasmaWaves.jl"><li>PlasmaWaves.jl</li></a>
+                    <a href="https://juliaspacephysics.github.io/PlasmaBO.jl"><li>PlasmaBO.jl</li></a>
+                    <a href="https://github.com/JuliaSpacePhysics/SpacePhysicsMakie.jl"><li>SpacePhysicsMakie.jl</li></a>
+                </ul>
+            </div>
+        </li>
+        <li><a href="https://juliaspacephysics.github.io/tutorials/">Tutorials</a></li>
+    </ul>
+    <a href="https://github.com/JuliaSpacePhysics">
+        <svg width="32px" height="32px" viewBox="-8.2 -8.2 36.40 36.40" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" fill="#000000">
+            <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+            <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+            <g id="SVGRepo_iconCarrier">
+                <title>github [#142]</title>
+                <desc>JuliaSpacePhysics</desc>
+                <defs></defs>
+                <g id="Page-1" stroke-width="0.0002" fill="none" fill-rule="evenodd">
+                    <g id="Dribbble-Light-Preview" transform="translate(-140.000000, -7559.000000)" fill="#ffffff">
+                        <g id="icons" transform="translate(56.000000, 160.000000)">
+                            <path
+                                d="M94,7399 C99.523,7399 104,7403.59 104,7409.253 C104,7413.782 101.138,7417.624 97.167,7418.981 C96.66,7419.082 96.48,7418.762 96.48,7418.489 C96.48,7418.151 96.492,7417.047 96.492,7415.675 C96.492,7414.719 96.172,7414.095 95.813,7413.777 C98.04,7413.523 100.38,7412.656 100.38,7408.718 C100.38,7407.598 99.992,7406.684 99.35,7405.966 C99.454,7405.707 99.797,7404.664 99.252,7403.252 C99.252,7403.252 98.414,7402.977 96.505,7404.303 C95.706,7404.076 94.85,7403.962 94,7403.958 C93.15,7403.962 92.295,7404.076 91.497,7404.303 C89.586,7402.977 88.746,7403.252 88.746,7403.252 C88.203,7404.664 88.546,7405.707 88.649,7405.966 C88.01,7406.684 87.619,7407.598 87.619,7408.718 C87.619,7412.646 89.954,7413.526 92.175,7413.785 C91.889,7414.041 91.63,7414.493 91.54,7415.156 C90.97,7415.418 89.522,7415.871 88.63,7414.304 C88.63,7414.304 88.101,7413.319 87.097,7413.247 C87.097,7413.247 86.122,7413.234 87.029,7413.87 C87.029,7413.87 87.684,7414.185 88.139,7415.37 C88.139,7415.37 88.726,7417.2 91.508,7416.58 C91.513,7417.437 91.522,7418.245 91.522,7418.489 C91.522,7418.76 91.338,7419.077 90.839,7418.982 C86.865,7417.627 84,7413.783 84,7409.253 C84,7403.59 88.478,7399 94,7399"
+                                id="github-[#142]">
+                            </path>
+                        </g>
+                    </g>
+                </g>
+            </g>
+        </svg>
+    </a>
+    <span class="ext-menu-toggle">&#9776;</span>
+</nav>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const menuToggle = document.querySelector(".ext-menu-toggle");
+        const navLinks = document.querySelector(".ext-nav-links");
+        const nav = document.querySelector(".ext-navigation");
+        const navigationHandler = document.getElementById("library-handler");
+        const navigationItemsContainer =
+            document.getElementById("ext-dropdown-items");
+        let lastScrollY = window.scrollY;
+
+        function setAppropriateHeight() {
+            if (window.innerWidth <= 768) {
+                const viewportHeight = window.innerHeight;
+                const navHeight = nav.offsetHeight;
+                navLinks.style.maxHeight = `${viewportHeight - navHeight}px`;
+                navLinks.style.overflowY = "auto";
+            } else {
+                navLinks.style.maxHeight = "";
+                navLinks.style.overflowY = "";
+            }
+        }
+
+        // Toggle main menu for mobile
+        menuToggle.addEventListener("click", () => {
+            navLinks.classList.toggle("show");
+            if (navLinks.classList.contains("show")) {
+                setAppropriateHeight();
+                // Ensure the dropdown is hidden when menu is first opened
+                navigationItemsContainer.style.display = "none";
+                navigationItemsContainer.classList.remove("show");
+            }
+        });
+
+        // Close menus if clicked outside
+        document.addEventListener("click", (event) => {
+            if (
+                !navLinks.contains(event.target) &&
+                !menuToggle.contains(event.target)
+            ) {
+                navLinks.classList.remove("show");
+                navigationItemsContainer.classList.remove("show");
+                navigationHandler.classList.remove("open");
+            }
+        });
+
+        // Hide navigation bar on scroll down in mobile view
+        window.addEventListener("scroll", () => {
+            if (window.innerWidth <= 768) {
+                nav.classList.toggle("hide", window.scrollY > lastScrollY);
+                lastScrollY = window.scrollY;
+            }
+        });
+
+        // Library API script
+        navigationHandler.addEventListener("click", (event) => {
+            event.preventDefault(); // Prevent default action of the link
+            if (navigationItemsContainer.classList.contains("show")) {
+                navigationItemsContainer.classList.remove("show");
+                navigationHandler.classList.remove("open");
+                setTimeout(() => {
+                    navigationItemsContainer.style.display = "none";
+                }, 500); // Match the timeout to the CSS transition duration
+            } else {
+                navigationItemsContainer.style.display = "grid";
+                navigationHandler.classList.add("open");
+                setTimeout(() => {
+                    navigationItemsContainer.classList.add("show");
+                }, 10); // Delay to ensure the display change takes effect before adding class
+            }
+            setAppropriateHeight(); // Recalculate height when dropdown changes
+        });
+
+        // Handle window resize
+        window.addEventListener("resize", setAppropriateHeight);
+
+        // Initial setup
+        setAppropriateHeight();
+    });
+</script>
+<!-- NAVBAR END -->
+
+<div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../">PlasmaBO.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../">Home</a></li><li class="is-active"><a class="tocitem" href>Ring beam instability</a><ul class="internal"><li><a class="tocitem" href="#Dispersion-Curve-Scan"><span>Dispersion Curve Scan</span></a></li></ul></li><li><a class="tocitem" href="../firehose_Astfalk17/">Firehose instability</a></li><li><a class="tocitem" href="../mirror_mode/">Mirror mode</a></li><li><a class="tocitem" href="../ice_Irvine18/">Ion cyclotron emission</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Ring beam instability</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Ring beam instability</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/JuliaSpacePhysics/PlasmaBO.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/JuliaSpacePhysics/PlasmaBO.jl/blob/main/docs/src/ringbeam_Umeda12.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Case:-Ring-beam-instability"><a class="docs-heading-anchor" href="#Case:-Ring-beam-instability">Case: Ring beam instability</a><a id="Case:-Ring-beam-instability-1"></a><a class="docs-heading-anchor-permalink" href="#Case:-Ring-beam-instability" title="Permalink"></a></h1><p>This page demonstrates how to use the package to solve kinetic dispersion relations for the ring beam instability <a href="../#umedaNumericalElectromagneticLinear2012">Umeda <em>et al.</em> [7]</a>.</p><pre><code class="language-julia hljs">using PlasmaBO
+using PlasmaBO: q, kb, ε0, me, c0
+
+# Umeda 2012 ring beam configuration
+B0 = 96.24e-9  # [Tesla]
+
+me_mp = 1/1836 # [proton mass]
+T = 51 # [eV]
+# Ring beam electrons (10% density)
+ring_beam = Maxwellian(-1.0, me_mp, 1e5, T; vdz=0.1, vdr=0.05)
+# Background electrons (90% density)
+background = Maxwellian(-1.0, me_mp, 9e5, T)
+
+species = [ring_beam, background]
+
+# Compute normalization
+wce = abs(B0 * q / me)
+lambdaD = Debye_length(species)
+
+# Wave vector: k*λD = 0.03, θ = 40°
+k = 0.03 / lambdaD
+θ = deg2rad(40)
+kx = k * sin(θ)
+kz = k * cos(θ)
+
+# J=12 provides good accuracy (J-pole approximation order)
+ωs = solve_kinetic_dispersion(species, B0, kx, kz; N=6, J=12)
+
+# Filter for unstable modes (ω/ωce) with positive growth rate
+ω_unstable = filter(ω -&gt; isfinite(ω) &amp;&amp; imag(ω) &gt; 0.001*wce, ωs)[1] ./wce</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">0.6229225524157314 + 0.15686544364848592im</code></pre><h2 id="Dispersion-Curve-Scan"><a class="docs-heading-anchor" href="#Dispersion-Curve-Scan">Dispersion Curve Scan</a><a id="Dispersion-Curve-Scan-1"></a><a class="docs-heading-anchor-permalink" href="#Dispersion-Curve-Scan" title="Permalink"></a></h2><pre><code class="language-julia hljs"># Scan k*λD from 0.01 to 0.3
+k_ranges = (0.01:0.0025:0.3) ./ lambdaD
+results = solve_kinetic_dispersion(species, B0, k_ranges, θ; N=6)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">PlasmaBO.DispersionSolution{StepRangeLen{Float64, Base.TwicePrecision{Float64}, Base.TwicePrecision{Float64}, Int64}, Vector{Vector{ComplexF64}}}(0.00018836306290145928:4.709076572536482e-5:0.005650891887043778, Vector{ComplexF64}[[-102920.40394773427 - 993.6815537958173im, -102920.40394773382 - 993.6815537958362im, -102920.40394773366 - 993.6815537957599im, -102448.32475477345 - 1093.7129044863996im, -102448.32475477303 - 1093.7129044864562im, -102448.32475477278 - 1093.712904486453im, -102065.7617376683 - 1156.2785572655828im, -102065.7617376681 - 1156.2785572655957im, -102065.76173766714 - 1156.2785572655428im, -101720.27207340716 - 1186.7084549903134im  …  106046.11168569625 - 1186.7084549902731im, 106391.60134995556 - 1156.278557265532im, 106391.60134995633 - 1156.278557265569im, 106391.60134995679 - 1156.278557265552im, 106774.16436706178 - 1093.7129044864662im, 106774.1643670618 - 1093.7129044864491im, 106774.16436706223 - 1093.7129044865196im, 107246.24356002222 - 993.68155379582im, 107246.24356002278 - 993.68155379581im, 107246.24356002292 - 993.6815537958071im], [-103262.2904280305 - 1242.101942244737im, -103262.2904280298 - 1242.1019422447855im, -103262.29042802962 - 1242.1019422447444im, -102672.19143682938 - 1367.1411306080054im, -102672.1914368293 - 1367.1411306080572im, -102672.191436829 - 1367.141130608024im, -102193.98766544745 - 1445.348196581926im, -102193.98766544684 - 1445.3481965819878im, -102193.98766544671 - 1445.3481965819465im, -101762.12558512142 - 1483.3855687378364im  …  107169.42510048191 - 1483.3855687378118im, 107601.28718080804 - 1445.3481965819865im, 107601.28718080818 - 1445.348196581981im, 107601.28718080818 - 1445.3481965819608im, 108079.4909521897 - 1367.1411306080952im, 108079.49095218991 - 1367.1411306080404im, 108079.49095219 - 1367.1411306080531im, 108669.58994339005 - 1242.1019422447553im, 108669.58994339067 - 1242.1019422447598im, 108669.58994339088 - 1242.1019422447316im], [-104130.58889637346 - 4.516120872740401e-7im, -103604.17690832636 - 1490.5223306937166im, -103604.17690832602 - 1490.5223306937232im, -103604.17690832565 - 1490.5223306937282im, -102896.05811888508 - 1640.569356729684im, -102896.05811888499 - 1640.5693567296817im, -102896.05811888498 - 1640.5693567296573im, -102322.21359322683 - 1734.4178358983884im, -102322.21359322664 - 1734.4178358983197im, -102322.2135932264 - 1734.4178358983852im  …  108292.73851526887 - 1780.062682477148im, 108810.97301165668 - 1734.4178358999343im, 108810.97301165965 - 1734.417835898295im, 108810.97301165991 - 1734.4178358983438im, 109384.81753731745 - 1640.5693567297185im, 109384.81753731758 - 1640.5693567296985im, 109384.8175373185 - 1640.569356730035im, 110092.93632675838 - 1490.5223306937178im, 110092.9363267591 - 1490.5223306937137im, 110092.93632675949 - 1490.5223306937094im], [-115647.38706854943 - 5.537411635753164e-7im, -112407.10477794922 - 8.672463383327539e-7im, -103946.06338862191 - 1738.9427191426748im, -103946.06338862181 - 1738.9427191426153im, -103946.06338862175 - 1738.9427191426669im, -103119.92480094115 - 1913.997582851279im, -103119.92480094047 - 1913.9975828512622im, -103119.92480094009 - 1913.9975828512231im, -102450.43952100573 - 2023.4874752147477im, -102450.43952100573 - 2023.4874752147152im  …  110020.65884251165 - 2023.487475214787im, 110020.65884252307 - 2023.4874752180715im, 110690.14412244478 - 1913.9975828512606im, 110690.14412244492 - 1913.9975828486145im, 110690.14412244591 - 1913.9975828512584im, 111516.28271012683 - 1738.9427191426753im, 111516.28271012695 - 1738.942719142737im, 111516.28271012701 - 1738.9427191426842im, 112411.38279916876 - 9.70287253159699e-7im, 115656.5837169567 - 6.098998547862334e-7im], [-127732.91227463391 - 6.178989991552965e-7im, -125107.53376716767 - 8.626322652931017e-7im, -104287.9498689194 - 1987.3631075916492im, -104287.94986891786 - 1987.3631075917im, -104287.94986891776 - 1987.363107591603im, -103343.7914829968 - 2187.425808972864im, -103343.79148299653 - 2187.4258089728983im, -103343.79148299563 - 2187.4258089728737im, -102578.66544878608 - 2312.5571145310823im, -102578.66544878524 - 2312.5571145311337im  …  111230.34467336343 - 2312.557114531239im, 111230.34467337662 - 2312.5571145319695im, 111995.47070757259 - 2187.425808970285im, 111995.47070757375 - 2187.425808972906im, 111995.47070757422 - 2187.4258089728733im, 112939.6290934948 - 1987.3631075916837im, 112939.62909349489 - 1987.363107591646im, 112939.62909349526 - 1987.3631075916426im, 125109.68727751252 - 9.647546134723552e-7im, 127740.78044758513 - 6.835142527528149e-7im], [-140230.4611574202 - 6.517105324629134e-7im, -138070.3092189998 - 8.424713878357359e-7im, -104629.8363492136 - 2235.7834960405708im, -104629.83634921354 - 2235.783496040582im, -104629.83634921341 - 2235.7834960405294im, -103567.65816505234 - 2460.8540350944986im, -103567.65816505188 - 2460.8540350944704im, -103567.65816505182 - 2460.8540350944686im, -102706.89137656592 - 2601.6267538474926im, -102706.89137656504 - 2601.62675384752im  …  112440.03050421353 - 2601.626753847471im, 112440.0305042384 - 2601.6267538481843im, 113300.79729269838 - 2460.854035090505im, 113300.79729270095 - 2460.854035094496im, 113300.79729270132 - 2460.8540350944913im, 114362.97547686298 - 2235.7834960405253im, 114362.97547686362 - 2235.7834960407104im, 114362.9754768641 - 2235.7834960405703im, 138071.32500350283 - 9.428818261085319e-7im, 140237.19520060282 - 7.235030921037833e-7im], [-153032.41700460628 - 6.652947008692018e-7im, -151229.61983547747 - 8.144397696939695e-7im, -104971.72282951002 - 2484.203884489509im, -104971.72282950992 - 2484.203884489538im, -104971.7228295092 - 2484.203884489507im, -103791.52484710781 - 2734.2822612160835im, -103791.52484710752 - 2734.2822612160626im, -103791.52484710712 - 2734.282261216074im, -102835.1173043445 - 2890.696393163876im, -102835.11730434414 - 2890.696393163877im  …  113649.71633506578 - 2890.696393163863im, 113649.716335103 - 2890.6963931648766im, 114606.1238778252 - 2734.2822612097257im, 114606.12387782909 - 2734.2822612160753im, 114606.1238778295 - 2734.2822612161144im, 115786.32186023015 - 2484.2038844893646im, 115786.32186023075 - 2484.20388448979im, 115786.32186023139 - 2484.203884489495im, 151230.00915615656 - 9.117725267224208e-7im, 153038.2035387862 - 7.391712415483198e-7im], [-166063.79613367072 - 6.642189574404519e-7im, -164539.8086374809 - 7.819399574977247e-7im, -105313.60930980556 - 2732.624272938444im, -105313.60930980532 - 2732.624272938451im, -105313.60930980486 - 2732.6242729384257im, -104015.39152916447 - 3007.7104873377084im, -104015.39152916403 - 3007.7104873377007im, -104015.39152916257 - 3007.710487337682im, -102963.34323212437 - 3179.7660324803273im, -102963.34323212388 - 3179.766032480237im  …  114859.4021659176 - 3179.766032480247im, 114859.40216597181 - 3179.766032482343im, 115911.45046295114 - 3007.710487328168im, 115911.45046295613 - 3007.710487337678im, 115911.45046295696 - 3007.710487337756im, 117209.6682435981 - 2732.624272938438im, 117209.66824359827 - 2732.6242729389564im, 117209.66824359912 - 2732.6242729383957im, 164539.84914136244 - 8.75799762711793e-7im, 166068.79860425554 - 7.389518259515171e-7im], [-179271.40134617407 - 6.547409502133119e-7im, -177968.23244866487 - 7.494106408033413e-7im, -105655.49579010223 - 2981.044661387403im, -105655.49579010194 - 2981.0446613874055im, -105655.49579010131 - 2981.0446613874306im, -104239.25821121995 - 3281.1387134593015im, -104239.25821121932 - 3281.1387134593188im, -104239.2582112189 - 3281.1387134592997im, -103091.56915990383 - 3468.83567179666im, -103091.56915990368 - 3468.8356717966944im  …  116069.08799676893 - 3468.8356717966485im, 116069.08799683806 - 3468.835671801534im, 117216.77704807711 - 3281.1387134468446im, 117216.77704808465 - 3281.138713459313im, 117216.77704808538 - 3281.1387134593388im, 118633.0146269653 - 2981.0446613880613im, 118633.01462696647 - 2981.0446613873064im, 118633.01462696778 - 2981.0446613874133im, 177968.08030378842 - 8.377900982403652e-7im, 179275.7562424883 - 7.288764294344219e-7im], [-192616.76857166385 - 6.394675667576201e-7im, -191490.95605688333 - 7.162747543230201e-7im, -105997.38227039829 - 3229.4650498364504im, -105997.38227039788 - 3229.4650498363612im, -105997.38227039675 - 3229.465049836364im, -104463.12489327496 - 3554.566939580859im, -104463.1248932747 - 3554.5669395809605im, -104463.12489327455 - 3554.5669395808827im, -103219.79508768271 - 3757.905311113002im, -103219.79508768217 - 3757.905311113103im  …  117278.77382762123 - 3757.905311113124im, 117278.77382768331 - 3757.9053111237063im, 118522.10363320752 - 3554.5669395685964im, 118522.10363321252 - 3554.5669395809555im, 118522.10363321287 - 3554.566939580929im, 120056.36101033454 - 3229.465049836943im, 120056.36101033461 - 3229.4650498363394im, 120056.36101033508 - 3229.4650498362316im, 191490.7013666795 - 8.006527281168019e-7im, 192620.5872583479 - 7.120855798348202e-7im]  …  [-1.5680612210810133e6 - 1.0534859029576182e-7im, -1.5680445122584868e6 - 1.0158055374631658e-7im, -139502.25865171626 - 27574.660627016012im, -139502.25733940204 - 27574.66311783386im, -139502.25733939547 - 27574.66311784422im, -126402.09277434582 - 30350.582601785212im, -126402.0597347397 - 30350.533099498796im, -126402.05973461803 - 30350.533099269414im, -122576.82126508729 - 27574.584607458848im, -122576.78100164256 - 27574.663117833377im  …  242618.8302426486 - 27574.663117833687im, 242633.5197054327 - 27559.576775370755im, 246444.10871669653 - 30350.53130038179im, 246444.10897574484 - 30350.533099498654im, 246455.37969810294 - 30405.03268871297im, 259544.30651293893 - 27574.663184307396im, 259544.30658040653 - 27574.663117833523im, 259546.3006728403 - 27572.56170923483im, 1.5680445895479503e6 - 1.130521723824527e-7im, 1.568061376039266e6 - 1.1882184480782598e-7im], [-1.5821694378312689e6 - 1.044354576151818e-7im, -1.5821530296564607e6 - 1.0084363566420507e-7im, -139844.14525222854 - 27823.080795347487im, -139844.1438196967 - 27823.083506282645im, -139844.1438196902 - 27823.08350629447im, -126625.96229597671 - 30624.015253424626im, -126625.92641679524 - 30623.961325620403im, -126625.92641666229 - 30623.96132536606im, -122918.71066789748 - 27822.99960275168im, -122918.66748193922 - 27823.08350628261im  …  244042.17662601557 - 27823.083506282557im, 244057.64681962243 - 27807.21115930798im, 247749.4352805032 - 30623.959348230575im, 247749.43556087508 - 30623.96132562044im, 247761.44175584172 - 30682.51638336247im, 260967.65288952016 - 27823.083579236016im, 260967.65296377506 - 27823.083506282535im, 260969.80025424462 - 27820.82832514771im, 1.582153109288612e6 - 1.1247765993897471e-7im, 1.582169593802667e6 - 1.1874203664774541e-7im], [-1.5962778171183628e6 - 1.0368603398092091e-7im, -1.5962617019080757e6 - 9.980044524127152e-8im, -140186.03186240076 - 28071.500946742293im, -140186.03029999285 - 28071.503894731388im, -140186.03029998555 - 28071.50389474453im, -126849.83202829555 - 30897.448250539906im, -126849.79309885067 - 30897.389551741955im, -126849.79309870485 - 30897.389551460117im, -123260.60025026728 - 28071.41428899346im, -123260.5539622345 - 28071.503894731402im  …  245465.5230093859 - 28071.503894731577im, 245481.79859543708 - 28054.820426122114im, 249054.76184292912 - 30897.387380901855im, 249054.7621460007 - 30897.38955174193im, 249067.5410666376 - 30960.234772114025im, 262390.9992655155 - 28071.503974705938im, 262390.99934714247 - 28071.503894731402im, 262393.3091829085 - 28069.086169012786im, 1.5962617840418536e6 - 1.1085003255931203e-7im, 1.596277974301102e6 - 1.1718429959728383e-7im], [-1.6103863545209873e6 - 1.025036908686161e-7im, -1.6103705248710671e6 - 9.903487807605416e-8im, -140527.9184829016 - 28319.921080095522im, -140527.91678028821 - 28319.924283180262im, -140527.91678028018 - 28319.92428319482im, -127073.70198436656 - 31170.88161609399im, -127073.65978090554 - 31170.817777863176im, -127073.65978074503 - 31170.817777551296im, -123602.49002113695 - 28319.828652181866im, -123602.44044253063 - 28319.9242831804im  …  246888.86939275262 - 28319.924283180473im, 246905.97476411195 - 28302.404854254408im, 250360.08840391957 - 31170.81539733365im, 250360.08873112677 - 31170.817777863263im, 250373.6789411861 - 31238.196411354853im, 263814.34564087936 - 28319.92437075315im, 263814.3457305113 - 28319.924283180444im, 263816.8278497988 - 28317.33491722892im, 1.6103706096734554e6 - 1.0995532243767477e-7im, 1.6103865131200603e6 - 1.1601844107644865e-7im], [-1.6244950457694805e6 - 1.0180883691646159e-7im, -1.6244794945429142e6 - 9.806876732909586e-8im, -140869.805114427 - 28568.34119424352im, -140869.8032605857 - 28568.344671629617im, -140869.80326057473 - 28568.34467164548im, -127297.5721779007 - 31444.315374298432im, -127297.52646296241 - 31444.24600398509im, -127297.5264627841 - 31444.24600363991im, -123944.3799897756 - 28568.242677867656im, -123944.32692282728 - 28568.344671629427im  …  248312.21577611845 - 28568.344671629264im, 248330.17499884352 - 28549.964829150987im, 251665.41496341716 - 31444.24339640946im, 251665.41531625637 - 31444.24600398535im, 251679.85669987503 - 31516.409823932976im, 265237.69201556745 - 28568.344767416973im, 265237.6921138782 - 28568.344671629486im, 265240.356650644 - 28565.57424531693im, 1.624479582189164e6 - 1.0924299933320197e-7im, 1.6244952059968205e6 - 1.1506563168950379e-7im], [-1.6386038867392663e6 - 1.0113944881595671e-7im, -1.638588607054857e6 - 9.765722097654361e-8im, -141211.69175772477 - 28816.761287962174im, -141211.68974088193 - 28816.765060078593im, -141211.68974087018 - 28816.765060095975im, -127521.44262327136 - 31717.74955066065im, -127521.39314501832 - 31717.674230106688im, -127521.39314482213 - 31717.67422972526im, -124286.2701657895 - 28816.65635114925im, -124286.21340312214 - 28816.76506007837im  …  249735.56215948847 - 28816.765060078167im, 249754.39892011668 - 28797.500850753113im, 252970.74152136318 - 31717.671376954513im, 252970.7419013822 - 31717.674230106546im, 252986.07566549894 - 31794.883472959984im, 266661.0383895382 - 28816.765164738277im, 266661.03849724686 - 28816.76506007847im, 266663.8959853032 - 28813.803828647804im, 1.6385886977287454e6 - 1.0801416389484911e-7im, 1.6386040488139265e6 - 1.1432632618380012e-7im], [-1.6527128734448233e6 - 1.0042640496976674e-7im, -1.6526978586663965e6 - 9.713266990729608e-8im, -141553.5784135763 - 29065.181359964037im, -141553.57622117674 - 29065.185448527336im, -141553.57622116592 - 29065.18544854688im, -127745.31333553472 - 31991.18417204021im, -127745.25982707362 - 31991.102456228382im, -127745.25982685923 - 31991.10245580689im, -124628.16055913102 - 29065.06965666597im, -124628.09988341921 - 29065.18544852735im  …  251158.90854285806 - 29065.185448527256im, 251178.64610282614 - 29045.013540381948im, 254276.06807769887 - 31991.09933773723im, 254276.06848650967 - 31991.10245622819im, 254292.3371543256 - 32073.625735299054im, 268084.38476273755 - 29065.185562759245im, 268084.38488061493 - 29065.185448527394im, 268087.4462570134 - 29062.023343188994im, 1.652697952560428e6 - 1.071860873478464e-7im, 1.6527130375930546e6 - 1.1349902706569992e-7im], [-1.666822002033813e6 - 9.884752216748893e-8im, -1.6668072457599202e6 - 9.555174074193928e-8im, -141895.4650828106 - 29313.60140889755im, -141895.46270147295 - 29313.605836976112im, -141895.4627014575 - 29313.605836997664im, -127969.18433045085 - 32264.61926669829im, -127969.12650912971 - 32264.530682349887im, -127969.12650889247 - 32264.530681885073im, -124970.0511801045 - 29313.482578593732im, -124969.98636371354 - 29313.605836975974im  …  252582.25492622482 - 29313.60583697619im, 252602.91608529395 - 29292.503646659305im, 255581.39463237222 - 32264.527277464196im, 255581.39507163854 - 32264.530682350305im, 255598.64246543092 - 32352.644875154132im, 269507.7311351137 - 29313.605961523983im, 269507.73126398027 - 29313.60583697594im, 269511.00787166704 - 29310.232466290025im, 1.6668073430756137e6 - 1.0601118145825428e-7im, 1.66682216848918e6 - 1.1224437912460417e-7im], [-1.6809312687816513e6 - 9.867653716355562e-8im, -1.6809167648357234e6 - 9.521545507595874e-8im, -142237.35176629544 - 29562.02143334083im, -142237.34918176872 - 29562.026225425296im, -142237.34918175288 - 29562.02622544862im, -128193.05562451114 - 32538.05486435556im, -128192.99319118471 - 32537.958908471468im, -128192.99319092535 - 32537.958907958924im, -125311.94203937131 - 29561.895100638223im, -125311.87284401101 - 29562.026225425376im  …  254005.60130959484 - 29562.026225425132im, 254027.20838018102 - 29539.972050033623im, 256886.72118532594 - 32537.95519478138im, 256886.72165676783 - 32537.9589084718im, 256904.99286822398 - 32631.949018225776im, 270931.07750661863 - 29562.02636108065im, 270931.07764735207 - 29562.02622542545im, 270934.5812370124 - 29558.430877490962im, 1.6809168657838432e6 - 1.0463828160368893e-7im, 1.6809314377850608e6 - 1.1115753295598552e-7im], [-1.6950406700862758e6 - 9.763971320353448e-8im, -1.6950264125072004e6 - 9.431028047401924e-8im, -142579.2384649528 - 29810.441431803738im, -142579.2356620652 - 29810.446613874068im, -142579.23566204886 - 29810.446613900247im, -128416.927234958 - 32811.49099624506im, -128416.85987324156 - 32811.38713459339im, -128416.85987295589 - 32811.38713402866im, -125653.8331479578 - 29810.30720602837im, -125653.75932430591 - 29810.446613874057im  …  255428.9476929627 - 29810.446613874403im, 255451.5224871889 - 29787.419765443727im, 258192.0477365057 - 32811.38308827272im, 258192.04824189414 - 32811.38713459301im, 258211.38958829778 - 32911.546126959394im, 272354.4238771894 - 29810.446761476065im, 272354.4240307205 - 29810.44661387417im, 272358.1667618139 - 29806.61825935528im, 1.6950265173080605e6 - 1.0494588224265952e-7im, 1.695040841886015e6 - 1.1126348908874206e-7im]])</code></pre><pre><code class="language-julia hljs">using CairoMakie
+
+initial_points = [
+    BranchPoint(0.1 / lambdaD, 0.3im * wce),
+    BranchPoint(0.1 / lambdaD, 0.1im * wce),
+    BranchPoint(0.2 / lambdaD, 0.25im * wce)
+]
+
+branches = track_dispersion_branches(results, initial_points)
+
+# Extract individual branches
+for (i, (k_branch, ω_branch)) in enumerate(branches)
+    println(&quot;Branch $i:&quot;)
+    println(&quot;  k range: $(minimum(k_branch)) to $(maximum(k_branch))&quot;)
+    println(&quot;  Max growth rate: γ = $(maximum(imag.(ω_branch)))&quot;)
+end
+
+# Plot all branches
+let xlabel = &quot;k*λD&quot;, fig = Figure()
+    ax1 = Axis(fig[1, 1]; xlabel, ylabel = &quot;ωᵣ / ωₙ&quot;,)
+    ax2 = Axis(fig[1, 2]; xlabel, ylabel = &quot;γ / ωₙ&quot;)
+    for (i, (k, ω)) in enumerate(branches)
+        lines!(ax1, k * lambdaD, real.(ω) ./ wce, label = &quot;Branch $i&quot;)
+        lines!(ax2, k * lambdaD, imag.(ω) ./ wce)
+    end
+
+    fig
+end</code></pre><img src="fb254874.png" alt="Example block output"/></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../">« Home</a><a class="docs-footer-nextpage" href="../firehose_Astfalk17/">Firehose instability »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.16.1 on <span class="colophon-date" title="Wednesday 24 December 2025 08:27">Wednesday 24 December 2025</span>. Using Julia version 1.12.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

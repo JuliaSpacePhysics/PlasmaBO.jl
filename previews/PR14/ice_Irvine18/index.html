@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Ion cyclotron emission · PlasmaBO.jl</title><meta name="title" content="Ion cyclotron emission · PlasmaBO.jl"/><meta property="og:title" content="Ion cyclotron emission · PlasmaBO.jl"/><meta property="twitter:title" content="Ion cyclotron emission · PlasmaBO.jl"/><meta name="description" content="Documentation for PlasmaBO.jl."/><meta property="og:description" content="Documentation for PlasmaBO.jl."/><meta property="twitter:description" content="Documentation for PlasmaBO.jl."/><meta property="og:url" content="https://JuliaSpacePhysics.github.io/PlasmaBO.jl/ice_Irvine18/"/><meta property="twitter:url" content="https://JuliaSpacePhysics.github.io/PlasmaBO.jl/ice_Irvine18/"/><link rel="canonical" href="https://JuliaSpacePhysics.github.io/PlasmaBO.jl/ice_Irvine18/"/><script data-outdated-warner src="../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../search_index.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script></head><body>
+<!-- NAVBAR START -->
+<style>
+    html {
+        scroll-padding-top: calc(55px + 1rem);
+    }
+
+    /* Documenter css tweaks */
+    .docs-sidebar {
+        margin-top: 3.75rem;
+    }
+
+    #documenter {
+        margin-top: 3.75rem;
+    }
+
+    .docs-version-selector {
+        margin-bottom: 60px !important;
+    }
+
+    @media screen and (max-width: 1056px) {
+        .docs-version-selector {
+            margin-bottom: 60px !important;
+        }
+
+        .docs-sidebar {
+            margin-top: 0 !important;
+        }
+    }
+    /* Documenter css tweaks ends here */
+
+    :root {
+        --heading-color: white;
+        --item-color: rgb(165, 165, 165);
+        --primary-bg: #f8f9fa;  /* Light gray to match Quarto's default navbar */
+        --navbar-text: #212529;  /* Dark text color for better contrast */
+        --hover-color: #e9ecef;  /* Slightly darker gray for hover state */
+        --deprecated-bg: #ff4d4d;
+        --deprecated-text: white;
+    }
+
+    .ext-navigation {
+        position: fixed;
+        height: 3.75rem;
+        top: 0;
+        width: 100%;
+        background-color: var(--primary-bg);
+        color: var(--navbar-text);
+        z-index: 1000;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        display: flex;
+        align-items: center;
+        padding: 0 1.0625rem;
+        transition: transform 0.3s;
+    }
+
+    .ext-navbar-logo {
+        margin-left: 0.625rem;
+    }
+
+    .ext-nav-links {
+        display: flex;
+        align-items: center;
+        list-style-type: none;
+        margin: 0;
+        padding: 0;
+        flex-grow: 1;
+    }
+
+    .ext-nav-links li {
+        margin-left: 1rem !important;
+    }
+
+    .ext-nav-link {
+        color: var(--navbar-text) !important;
+        text-decoration: none;
+        font-size: 1.0625rem !important;
+        transition: color 0.2s ease;
+        cursor: pointer;
+    }
+
+    .ext-nav-link:hover,
+    .ext-navbar-item-single a:hover {
+        color: var(--hover-color) !important;
+        text-decoration: none !important;
+    }
+    
+    .ext-navigation a {
+        text-decoration: none !important;
+    }
+
+    .ext-navbar-item-single a {
+        color: var(--navbar-text) !important;
+    }
+
+    .ext-menu-toggle {
+        display: none;
+        font-size: 1.5rem;
+        color: white;
+        cursor: pointer;
+    }
+
+    .ext-dropdown {
+        display: none;
+        grid-template-columns: 1fr 1fr 1fr 1fr;
+        grid-template-rows: auto auto auto;
+        padding: 1.875rem;
+        position: absolute;
+        width: 100%;
+        left: 0;
+        background-color: var(--primary-bg);
+        line-height: 1.875rem;
+        opacity: 0;
+        transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+        transform: translateY(-0.625rem);
+    }
+
+    #library-handler::after {
+        content: "▼";
+        font-size: 0.6875rem;
+        margin-left: 0.3125rem;
+        transition: transform 0.3s ease-in-out;
+    }
+
+    #library-handler.open::after {
+        content: "▲";
+    }
+
+    .ext-dropdown.show {
+        display: grid;
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    .ext-dropdown ul {
+        height: auto;
+        width: 12.5rem;
+        margin-bottom: 1.25rem;
+    }
+
+    .ext-dropdown ul li {
+        text-align: left;
+        display: flex;
+        align-items: center;
+    }
+
+    .navbar-sub-item {
+        list-style: none;
+    }
+
+    .ext-dropdown ul a li {
+        color: var(--item-color);
+        width: 15.625rem;
+        border-radius: 3px;
+        padding: 0.125rem 0.625rem;
+        transition: background-color 0.2s ease;
+        text-decoration: none !important;
+    }
+
+    .ext-dropdown ul a li:hover {
+        background-color: rgba(107, 107, 107, 0.5);
+    }
+
+    .ext-dropdown-item-heading {
+        /* color: var(--heading-color); */
+        text-align: center;
+    }
+
+    .deprecated-badge {
+        background-color: var(--deprecated-bg);
+        color: var(--deprecated-text);
+        font-size: 0.75rem;
+        padding: 0.125rem 0.375rem;
+        border-radius: 3px;
+        margin-left: 0.5rem;
+        line-height: 1;
+    }
+
+    /* Responsive styling */
+    @media (max-width: 966px) {
+        .ext-dropdown {
+            grid-template-columns: 1fr 1fr 1fr;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .ext-nav-links {
+            display: none;
+            flex-direction: column;
+            width: 100%;
+            background-color: var(--primary-bg);
+            position: absolute;
+            top: 3.75rem;
+            left: 0;
+            padding: 0.625rem 0;
+            height: auto;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: rgb(141, 141, 141) grey;
+        }
+
+        .ext-nav-links.show {
+            display: flex;
+        }
+
+        .ext-nav-links li {
+            margin: 0.625rem 0;
+            text-align: center;
+        }
+
+        .ext-menu-toggle {
+            display: block;
+            margin-left: auto;
+        }
+
+        .ext-navigation.hide {
+            transform: translateY(-3.75rem);
+        }
+
+        .ext-dropdown {
+            place-content: center;
+            text-align: center;
+            grid-template-columns: 1fr;
+            line-height: 1.25rem;
+            padding: 0.625rem;
+        }
+
+        .ext-dropdown ul {
+            width: 100%;
+            text-align: center;
+            margin-bottom: 0.3125rem;
+        }
+
+        .ext-dropdown ul li {
+            text-align: center;
+            /* justify-content: center; */
+        }
+
+        .ext-dropdown ul a li {
+            width: 100%;
+        }
+
+        .ext-dropdown ul a li:hover {
+            background-color: var(--primary-bg);
+            /* color: #fff; */
+        }
+
+        /* Modified scroll bar */
+        .ext-nav-links::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        .ext-nav-links::-webkit-scrollbar-track {
+            box-shadow: inset 0 0 5px grey;
+        }
+
+        .ext-nav-links::-webkit-scrollbar-thumb {
+            background: rgb(141, 141, 141);
+            border-radius: 3px;
+        }
+
+        .ext-nav-links::-webkit-scrollbar-thumb:hover {
+            background: #9b9b9b;
+        }
+    }
+</style>
+<nav class="ext-navigation">
+    <a href="https://juliaspacephysics.github.io"></a>
+    <a style="color: #212529 !important; font-size: 21.25px !important; margin-left: 10px;" href="https://juliaspacephysics.github.io">JuliaSpacePhysics</a>
+    <ul class="ext-nav-links">
+        <li>
+            <p class="ext-nav-link" id="library-handler">Ecosystem</p>
+            <div class="ext-dropdown" id="ext-dropdown-items">
+                <ul>
+                    <li class="ext-dropdown-item-heading">Core</li>
+                    <a href="https://juliaspacephysics.github.io/SPEDAS.jl"><li>SPEDAS.jl</li></a>
+                    <a href="https://juliaspacephysics.github.io/SpaceDataModel.jl"><li>SpaceDataModel.jl</li></a>
+                    <a href="https://juliaspacephysics.github.io/GeoCotrans.jl"><li>GeoCotrans.jl</li></a>
+                    <a href="https://henry2004y.github.io/TestParticle.jl/"><li>TestParticle.jl</li></a>
+                </ul>
+                <ul>
+                    <li class="ext-dropdown-item-heading">Data</li>
+                    <a href="https://juliaspacephysics.github.io/CDFDatasets.jl/"><li>CDFDatasets.jl</li></a>
+                    <a href="https://juliaspacephysics.github.io/CDAWeb.jl/"><li>CDAWeb.jl</li></a>
+                    <a href="https://sciqlop.github.io/Speasy.jl/"><li>Speasy.jl</li></a>
+                    <a href="https://juliaspacephysics.github.io/HAPIClient.jl/"><li>HAPIClient.jl</li></a>
+                    <a href="https://juliaspacephysics.github.io/Madrigal.jl/"><li>Madrigal.jl</li></a>
+                    <a href="https://github.com/JuliaSpacePhysics/PySPEDAS.jl"><li>PySPEDAS.jl</li></a>
+                    <a href="https://juliaspacephysics.github.io/CommonDataFormat.jl/"><li>CommonDataFormat.jl</li></a>
+                </ul>
+                <ul>
+                    <li class="ext-dropdown-item-heading">Domain</li>
+                    <a href="https://juliaspacephysics.github.io/SolarEnergeticParticle.jl/dev/"><li>SolarEnergeticParticle.jl (Helio)</li></a>
+                    <a href="https://juliaspacephysics.github.io/GeoAACGM.jl"><li>GeoAACGM.jl (ITM)</li></a>
+                    <a href="https://juliaspacephysics.github.io/IRBEM.jl"><li>IRBEM.jl (Magnetosphere)</li></a>
+                </ul>
+                <!-- Enable when more mission-specific packages are available -->
+                <ul>
+                    <li class="ext-dropdown-item-heading">Mission-specific</li>
+                    <a href="https://juliaspacephysics.github.io/EISCATData.jl"><li>EISCATData.jl</li></a>
+                    <a href="https://juliaspacephysics.github.io/ELFINData.jl"><li>ELFINData.jl</li></a>
+                    <a href="https://juliaspacephysics.github.io/DMSPData.jl"><li>DMSPData.jl</li></a>
+                </ul>
+               
+                <ul>
+                    <li class="ext-dropdown-item-heading">General Analysis</li>
+                    <a href="https://juliaplasma.github.io/PlasmaFormulary.jl"><li>JuliaPlasma/PlasmaFormulary.jl</li></a>
+                    <a href="https://juliaplasma.github.io/ChargedParticles.jl"><li>JuliaPlasma/ChargedParticles.jl</li></a>
+                    <a href="https://juliaspacephysics.github.io/VelocityDistributionFunctions.jl"><li>VelocityDistributionFunctions.jl</li></a>
+                    <a href="https://juliaspacephysics.github.io/PlasmaWaves.jl"><li>PlasmaWaves.jl</li></a>
+                    <a href="https://juliaspacephysics.github.io/PlasmaBO.jl"><li>PlasmaBO.jl</li></a>
+                    <a href="https://github.com/JuliaSpacePhysics/SpacePhysicsMakie.jl"><li>SpacePhysicsMakie.jl</li></a>
+                </ul>
+            </div>
+        </li>
+        <li><a href="https://juliaspacephysics.github.io/tutorials/">Tutorials</a></li>
+    </ul>
+    <a href="https://github.com/JuliaSpacePhysics">
+        <svg width="32px" height="32px" viewBox="-8.2 -8.2 36.40 36.40" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" fill="#000000">
+            <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+            <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+            <g id="SVGRepo_iconCarrier">
+                <title>github [#142]</title>
+                <desc>JuliaSpacePhysics</desc>
+                <defs></defs>
+                <g id="Page-1" stroke-width="0.0002" fill="none" fill-rule="evenodd">
+                    <g id="Dribbble-Light-Preview" transform="translate(-140.000000, -7559.000000)" fill="#ffffff">
+                        <g id="icons" transform="translate(56.000000, 160.000000)">
+                            <path
+                                d="M94,7399 C99.523,7399 104,7403.59 104,7409.253 C104,7413.782 101.138,7417.624 97.167,7418.981 C96.66,7419.082 96.48,7418.762 96.48,7418.489 C96.48,7418.151 96.492,7417.047 96.492,7415.675 C96.492,7414.719 96.172,7414.095 95.813,7413.777 C98.04,7413.523 100.38,7412.656 100.38,7408.718 C100.38,7407.598 99.992,7406.684 99.35,7405.966 C99.454,7405.707 99.797,7404.664 99.252,7403.252 C99.252,7403.252 98.414,7402.977 96.505,7404.303 C95.706,7404.076 94.85,7403.962 94,7403.958 C93.15,7403.962 92.295,7404.076 91.497,7404.303 C89.586,7402.977 88.746,7403.252 88.746,7403.252 C88.203,7404.664 88.546,7405.707 88.649,7405.966 C88.01,7406.684 87.619,7407.598 87.619,7408.718 C87.619,7412.646 89.954,7413.526 92.175,7413.785 C91.889,7414.041 91.63,7414.493 91.54,7415.156 C90.97,7415.418 89.522,7415.871 88.63,7414.304 C88.63,7414.304 88.101,7413.319 87.097,7413.247 C87.097,7413.247 86.122,7413.234 87.029,7413.87 C87.029,7413.87 87.684,7414.185 88.139,7415.37 C88.139,7415.37 88.726,7417.2 91.508,7416.58 C91.513,7417.437 91.522,7418.245 91.522,7418.489 C91.522,7418.76 91.338,7419.077 90.839,7418.982 C86.865,7417.627 84,7413.783 84,7409.253 C84,7403.59 88.478,7399 94,7399"
+                                id="github-[#142]">
+                            </path>
+                        </g>
+                    </g>
+                </g>
+            </g>
+        </svg>
+    </a>
+    <span class="ext-menu-toggle">&#9776;</span>
+</nav>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const menuToggle = document.querySelector(".ext-menu-toggle");
+        const navLinks = document.querySelector(".ext-nav-links");
+        const nav = document.querySelector(".ext-navigation");
+        const navigationHandler = document.getElementById("library-handler");
+        const navigationItemsContainer =
+            document.getElementById("ext-dropdown-items");
+        let lastScrollY = window.scrollY;
+
+        function setAppropriateHeight() {
+            if (window.innerWidth <= 768) {
+                const viewportHeight = window.innerHeight;
+                const navHeight = nav.offsetHeight;
+                navLinks.style.maxHeight = `${viewportHeight - navHeight}px`;
+                navLinks.style.overflowY = "auto";
+            } else {
+                navLinks.style.maxHeight = "";
+                navLinks.style.overflowY = "";
+            }
+        }
+
+        // Toggle main menu for mobile
+        menuToggle.addEventListener("click", () => {
+            navLinks.classList.toggle("show");
+            if (navLinks.classList.contains("show")) {
+                setAppropriateHeight();
+                // Ensure the dropdown is hidden when menu is first opened
+                navigationItemsContainer.style.display = "none";
+                navigationItemsContainer.classList.remove("show");
+            }
+        });
+
+        // Close menus if clicked outside
+        document.addEventListener("click", (event) => {
+            if (
+                !navLinks.contains(event.target) &&
+                !menuToggle.contains(event.target)
+            ) {
+                navLinks.classList.remove("show");
+                navigationItemsContainer.classList.remove("show");
+                navigationHandler.classList.remove("open");
+            }
+        });
+
+        // Hide navigation bar on scroll down in mobile view
+        window.addEventListener("scroll", () => {
+            if (window.innerWidth <= 768) {
+                nav.classList.toggle("hide", window.scrollY > lastScrollY);
+                lastScrollY = window.scrollY;
+            }
+        });
+
+        // Library API script
+        navigationHandler.addEventListener("click", (event) => {
+            event.preventDefault(); // Prevent default action of the link
+            if (navigationItemsContainer.classList.contains("show")) {
+                navigationItemsContainer.classList.remove("show");
+                navigationHandler.classList.remove("open");
+                setTimeout(() => {
+                    navigationItemsContainer.style.display = "none";
+                }, 500); // Match the timeout to the CSS transition duration
+            } else {
+                navigationItemsContainer.style.display = "grid";
+                navigationHandler.classList.add("open");
+                setTimeout(() => {
+                    navigationItemsContainer.classList.add("show");
+                }, 10); // Delay to ensure the display change takes effect before adding class
+            }
+            setAppropriateHeight(); // Recalculate height when dropdown changes
+        });
+
+        // Handle window resize
+        window.addEventListener("resize", setAppropriateHeight);
+
+        // Initial setup
+        setAppropriateHeight();
+    });
+</script>
+<!-- NAVBAR END -->
+
+<div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../">PlasmaBO.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../">Home</a></li><li><a class="tocitem" href="../ringbeam_Umeda12/">Ring beam instability</a></li><li><a class="tocitem" href="../firehose_Astfalk17/">Firehose instability</a></li><li><a class="tocitem" href="../mirror_mode/">Mirror mode</a></li><li class="is-active"><a class="tocitem" href>Ion cyclotron emission</a><ul class="internal"><li><a class="tocitem" href="#Dispersion-Curve-Scan"><span>Dispersion Curve Scan</span></a></li></ul></li><li><a class="tocitem" href="../cold_plasma/">Cold plasma (fluid vs kinetic solver)</a></li><li><a class="tocitem" href="../dispersion_surface/">Dispersion surface tracking</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Ion cyclotron emission</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Ion cyclotron emission</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/JuliaSpacePhysics/PlasmaBO.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/JuliaSpacePhysics/PlasmaBO.jl/blob/main/docs/src/ice_Irvine18.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Case:-Ion-cyclotron-emission"><a class="docs-heading-anchor" href="#Case:-Ion-cyclotron-emission">Case: Ion cyclotron emission</a><a id="Case:-Ion-cyclotron-emission-1"></a><a class="docs-heading-anchor-permalink" href="#Case:-Ion-cyclotron-emission" title="Permalink"></a></h1><p>Ion cyclotron emission (ICE) driven by a ring ion beam distribution in a magnetized fusion device</p><pre><code class="language-julia hljs">using PlasmaBO
+using PlasmaBO: gyrofrequency, Alfven_speed
+
+using DelimitedFiles
+
+# Magnetic field (Tesla)
+B0 = 2.1
+
+# Wave vector angle between k and B0
+θ = deg2rad(89.5)
+
+# Species table taken from the original BO MATLAB input
+fpath = pkgdir(PlasmaBO, &quot;test/ice_Irvine18.in&quot;)
+readdlm(fpath)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">4×8 Matrix{Any}:
+   &quot;qs(e)&quot;   &quot;ms(m_unit)&quot;   &quot;ns(m^-3)&quot;  …   &quot;vdsz/c&quot;   &quot;vdsr/c&quot;   &quot;ifv(1/0)&quot;
+  2         4.0            1.0e16          0.0        0.045      1
+  1         2.0            9.98e18         0.0        0.0        1
+ -1         0.0005447      1.0e19          0.0        0.0        1</code></pre><h2 id="Dispersion-Curve-Scan"><a class="docs-heading-anchor" href="#Dispersion-Curve-Scan">Dispersion Curve Scan</a><a id="Dispersion-Curve-Scan-1"></a><a class="docs-heading-anchor-permalink" href="#Dispersion-Curve-Scan" title="Permalink"></a></h2><pre><code class="language-julia hljs">tbl = readdlm(fpath, Float64; skipstart = 1)
+species = map(eachrow(tbl)) do row
+    Z, A, n_s, Tz_s, Tp_s, vdz_s, vdr_s = row[1:7]
+    Maxwellian(n_s, Tz_s, Tp_s; vdz = vdz_s, vdr = vdr_s, Z , A)
+end
+
+ωn = gyrofrequency(B0, species[1])
+vA = Alfven_speed(B0, species)
+kn = ωn / vA
+
+ks = (9.5:0.025:11.5) .* kn
+results = solve_kinetic_dispersion(species, B0, ks, θ; N = 12, J = 4)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">PlasmaBO.DispersionSolution{StepRangeLen{Float64, Base.TwicePrecision{Float64}, Base.TwicePrecision{Float64}, Int64}, Nothing, Vector{Vector{ComplexF64}}}(93.30054329941338:0.24552774552477205:112.94276294139515, nothing, Vector{ComplexF64}[[-4.431570101700105e12 - 1.8551906132743835e7im, -4.431570101700048e12 - 1.855190613299454e7im, -4.431570101700044e12 - 1.8551906132402502e7im, -4.431557011709514e12 - 2.062794004699707e7im, -4.43155701170949e12 - 2.0627940044266112e7im, -4.4315570117094795e12 - 2.062794004661354e7im, -4.431545449453735e12 - 2.062794004574933e7im, -4.431545449453715e12 - 2.0627940046325684e7im, -4.431545449453697e12 - 2.0627940048087966e7im, -4.431532359463166e12 - 1.8551906133423638e7im  …  4.431532359463174e12 - 1.855190613293785e7im, 4.431545449453701e12 - 2.0627940047129918e7im, 4.431545449453714e12 - 2.0627940046105474e7im, 4.43154544945373e12 - 2.062794004649529e7im, 4.431557011709484e12 - 2.0627940047303073e7im, 4.431557011709486e12 - 2.0627940046022587e7im, 4.431557011709514e12 - 2.0627940047232505e7im, 4.431570101700042e12 - 1.855190613433528e7im, 4.431570101700056e12 - 1.855190613317871e7im, 4.431570101700072e12 - 1.8551906132433206e7im], [-4.431570151360906e12 - 1.860072693859969e7im, -4.431570151360874e12 - 1.8600726939453125e7im, -4.431570151360872e12 - 1.860072693888073e7im, -4.431557026923001e12 - 2.068222410205078e7im, -4.431557026922997e12 - 2.068222409992209e7im, -4.431557026922979e12 - 2.0682224099578846e7im, -4.431545434240236e12 - 2.0682224099577475e7im, -4.431545434240211e12 - 2.068222409960831e7im, -4.431545434240188e12 - 2.0682224099379938e7im, -4.431532309802329e12 - 1.860072693884978e7im  …  4.4315323098023125e12 - 1.8600726938843306e7im, 4.431545434240203e12 - 2.06822240991066e7im, 4.431545434240207e12 - 2.068222409964717e7im, 4.431545434240229e12 - 2.0682224098751225e7im, 4.431557026922972e12 - 2.0682224099360466e7im, 4.431557026922976e12 - 2.0682224099651814e7im, 4.431557026923018e12 - 2.0682224099990536e7im, 4.431570151360887e12 - 1.8600726938842773e7im, 4.431570151360889e12 - 1.8600726939086914e7im, 4.431570151360911e12 - 1.860072693713379e7im], [-4.431570201021741e12 - 1.864954774464475e7im, -4.431570201021739e12 - 1.8649547744150534e7im, -4.431570201021714e12 - 1.8649547744934082e7im, -4.431557042136508e12 - 2.073650815318489e7im, -4.431557042136504e12 - 2.073650815135449e7im, -4.431557042136492e12 - 2.0736508152343813e7im, -4.431545419026747e12 - 2.0736508152181625e7im, -4.431545419026735e12 - 2.0736508152038615e7im, -4.431545419026733e12 - 2.07365081519894e7im, -4.431532260141561e12 - 1.864954774590073e7im  …  4.431532260141478e12 - 1.8649547743505593e7im, 4.431545419026713e12 - 2.07365081523629e7im, 4.431545419026726e12 - 2.0736508150843758e7im, 4.431545419026758e12 - 2.073650815154051e7im, 4.431557042136467e12 - 2.0736508153594732e7im, 4.431557042136469e12 - 2.0736508152112175e7im, 4.431557042136557e12 - 2.0736508153657693e7im, 4.43157020102172e12 - 1.864954774410394e7im, 4.431570201021757e12 - 1.8649547743433382e7im, 4.431570201021763e12 - 1.8649547744461745e7im], [-4.431570250682585e12 - 1.8698368548738573e7im, -4.431570250682578e12 - 1.8698368548828125e7im, -4.431570250682556e12 - 1.8698368548779488e7im, -4.43155705735e12 - 2.0790792203017637e7im, -4.4315570573499795e12 - 2.0790792204708498e7im, -4.431557057349971e12 - 2.0790792204345703e7im, -4.431545403813279e12 - 2.0790792206074703e7im, -4.431545403813234e12 - 2.0790792204835907e7im, -4.43154540381323e12 - 2.079079220443371e7im, -4.431532210480692e12 - 1.8698368551632576e7im  …  4.43153221048064e12 - 1.8698368549951326e7im, 4.431545403813196e12 - 2.0790792204632994e7im, 4.43154540381323e12 - 2.0790792205845606e7im, 4.431545403813307e12 - 2.0790792206968527e7im, 4.431557057349969e12 - 2.0790792207030237e7im, 4.43155705734998e12 - 2.0790792205810547e7im, 4.431557057349986e12 - 2.0790792202979326e7im, 4.431570250682559e12 - 1.869836854940281e7im, 4.431570250682567e12 - 1.869836855462295e7im, 4.431570250682603e12 - 1.869836855053141e7im], [-4.431570300343432e12 - 1.8747189355896033e7im, -4.431570300343407e12 - 1.8747189355115373e7im, -4.431570300343381e12 - 1.874718935534668e7im, -4.431557072563483e12 - 2.084507625685141e7im, -4.43155707256347e12 - 2.084507625769043e7im, -4.431557072563465e12 - 2.0845076257507324e7im, -4.431545388599811e12 - 2.084507625724894e7im, -4.43154538859973e12 - 2.0845076256637573e7im, -4.431545388599728e12 - 2.0845076257682897e7im, -4.431532160819839e12 - 1.8747189357177734e7im  …  4.431532160819813e12 - 1.874718935583475e7im, 4.43154538859973e12 - 2.0845076257332206e7im, 4.431545388599736e12 - 2.084507625753587e7im, 4.43154538859977e12 - 2.0845076256664157e7im, 4.431557072563449e12 - 2.084507625682883e7im, 4.431557072563455e12 - 2.0845076256342612e7im, 4.431557072563477e12 - 2.084507625793458e7im, 4.431570300343393e12 - 1.8747189355105042e7im, 4.431570300343408e12 - 1.8747189356262203e7im, 4.43157030034341e12 - 1.874718935595703e7im], [-4.431570350004271e12 - 1.8796010161148105e7im, -4.431570350004233e12 - 1.879601016003418e7im, -4.431570350004229e12 - 1.8796010161132812e7im, -4.431557087776992e12 - 2.0899360310712755e7im, -4.431557087776984e12 - 2.0899360310702078e7im, -4.431557087776971e12 - 2.0899360310305595e7im, -4.431545373386259e12 - 2.089936031002622e7im, -4.431545373386253e12 - 2.0899360310190577e7im, -4.431545373386247e12 - 2.0899360310297836e7im, -4.431532111158993e12 - 1.8796010161300622e7im  …  4.431532111158964e12 - 1.8796010160628796e7im, 4.431545373386241e12 - 2.089936031158612e7im, 4.43154537338625e12 - 2.0899360310775526e7im, 4.43154537338626e12 - 2.0899360310544968e7im, 4.431557087776979e12 - 2.0899360310362518e7im, 4.431557087776986e12 - 2.089936031073447e7im, 4.431557087776997e12 - 2.0899360311529122e7im, 4.431570350004222e12 - 1.8796010162006576e7im, 4.431570350004231e12 - 1.87960101619644e7im, 4.431570350004238e12 - 1.8796010161193848e7im], [-4.431570399665097e12 - 1.8844830966796875e7im, -4.431570399665095e12 - 1.8844830967529297e7im, -4.431570399665065e12 - 1.8844830967041016e7im, -4.431557102990489e12 - 2.0953644363155365e7im, -4.431557102990459e12 - 2.09536443637619e7im, -4.431557102990451e12 - 2.095364436263281e7im, -4.431545358172777e12 - 2.09536443630338e7im, -4.431545358172757e12 - 2.0953644362871885e7im, -4.431545358172742e12 - 2.0953644363284126e7im, -4.431532061498134e12 - 1.8844830967790738e7im  …  4.431532061498146e12 - 1.8844830967648327e7im, 4.431545358172741e12 - 2.0953644362930246e7im, 4.431545358172746e12 - 2.0953644363286454e7im, 4.431545358172785e12 - 2.0953644361938488e7im, 4.431557102990451e12 - 2.095364436354454e7im, 4.431557102990466e12 - 2.095364436316443e7im, 4.431557102990473e12 - 2.0953644364273373e7im, 4.43157039966505e12 - 1.8844830968461663e7im, 4.431570399665057e12 - 1.8844830967715446e7im, 4.431570399665092e12 - 1.884483096656247e7im], [-4.4315704493259375e12 - 1.8893651773257863e7im, -4.431570449325937e12 - 1.889365177349028e7im, -4.431570449325915e12 - 1.8893651772094723e7im, -4.4315571182039795e12 - 2.100792841802795e7im, -4.431557118203979e12 - 2.1007928416869458e7im, -4.431557118203938e12 - 2.1007928416844733e7im, -4.431545342959284e12 - 2.1007928417480506e7im, -4.431545342959258e12 - 2.1007928415466305e7im, -4.431545342959256e12 - 2.1007928416332718e7im, -4.431532011837317e12 - 1.8893651772288155e7im  …  4.43153201183729e12 - 1.8893651772608303e7im, 4.431545342959232e12 - 2.1007928415285476e7im, 4.431545342959248e12 - 2.1007928416037247e7im, 4.431545342959251e12 - 2.1007928415893685e7im, 4.431557118203949e12 - 2.1007928415204287e7im, 4.431557118203962e12 - 2.1007928414814632e7im, 4.431557118203975e12 - 2.100792841582966e7im, 4.431570449325902e12 - 1.8893651771730676e7im, 4.431570449325915e12 - 1.8893651772679787e7im, 4.431570449325934e12 - 1.889365177292628e7im], [-4.431570498986769e12 - 1.894247257763672e7im, -4.431570498986767e12 - 1.8942472578828264e7im, -4.43157049898675e12 - 1.8942472578012895e7im, -4.431557133417472e12 - 2.1062212469157636e7im, -4.431557133417456e12 - 2.106221246899414e7im, -4.43155713341745e12 - 2.1062212469141006e7im, -4.431545327745767e12 - 2.1062212468048114e7im, -4.431545327745761e12 - 2.1062212468908958e7im, -4.431545327745753e12 - 2.106221246835268e7im, -4.431531962176459e12 - 1.894247257901261e7im  …  4.43153196217646e12 - 1.8942472579011917e7im, 4.431545327745766e12 - 2.1062212468909703e7im, 4.431545327745773e12 - 2.10622124699582e7im, 4.431545327745834e12 - 2.1062212468977075e7im, 4.431557133417459e12 - 2.1062212468759537e7im, 4.431557133417513e12 - 2.106221246893011e7im, 4.431557133417517e12 - 2.106221246679687e7im, 4.431570498986749e12 - 1.8942472578125e7im, 4.431570498986767e12 - 1.8942472578361254e7im, 4.431570498986768e12 - 1.8942472578131497e7im], [-4.431570548647635e12 - 1.8991293383392334e7im, -4.431570548647602e12 - 1.8991293386380196e7im, -4.431570548647539e12 - 1.899129338220424e7im, -4.431557148630956e12 - 2.1116496523926333e7im, -4.431557148630956e12 - 2.1116496522765085e7im, -4.431557148630928e12 - 2.1116496520864323e7im, -4.431545312532265e12 - 2.1116496522331327e7im, -4.431545312532262e12 - 2.111649652125984e7im, -4.431545312532226e12 - 2.11164965239563e7im, -4.431531912515626e12 - 1.8991293383519292e7im  …  4.43153191251563e12 - 1.8991293383963868e7im, 4.431545312532267e12 - 2.1116496521337625e7im, 4.431545312532287e12 - 2.1116496522084832e7im, 4.431545312532318e12 - 2.1116496519358166e7im, 4.431557148630945e12 - 2.111649652162361e7im, 4.431557148630953e12 - 2.1116496522071067e7im, 4.431557148630994e12 - 2.111649652144901e7im, 4.431570548647616e12 - 1.8991293383273266e7im, 4.431570548647616e12 - 1.8991293383199185e7im, 4.431570548647619e12 - 1.8991293384033203e7im]  …  [-4.431573627619578e12 - 2.2018183332724165e7im, -4.431573627619556e12 - 2.2018183331871223e7im, -4.431573627619529e12 - 2.201818333178711e7im, -4.431558091867636e12 - 2.448210779077384e7im, -4.431558091867629e12 - 2.448210779210624e7im, -4.4315580918676e12 - 2.448210779269409e7im, -4.431544369295616e12 - 2.448210779284704e7im, -4.431544369295612e12 - 2.4482107792444944e7im, -4.431544369295603e12 - 2.4482107791214198e7im, -4.431528833543722e12 - 2.2018183331470028e7im  …  4.431528833543662e12 - 2.2018183331909176e7im, 4.431544369295612e12 - 2.448210779272461e7im, 4.431544369295629e12 - 2.4482107791327894e7im, 4.43154436929563e12 - 2.448210779445301e7im, 4.431558091867584e12 - 2.4482107791993827e7im, 4.431558091867601e12 - 2.448210779234363e7im, 4.431558091867637e12 - 2.4482107795774236e7im, 4.431573627619534e12 - 2.201818333144455e7im, 4.431573627619549e12 - 2.201818333178496e7im, 4.431573627619552e12 - 2.2018183331751563e7im], [-4.431573677280391e12 - 2.206700413712848e7im, -4.431573677280379e12 - 2.2067004138326056e7im, -4.431573677280369e12 - 2.2067004138305664e7im, -4.431558107081122e12 - 2.4536391844822805e7im, -4.431558107081109e12 - 2.453639184517939e7im, -4.431558107081092e12 - 2.4536391845478058e7im, -4.431544354082119e12 - 2.453639184439875e7im, -4.431544354082118e12 - 2.453639184486553e7im, -4.431544354082107e12 - 2.4536391845190443e7im, -4.431528783882838e12 - 2.2067004136893585e7im  …  4.431528783882835e12 - 2.2067004136720985e7im, 4.431544354082125e12 - 2.453639184448205e7im, 4.431544354082133e12 - 2.453639184480011e7im, 4.431544354082147e12 - 2.4536391845473733e7im, 4.431558107081094e12 - 2.4536391845298734e7im, 4.431558107081103e12 - 2.4536391843897082e7im, 4.431558107081121e12 - 2.4536391844886903e7im, 4.431573677280398e12 - 2.2067004137402967e7im, 4.4315736772804e12 - 2.2067004137066856e7im, 4.431573677280401e12 - 2.2067004137876175e7im], [-4.4315737269412295e12 - 2.2115824943725586e7im, -4.431573726941227e12 - 2.2115824943528175e7im, -4.431573726941225e12 - 2.2115824943260193e7im, -4.431558122294599e12 - 2.4590675896365047e7im, -4.431558122294588e12 - 2.459067590001981e7im, -4.431558122294574e12 - 2.459067589758859e7im, -4.431544338868618e12 - 2.4590675899230957e7im, -4.431544338868606e12 - 2.4590675897789232e7im, -4.431544338868603e12 - 2.459067589846802e7im, -4.431528734221979e12 - 2.2115824943115234e7im  …  4.43152873422201e12 - 2.2115824943532772e7im, 4.431544338868603e12 - 2.459067589752458e7im, 4.431544338868611e12 - 2.459067589732701e7im, 4.431544338868633e12 - 2.4590675898564253e7im, 4.431558122294585e12 - 2.45906758983127e7im, 4.431558122294586e12 - 2.4590675896770388e7im, 4.431558122294591e12 - 2.4590675897978183e7im, 4.431573726941215e12 - 2.2115824943107918e7im, 4.431573726941243e12 - 2.2115824943514008e7im, 4.431573726941251e12 - 2.2115824941947836e7im], [-4.431573776602082e12 - 2.216464574650523e7im, -4.431573776602055e12 - 2.2164645748254802e7im, -4.431573776602039e12 - 2.216464574864088e7im, -4.43155813750811e12 - 2.4644959949316163e7im, -4.431558137508074e12 - 2.464495994925527e7im, -4.431558137508072e12 - 2.464495995074023e7im, -4.431544323655186e12 - 2.4644959949579008e7im, -4.431544323655129e12 - 2.4644959950889062e7im, -4.431544323655102e12 - 2.464495995009005e7im, -4.431528684561158e12 - 2.2164645748952866e7im  …  4.431528684561138e12 - 2.2164645747765075e7im, 4.431544323655097e12 - 2.4644959950651646e7im, 4.431544323655123e12 - 2.464495995023888e7im, 4.431544323655131e12 - 2.464495995062685e7im, 4.43155813750807e12 - 2.4644959950373173e7im, 4.431558137508072e12 - 2.4644959950066254e7im, 4.431558137508084e12 - 2.4644959950938586e7im, 4.43157377660205e12 - 2.2164645749627113e7im, 4.431573776602065e12 - 2.216464574851189e7im, 4.431573776602082e12 - 2.21646457485352e7im], [-4.431573826262928e12 - 2.221346655434136e7im, -4.431573826262907e12 - 2.221346655456543e7im, -4.431573826262892e12 - 2.2213466555105824e7im, -4.431558152721598e12 - 2.4699244003804684e7im, -4.431558152721577e12 - 2.4699244003901437e7im, -4.431558152721575e12 - 2.4699244003465224e7im, -4.431544308441641e12 - 2.469924400378418e7im, -4.431544308441641e12 - 2.4699244002622735e7im, -4.431544308441637e12 - 2.4699244004032135e7im, -4.431528634900303e12 - 2.221346655444367e7im  …  4.431528634900305e12 - 2.2213466554545343e7im, 4.431544308441613e12 - 2.469924400304413e7im, 4.431544308441629e12 - 2.4699244003183424e7im, 4.431544308441645e12 - 2.469924400324643e7im, 4.431558152721549e12 - 2.469924400158772e7im, 4.4315581527215625e12 - 2.469924400383834e7im, 4.4315581527215625e12 - 2.4699244003795117e7im, 4.431573826262889e12 - 2.2213466554382324e7im, 4.431573826262906e12 - 2.2213466553581625e7im, 4.431573826262931e12 - 2.2213466554612163e7im], [-4.431573875923738e12 - 2.226228735960409e7im, -4.43157387592373e12 - 2.2262287360574942e7im, -4.431573875923727e12 - 2.226228735986423e7im, -4.431558167935064e12 - 2.4753528057017516e7im, -4.431558167935046e12 - 2.47535280562264e7im, -4.43155816793503e12 - 2.4753528056910314e7im, -4.431544293228128e12 - 2.4753528056899894e7im, -4.431544293228114e12 - 2.475352805612564e7im, -4.4315442932281e12 - 2.4753528057739258e7im, -4.431528585239471e12 - 2.226228735857872e7im  …  4.431528585239477e12 - 2.226228735975967e7im, 4.431544293228133e12 - 2.475352805593909e7im, 4.431544293228143e12 - 2.475352805705001e7im, 4.431544293228148e12 - 2.475352805587216e7im, 4.431558167935064e12 - 2.4753528056248665e7im, 4.431558167935075e12 - 2.475352805753876e7im, 4.431558167935083e12 - 2.4753528056177378e7im, 4.431573875923749e12 - 2.226228735961914e7im, 4.431573875923754e12 - 2.226228735998535e7im, 4.431573875923768e12 - 2.226228735924281e7im], [-4.431573925584599e12 - 2.2311108163504124e7im, -4.43157392558459e12 - 2.2311108164652728e7im, -4.431573925584576e12 - 2.2311108165893555e7im, -4.431558183148593e12 - 2.480781210802023e7im, -4.431558183148585e12 - 2.4807812110229492e7im, -4.431558183148571e12 - 2.4807812108352803e7im, -4.431544278014647e12 - 2.4807812108314514e7im, -4.431544278014643e12 - 2.480781210841757e7im, -4.431544278014635e12 - 2.4807812109176487e7im, -4.431528535578623e12 - 2.231110816530327e7im  …  4.431528535578638e12 - 2.2311108165283203e7im, 4.431544278014621e12 - 2.4807812108568516e7im, 4.431544278014635e12 - 2.4807812108473763e7im, 4.431544278014652e12 - 2.4807812109558683e7im, 4.431558183148551e12 - 2.480781210831117e7im, 4.431558183148558e12 - 2.4807812107834846e7im, 4.431558183148579e12 - 2.480781211067013e7im, 4.431573925584556e12 - 2.2311108167036444e7im, 4.431573925584559e12 - 2.231110816541278e7im, 4.431573925584594e12 - 2.231110816540025e7im], [-4.43157397524543e12 - 2.2359928970214844e7im, -4.431573975245427e12 - 2.235992897094345e7im, -4.431573975245415e12 - 2.2359928970928192e7im, -4.431558198362065e12 - 2.4862096161405563e7im, -4.431558198362064e12 - 2.4862096162485123e7im, -4.431558198362059e12 - 2.4862096161878586e7im, -4.431544262801162e12 - 2.4862096161139913e7im, -4.431544262801147e12 - 2.486209616073799e7im, -4.431544262801136e12 - 2.486209616135932e7im, -4.431528485917808e12 - 2.2359928971342094e7im  …  4.431528485917793e12 - 2.2359928971170425e7im, 4.431544262801118e12 - 2.4862096161157876e7im, 4.431544262801138e12 - 2.4862096160539083e7im, 4.431544262801145e12 - 2.486209616234878e7im, 4.43155819836204e12 - 2.486209616104412e7im, 4.431558198362062e12 - 2.4862096161693137e7im, 4.431558198362075e12 - 2.4862096160947554e7im, 4.431573975245406e12 - 2.2359928970648915e7im, 4.431573975245417e12 - 2.2359928971435547e7im, 4.431573975245438e12 - 2.2359928970458984e7im], [-4.431574024906299e12 - 2.2408749776369173e7im, -4.431574024906279e12 - 2.2408749776245117e7im, -4.431574024906258e12 - 2.2408749776682287e7im, -4.431558213575564e12 - 2.4916380214017868e7im, -4.431558213575559e12 - 2.4916380214492798e7im, -4.431558213575523e12 - 2.4916380214416534e7im, -4.431544247587656e12 - 2.4916380214933038e7im, -4.43154424758765e12 - 2.4916380213914007e7im, -4.431544247587649e12 - 2.4916380213399258e7im, -4.431528436256953e12 - 2.2408749775832076e7im  …  4.431528436256973e12 - 2.2408749776424684e7im, 4.431544247587623e12 - 2.4916380214953568e7im, 4.431544247587633e12 - 2.491638021551897e7im, 4.431544247587666e12 - 2.4916380213789497e7im, 4.431558213575532e12 - 2.4916380215483066e7im, 4.431558213575565e12 - 2.4916380214691736e7im, 4.431558213575578e12 - 2.4916380213882726e7im, 4.431574024906267e12 - 2.240874977797677e7im, 4.431574024906269e12 - 2.2408749776867695e7im, 4.431574024906276e12 - 2.2408749775333147e7im], [-4.43157407456713e12 - 2.245757058239746e7im, -4.431574074567095e12 - 2.245757058251953e7im, -4.431574074567091e12 - 2.2457570581979632e7im, -4.431558228789071e12 - 2.497066426705326e7im, -4.431558228789059e12 - 2.497066426678562e7im, -4.431558228789046e12 - 2.4970664266867924e7im, -4.431544232374204e12 - 2.4970664267345175e7im, -4.431544232374167e12 - 2.4970664267121825e7im, -4.431544232374149e12 - 2.4970664266902495e7im, -4.431528386596115e12 - 2.2457570582388036e7im  …  4.431528386596115e12 - 2.245757058238069e7im, 4.431544232374147e12 - 2.4970664266990457e7im, 4.431544232374174e12 - 2.4970664264423985e7im, 4.431544232374176e12 - 2.4970664266600944e7im, 4.431558228789046e12 - 2.497066426710525e7im, 4.431558228789067e12 - 2.4970664270290032e7im, 4.43155822878908e12 - 2.4970664267457385e7im, 4.431574074567088e12 - 2.245757058145441e7im, 4.431574074567092e12 - 2.2457570582720622e7im, 4.431574074567115e12 - 2.2457570582296487e7im]])</code></pre><pre><code class="language-julia hljs">using CairoMakie
+
+f, (ax, ax2) = plot(results, kn, ωn)
+ylims!(ax, [0, 15])
+ylims!(ax2, [-0.5, 0.5])
+f</code></pre><img src="9ab892be.png" alt="Example block output"/></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../mirror_mode/">« Mirror mode</a><a class="docs-footer-nextpage" href="../cold_plasma/">Cold plasma (fluid vs kinetic solver) »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.16.1 on <span class="colophon-date" title="Thursday 25 December 2025 17:30">Thursday 25 December 2025</span>. Using Julia version 1.12.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
