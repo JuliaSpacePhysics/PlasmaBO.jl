@@ -12,6 +12,7 @@ makedocs(;
     format = Documenter.HTML(;
         canonical = "https://JuliaSpacePhysics.github.io/PlasmaBO.jl",
         size_threshold_warn = 1024_000,
+        size_threshold = 4096_000,
     ),
     pages = [
         "Home" => "index.md",
