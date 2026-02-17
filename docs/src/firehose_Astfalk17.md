@@ -1,8 +1,20 @@
 # Case: Firehose instability (kappa distribution)
 
-This page demonstrates test firehose instability using Hermite-Hermite (HH) expansion for bi-kappa distribution. 
-
+This page demonstrates test firehose instability using Hermite-Hermite (HH) expansion for bi-kappa distribution.
 Here we first generate numerical samples of the distribution function using `gen_fv2d`. Then we use `hermite_expansion` to compute the Hermite expansion coefficients (this would also work for arbitrary distributions).
+
+### Simulation Parameters
+
+- **Background Magnetic Field**: $B_0 = 0.1$ T
+- **Species**:
+    1.  **Electrons** (Maxwellian)
+        -   Density: $n_e = 5 \times 10^{19}$ m$^{-3}$
+        -   Temperature: $T_e = 496.683$ eV
+    2.  **Protons** (Bi-Kappa)
+        -   Density: $n_p = 5 \times 10^{19}$ m$^{-3}$
+        -   Parallel Temperature: $T_{\parallel p} = 1986.734$ eV
+        -   Perpendicular Temperature: $T_{\perp p} = 993.367$ eV
+        -   Kappa Indices: $\kappa_{\parallel} = \kappa_{\perp} = 5.5$
 
 ```@example firehose
 using PlasmaBO
