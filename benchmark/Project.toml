@@ -1,0 +1,7 @@
+[deps]
+BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
+PlasmaBO = "89aa2b4b-ed13-41a6-8160-6e24b4388da4"
+
+[compat]
+BenchmarkTools = "1"
+julia = "1.10"
