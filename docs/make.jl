@@ -11,6 +11,8 @@ makedocs(;
     sitename = "PlasmaBO.jl",
     format = Documenter.HTML(;
         canonical = "https://JuliaSpacePhysics.github.io/PlasmaBO.jl",
+        size_threshold_warn = 1024_000,
+        size_threshold = 4096_000,
     ),
     pages = [
         "Home" => "index.md",
@@ -21,6 +23,7 @@ makedocs(;
         "R/L/P modes (PBK solver)" => "rlp_Cattaert07.md",
         "Cold plasma (fluid vs kinetic solver)" => "cold_plasma.md",
         "Dispersion surface tracking" => "dispersion_surface.md",
+        "Math notes" => "math_notes.md",
     ],
     plugins = [bib],
 )

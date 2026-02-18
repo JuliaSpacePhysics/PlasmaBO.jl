@@ -2,6 +2,20 @@
 
 This page demonstrates how to use the package to solve kinetic dispersion relations for the ring beam instability [umedaNumericalElectromagneticLinear2012](@citet).
 
+
+### Simulation Parameters
+
+- **Background Magnetic Field**: $B_0 = 96.24$ nT
+- **Species**:
+    1.  **Ring Beam Electrons** ($10\%$)
+        -   Density: $n_r = 0.1 n_0$
+        -   Temperature: $T_r = 51$ eV
+        -   Drift Velocity: $v_{d,z} = 0.1 c$, $v_{d,\perp} = 0.05 c$
+    2.  **Background Electrons** ($90\%$)
+        -   Density: $n_b = 0.9 n_0$
+        -   Temperature: $T_b = 51$ eV
+        -   Drift Velocity: $v_{d} = 0$
+
 ```@example matrix
 using PlasmaBO
 using PlasmaBO: q, me
