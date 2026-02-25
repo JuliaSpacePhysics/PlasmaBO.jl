@@ -1,6 +1,6 @@
 # Ion Beam Instability (Gary et al. 1984)
 
-This page reproduces the dispersion relations from the classical paper:
+This page reproduces the dispersion relations from the classical paper ([garyElectromagneticIonBeam1984](@citet)):
 Gary, S. P., Smith, C. W., Lee, M. A., Goldstein, M. L., & Forslund, D. W. (1984). Electromagnetic ion beam instabilities. *Physics of Fluids*, 27(7), 1852-1862.
 
 ## Reference Distribution Function Parameters
@@ -35,10 +35,12 @@ These baseline parameters are used throughout the study unless otherwise specifi
 Based on the parameter sets defined in Gary et al. (1984), here are complete `PlasmaBO.jl` configurations to demonstrate each instability mode.
 
 #### 1. Right-hand Resonant Ion Beam Instability
+
 This is the baseline case with modest beam velocity and temperature.
+
 ```@example gary84_mode1
 using PlasmaBO
-using PlasmaBO: c0, μ0, mp, q
+using PlasmaBO: c0, μ0, mp, q, kb
 using CairoMakie
 
 vA_c = 1.0e-4
@@ -52,29 +54,43 @@ wcp = q * B0 / mp
 nm = 0.99 * ne
 nb = 0.01 * ne
 Tm_eV = (beta_m * B0^2 / (2 * μ0) / nm) / q
+# thermal speed of main ions
+vm = sqrt(Tm_eV * q / mp)
 Tb_eV = 10.0 * Tm_eV
 Te_eV = 1.0 * Tm_eV
 
 # Parameters targeting Right-hand Resonant mode
-v0 = 10.0 * vA
-v_e = (nb / ne) * v0
+v0 = 10vm
+# v_e = (nb / ne) * v0
+v0m = -nb * v0 / (nm + nb)
+v0b = v0m + v0
 θ = 0.0 # Parallel propagation
 
-main_ion = Maxwellian(:p, nm, Tm_eV)
-beam_ion = Maxwellian(:p, nb, Tb_eV; vdz=v0)
-electron = Maxwellian(:e, ne, Te_eV; vdz=v_e)
-species = [main_ion, beam_ion, electron]
+main_ion = Maxwellian(:p, nm, Tm_eV; vdz=v0m/c0)
+beam_ion = Maxwellian(:p, nb, Tb_eV; vdz=v0b/c0)
+electron = Maxwellian(:e, ne, Te_eV)
+species = (main_ion, beam_ion, electron)
 
-k_ranges = (0.01:0.02:1.0) .* (wcp / vA)
-sol = solve(species, B0, k_ranges, θ;  N=6, J=12)
+k_ranges = (0.01:0.01:0.2) .* (wcp / vm)
+sol = solve(species, B0, k_ranges, θ; N=6, J=12)
 
-f, (ax1, ax2) = plot(sol, wcp / vA, wcp)
+f, (ax1, ax2) = plot(sol, wcp / vm, wcp)
 ax1.ylabel = "Re(ω) / ωcp"; ax2.ylabel = "Im(ω) / ωcp"; ax2.xlabel = "k vA / ωcp"
+ylims!(ax1, 0, 0.5)
+ylims!(ax2, 0, 0.5)
 f
 ```
 
+```@example gary84_mode1
+initial_point = (0.1 * wcp / vm, 0.08im * wcp)
+branch = track(sol, initial_point)
+plot_branches([branch], wcp / vm, wcp)
+```
+
 #### 2. Right-hand Nonresonant Ion Beam Instability
+
 Requires either a high drift velocity or a high beam density.
+
 ```@example gary84_mode2
 using PlasmaBO
 using PlasmaBO: c0, μ0, mp, q
@@ -140,7 +156,7 @@ v_e = (nb / ne) * v0
 main_ion = Maxwellian(:p, nm, Tm_eV)
 beam_ion = Maxwellian(:p, nb, Tb_eV; vdz=v0)
 electron = Maxwellian(:e, ne, Te_eV; vdz=v_e)
-species = [main_ion, beam_ion, electron]
+species = (main_ion, beam_ion, electron)
 
 k_ranges = (0.01:0.02:1.0) .* (wcp / vA)
 sol = solve(species, B0, k_ranges, θ; N=6)
@@ -184,7 +200,7 @@ beam_ion = Maxwellian(:p, nb, Tparallel_b, Tperp_b; vdz=v0)
 electron = Maxwellian(:e, ne, Te_eV; vdz=v_e)
 species = [main_ion, beam_ion, electron]
 
-k_ranges = (0.01:0.02:1.0) .* (wcp / vA)
+k_ranges = (0.01:0.05:1.0) .* (wcp / vA)
 sol = solve(species, B0, k_ranges, θ; N=6)
 
 f, (ax1, ax2) = plot(sol, wcp / vA, wcp)
@@ -221,7 +237,7 @@ v_e = (nb / ne) * v0
 main_ion = Maxwellian(:p, nm, Tm_eV)
 beam_ion = Maxwellian(:p, nb, Tb_eV; vdz=v0)
 electron = Maxwellian(:e, ne, Te_eV; vdz=v_e)
-species = [main_ion, beam_ion, electron]
+species = (main_ion, beam_ion, electron)
 
 # Scanning over a highly oblique angle
 k_ranges = (0.01:0.02:2.0) .* (wcp / vA)
