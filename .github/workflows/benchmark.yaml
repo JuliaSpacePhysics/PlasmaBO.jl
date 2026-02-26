@@ -19,3 +19,6 @@ jobs:
       - uses: MilesCranmer/AirspeedVelocity.jl@action-v1
         with:
           julia-version: '1'
+          exeflags: "--threads auto,1"
+        env:
+          JULIA_NUM_THREADS: auto,1
