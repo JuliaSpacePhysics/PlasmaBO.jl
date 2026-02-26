@@ -136,15 +136,10 @@ function _assemble_species!(
         nw_c = n * wc
         nwkp = nw_c / (kx * vtp)
 
-        for m in 0:(m_max + 2)
-            idm = m + 2
-            Aₙ[idm, 1] = 2.0 / R * funAn(n, as, d, m, 0)
-            Aₙ[idm, 2] = 2.0 / R * funAn(n, as, d, m, 1)
-            Bₙ[idm, 1] = 2.0 / R * funBn(n, as, d, m, 1)
-            Bₙ[idm, 2] = 2.0 / R * funBn(n, as, d, m, 2)
-            Cₙ[idm, 1] = 2.0 / R * funCn(n, as, d, m, 2)
-            Cₙ[idm, 2] = 2.0 / R * funCn(n, as, d, m, 3)
-        end
+        _compute_integral_matrices!(Aₙ, Bₙ, Cₙ, n, as, d, m_max)
+        Aₙ .*= 2.0 / R
+        Bₙ .*= 2.0 / R
+        Cₙ .*= 2.0 / R
 
         for j in 1:J
             snj += 1
@@ -247,13 +242,6 @@ end
 
 # Compute matrix dimensions
 _size(S::Int, N, J) = 3 * (S * (2 * N + 1) * J + S) + 6
-
-function build_dispersion_matrix(species, args...; N = 2, J = 8, kw...)
-    S = length(species)
-    n = _size(S, N, J)
-    M = zeros(ComplexF64, n, n)
-    return build_dispersion_matrix!(M, species, args...; N, J, kw...)
-end
 
 function build_dispersion_matrix!(M, params, kx, kz; N = 2, J = 8, c2 = c0^2)
     S = length(params)

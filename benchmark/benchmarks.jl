@@ -58,15 +58,9 @@ let
     θ = deg2rad(45)
     kx, kz = k .* sincos(θ)
 
-    # Kinetic solver with cold Maxwellian
-    e_vdf = Maxwellian(:e, n, T)
-    kinetic_species = [e_vdf, Maxwellian(:p, n, T)]
-
-    SUITE["FluidVsKinetic"]["kinetic"] = @benchmarkable solve($kinetic_species, $B0, $kx, $kz; N = 2, J = 8)
-
-    # Fluid solver
-    fluid_species = [e_vdf, FluidSpecies(:p, n, T)]
-    SUITE["FluidVsKinetic"]["fluid"] = @benchmarkable solve($fluid_species, $B0, $kx, $kz, BOFluid)
+    species = [Maxwellian(:e, n, T), Maxwellian(:p, n, T)]
+    SUITE["FluidVsKinetic"]["kinetic"] = @benchmarkable solve($species, $B0, $kx, $kz; N = 2, J = 8)
+    SUITE["FluidVsKinetic"]["fluid"] = @benchmarkable solve($species, $B0, $kx, $kz, BOFluid)
 end
 
 # ==============================================================================
