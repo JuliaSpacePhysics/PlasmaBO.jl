@@ -53,7 +53,6 @@ function _compute_sums(j, cⱼ, cj_l, alm, Aₙ, Bₙ, Cₙ, dr, Ils)
     sum22tmp1, sum22tmp2, sum22tmp3 = 0.0im, 0.0im, 0.0im
     sum13tmp1, sum13tmp2 = 0.0im, 0.0im
     sum23tmp1, sum23tmp2 = 0.0im, 0.0im
-    sum32tmp1, sum32tmp2 = 0.0im, 0.0im
     sum33tmp1, sum33tmp2, sum33tmp3 = 0.0im, 0.0im, 0.0im
 
     for l in 0:l_max
@@ -90,9 +89,6 @@ function _compute_sums(j, cⱼ, cj_l, alm, Aₙ, Bₙ, Cₙ, dr, Ils)
             sum23tmp1 += aₗₘ * (dr * cˡ + cˡ⁺¹) * dBm
             sum23tmp2 += aₗₘ * (dZlc + dr * dZl) * Bₙ[idx_m, 2]
 
-            sum32tmp1 += aₗₘ * (dr * cˡ + cˡ⁺¹) * dBm
-            sum32tmp2 += aₗₘ * (dZlc + dr * dZl) * Bₙ[idx_m, 2]
-
             sum33tmp1 += aₗₘ * (dr^2 * cˡ + 2 * dr * cˡ⁺¹ + cˡ⁺²) * dAm
             sum33tmp2 += aₗₘ * (dr^2 * dZl + 2 * dr * dZlc + (2 * cˡ⁺³ - l * cˡ⁺¹)) * Aₙ[idx_m, 2]
 
@@ -112,13 +108,12 @@ function _compute_sums(j, cⱼ, cj_l, alm, Aₙ, Bₙ, Cₙ, dr, Ils)
         sum22tmp1, sum22tmp2, sum22tmp3,
         sum13tmp1, sum13tmp2,
         sum23tmp1, sum23tmp2,
-        sum32tmp1, sum32tmp2,
         sum33tmp1, sum33tmp2, sum33tmp3,
     )
 end
 
 function _assemble_species!(
-        M,
+        M, Aₙ, Bₙ, Cₙ, Ils,
         snj,
         kx, kz, SNJ1, SNJ3,
         as,
@@ -128,15 +123,12 @@ function _assemble_species!(
     )
     l_max, m_max = size(alm) .- 1
 
-    b11, b12, b13, b21, b22, b23, b31, b32, b33 = ntuple(_ -> 0.0im, 9)
-    Aₙ = zeros(m_max + 4, 2) # Γ_{a,n,m,p}
-    Bₙ = zeros(m_max + 4, 2) # Γ_{b,n,m,p}
-    Cₙ = zeros(m_max + 4, 2) # Γ_{c,n,m,p}
+    b11, b12, b13, b22, b23, b33 = ntuple(_ -> 0.0im, 6)
 
     vr = vtp / vtz
     dr = vdz / vtz
 
-    Ils = funIn.(0:(l_max + 2))
+    Ils .= funIn.(0:(l_max + 2))
     for n in -N:N
         Aₙ .= 0
         Bₙ .= 0
@@ -166,7 +158,6 @@ function _assemble_species!(
                 sum22tmp1, sum22tmp2, sum22tmp3,
                 sum13tmp1, sum13tmp2,
                 sum23tmp1, sum23tmp2,
-                sum32tmp1, sum32tmp2,
                 sum33tmp1, sum33tmp2, sum33tmp3,
             ) = _compute_sums(j, cⱼ, cj_l, alm, Aₙ, Bₙ, Cₙ, dr, Ils)
 
@@ -190,7 +181,7 @@ function _assemble_species!(
             p13snj = nwkp * ((vtz / vtp) * nw_c * sum13tmp1 + kzvtp * sum13tmp2) * tmp
             p31snj = p13snj
             p23snj = -1im * ((vtz / vtp) * nw_c * sum23tmp1 + kzvtp * sum23tmp2) * tmp
-            p32snj = 1im * ((vtz / vtp) * nw_c * sum32tmp1 + kzvtp * sum32tmp2) * tmp
+            p32snj = -p23snj
             p33snj = (vtz / vtp) * ((vtz / vtp) * nw_c * sum33tmp1 + kzvtp * sum33tmp2) * tmp
 
             jjx = snj + 0 * SNJ1
@@ -211,16 +202,13 @@ function _assemble_species!(
 
             b11 -= p11snj
             b12 -= p12snj
-            b21 -= p21snj
-            b22 -= p22snj
             b13 -= p13snj
-            b31 -= p31snj
+            b22 -= p22snj
             b23 -= p23snj
-            b32 -= p32snj
             b33 -= p33snj
         end
     end
-    return snj, (b11, b12, b13, b21, b22, b23, b31, b32, b33)
+    return snj, (b11, b12, b13, b22, b23, b33)
 end
 
 function _assemble_species!(
@@ -232,11 +220,20 @@ function _assemble_species!(
     d = param.vdr / vtp
     R = exp(-d^2) + sqrt(π) * d * erfc(-d) # Normalization parameters
     wp2 = param.wp^2
-    return _assemble_species!(
-        M, snj, kx, kz, SNJ1, SNJ3, as, czj, bzj, czj_l,
-        param.wc, wp2, param.vtz, vtp, param.vdz, d, R, param.aslm,
-        N, J
-    )
+    alm = param.aslm
+    l_max, m_max = size(alm) .- 1
+
+    return @no_escape begin
+        Aₙ = @alloc(Float64, m_max + 4, 2) # Γ_{a,n,m,p}
+        Bₙ = @alloc(Float64, m_max + 4, 2) # Γ_{b,n,m,p}
+        Cₙ = @alloc(Float64, m_max + 4, 2) # Γ_{c,n,m,p}
+        Ils = @alloc(Float64, l_max + 3)
+        _assemble_species!(
+            M, Aₙ, Bₙ, Cₙ, Ils, snj, kx, kz, SNJ1, SNJ3, as, czj, bzj, czj_l,
+            param.wc, wp2, param.vtz, vtp, param.vdz, d, R, alm,
+            N, J
+        )
+    end
 end
 
 
@@ -250,14 +247,11 @@ end
 
 # Compute matrix dimensions
 _size(S::Int, N, J) = 3 * (S * (2 * N + 1) * J + S) + 6
-_zeros(species, N, J) = begin
-    S = length(species)
-    n = _size(S, N, J)
-    zeros(ComplexF64, n, n)
-end
 
 function build_dispersion_matrix(species, args...; N = 2, J = 8, kw...)
-    M = _zeros(species, N, J)
+    S = length(species)
+    n = _size(S, N, J)
+    M = zeros(ComplexF64, n, n)
     return build_dispersion_matrix!(M, species, args...; N, J, kw...)
 end
 
@@ -275,35 +269,41 @@ function build_dispersion_matrix!(M, params, kx, kz; N = 2, J = 8, c2 = c0^2)
     # Adjust czj for kz sign
     kz < 0 && (czj = -czj)
 
-    # Precompute czj^l for all l values
-    lsmax = [size(params[s].aslm, 1) - 1 for s in 1:S]
-    max_lsmax = maximum(lsmax)
-    czj_l = zeros(ComplexF64, J, max_lsmax + 5)
-    for l in 0:(max_lsmax + 3)
-        czj_l[:, l + 2] .= czj .^ l
+    max_lsmax = maximum(p -> size(p.aslm, 1) - 1, params)
+
+    # Column 1 is never read; columns 2..max_lsmax+5 hold czj^0..czj^(max_lsmax+3).
+    @no_escape begin
+        czj_l = @alloc(ComplexF64, J, max_lsmax + 5)
+        @inbounds for j in 1:J
+            czj_l[j, 2] = one(ComplexF64)
+            for l in 1:(max_lsmax + 3)
+                czj_l[j, l + 2] = czj_l[j, l + 1] * czj[j]
+            end
+        end
+
+        snj = 0
+        for s in 1:S
+            param = params[s]
+            snj, (b11, b12, b13, b22, b23, b33) = _assemble_species!(
+                M, param,
+                snj, kx, kz,
+                SNJ1, SNJ3,
+                czj, bzj, czj_l,
+                N, J,
+            )
+
+            M[SNJ + s, SNJ3 + 1] = b11
+            M[SNJ + s, SNJ3 + 2] = b12
+            M[SNJ + s, SNJ3 + 3] = b13
+            M[SNJ + SNJ1 + s, SNJ3 + 1] = -b12 # b21
+            M[SNJ + SNJ1 + s, SNJ3 + 2] = b22
+            M[SNJ + SNJ1 + s, SNJ3 + 3] = b23
+            M[SNJ + 2SNJ1 + s, SNJ3 + 1] = b13 # b31
+            M[SNJ + 2SNJ1 + s, SNJ3 + 2] = -b23 # b32
+            M[SNJ + 2SNJ1 + s, SNJ3 + 3] = b33
+        end
     end
 
-    snj = 0
-    for s in 1:S
-        param = params[s]
-        snj, (b11, b12, b13, b21, b22, b23, b31, b32, b33) = _assemble_species!(
-            M, param,
-            snj, kx, kz,
-            SNJ1, SNJ3,
-            czj, bzj, czj_l,
-            N, J,
-        )
-
-        M[SNJ + s, SNJ3 + 1] = b11
-        M[SNJ + s, SNJ3 + 2] = b12
-        M[SNJ + s, SNJ3 + 3] = b13
-        M[SNJ + SNJ1 + s, SNJ3 + 1] = b21
-        M[SNJ + SNJ1 + s, SNJ3 + 2] = b22
-        M[SNJ + SNJ1 + s, SNJ3 + 3] = b23
-        M[SNJ + 2SNJ1 + s, SNJ3 + 1] = b31
-        M[SNJ + 2SNJ1 + s, SNJ3 + 2] = b32
-        M[SNJ + 2SNJ1 + s, SNJ3 + 3] = b33
-    end
     # E(J) coupling: J_xyz = j_xyz + sum(v_snj_xyz)
     M[SNJ3 + 1, 1:SNJ1] .= -1.0
     M[SNJ3 + 2, (SNJ1 + 1):2SNJ1] .= -1.0
@@ -325,19 +325,4 @@ function _B_E_part!(M, idx, kx, kz; c2 = c0^2)
     M[idx + 5, idx + 3] = -kx
     M[idx + 6, idx + 2] = kx
     return M
-end
-
-function solve_dispersion_matrix(args...; kw...)
-    M = build_dispersion_matrix(args...; kw...)
-    return solve_with_threads(6) do # 6 threads is faster than 8 threads
-        eigvals!(M)
-    end
-end
-
-function solve_dispersion_matrix!(M, args...; kw...)
-    fill!(M, zero(eltype(M)))
-    build_dispersion_matrix!(M, args...; kw...)
-    return solve_with_threads(6) do
-        eigvals!(M)
-    end
 end

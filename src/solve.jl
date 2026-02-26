@@ -45,8 +45,8 @@ end
 
 function solve(pb::DispersionProblem, alg::BOHH)
     params = HHSolverParam.(pb.species, pb.B0)
-    N, J = alg.N, alg.J
-    return solve_dispersion_matrix(params, pb.kx, pb.kz; N, J)
+    M = build_dispersion_matrix(params, pb.kx, pb.kz; N = alg.N, J = alg.J)
+    return eigvals!(M)
 end
 
 function solve(pb::DispersionProblem, ::BOFluid)
@@ -57,17 +57,24 @@ end
 function _ensemble_solve(f, pb)
     ks, θs = pb.ks, pb.θs
     ωs = Matrix{Vector{ComplexF64}}(undef, length(ks), length(θs))
-    f(ωs)
+    solve_with_threads(1) do
+        f(ωs)
+    end
     return DispersionSolution(ks, θs, ωs)
 end
 
 function solve(pb::EnsembleProblem, alg::BOHH)
     return _ensemble_solve(pb) do ωs
         N, J = alg.N, alg.J
-        M = _zeros(pb.species, N, J)
         params = HHSolverParam.(pb.species, pb.B0)
+        n = _size(length(pb.species), N, J)
         with_progress(pb) do ik, iθ, kx, kz
-            ωs[ik, iθ] = solve_dispersion_matrix!(M, params, kx, kz; N, J)
+            @no_escape begin
+                M = @alloc(ComplexF64, n, n)
+                fill!(M, zero(eltype(M)))
+                build_dispersion_matrix!(M, params, kx, kz; N, J)
+                ωs[ik, iθ] = eigvals!(M)
+            end
         end
     end
 end
@@ -75,11 +82,13 @@ end
 function solve(pb::EnsembleProblem, ::BOFluid)
     return _ensemble_solve(pb) do ωs
         NN = _fluid_size(pb.species)
-        M = zeros(ComplexF64, NN, NN)
         with_progress(pb) do ik, iθ, kx, kz
-            fill!(M, zero(eltype(M)))
-            build_fluid_dispersion_matrix!(M, pb.species, kx, kz, pb.B0)
-            ωs[ik, iθ] = eigvals!(M)
+            @no_escape begin
+                M = @alloc(ComplexF64, NN, NN)
+                fill!(M, zero(eltype(M)))
+                build_fluid_dispersion_matrix!(M, pb.species, kx, kz, pb.B0)
+                ωs[ik, iθ] = eigvals!(M)
+            end
         end
     end
 end
