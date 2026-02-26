@@ -90,3 +90,27 @@ let
 
     SUITE["MirrorMode"]["solve"] = @benchmarkable solve($species, $B0, $kx, $kz)
 end
+
+# ==============================================================================
+# PBK Solver
+# ==============================================================================
+SUITE["PBKSolver"] = BenchmarkGroup()
+
+let
+    B0 = 1.0e-6          # [Tesla]
+    θ = deg2rad(30)
+
+    n = 2.43e6           # [m^-3]
+    T = 2555.0           # [eV]
+    κz = 1.0
+    κx = 200.0
+    electron = BiKappa2(:e, n, κz, κx, T; sigma = 0.0)
+
+    wce = abs(B0 * q / me)
+    ρce = electron.vtp / wce
+    kn = 1 / ρce  # so that k/kn = kρce
+    kρ_scan = range(1.0e-4, 0.3; length = 80)
+    ks = kρ_scan .* kn
+
+    SUITE["PBKSolver"]["solve"] = @benchmarkable solve($electron, $B0, $ks, $θ, BOPBK)
+end
