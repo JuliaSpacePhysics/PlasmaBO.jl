@@ -1,7 +1,10 @@
 module PBK
 using QuadGK: quadgk
 using SpecialFunctions: loggamma, gamma, besselj
+using Bumper: @no_escape, @alloc
 using ..Constants
+
+zero!(M) = fill!(M, zero(eltype(M)))
 
 function PBK_param(s, B0)
     T = Float64
@@ -214,69 +217,66 @@ function _pbk_add_species_Mxy!(
 
     for (idx_n, n) in enumerate(-N:N)
         csn = _csn(p, n, kz)
-        for l in 1:lmax(κz)
-            for jj in 1:(l + 1)
-                snlj = _pbk_snl_index(params, s, idx_n, l, jj, N)
+        for l in 1:lmax(κz), jj in 1:(l + 1)
+            snlj = _pbk_snl_index(params, s, idx_n, l, jj, N)
 
-                M[snlj, firstIndex + snlj] += csn
-                if jj < l + 1
-                    M[snlj, firstIndex + snlj + 1] += 1
+            M[snlj, firstIndex + snlj] += csn
+            if jj < l + 1
+                M[snlj, firstIndex + snlj + 1] += 1
+            end
+
+            if jj == l
+                if MatrixNo == 1
+                    b1 = b1snl(p, n, l, kz, λ; EPS0)
+                    b2 = b2snl(p, n, l, kz, λ; EPS0)
+                    b3 = b3snl(p, n, l, kz, λ; EPS0)
+
+                    M[snlj, end - ExNo] += bx11snl(wp, n, b1)
+                    M[snlj, end - EyNo] += bx21snl(wp, n, b3)
+                    M[snlj, end - EzNo] += bx31snl(wp, wc, n, tanθ, csn, b1, b2)
+
+                    if l <= κz
+                        b1_lp1 = b1snl(p, n, l + 1, kz, λ; EPS0)
+                        M[snlj, end - EzNo] += bx33snl(wp, wc, n, tanθ, b1_lp1)
+                    end
+                else
+                    b3 = b3snl(p, n, l, kz, λ; EPS0)
+                    b4 = b4snl(p, n, l, kz, λ; EPS0)
+                    b5 = b5snl(p, n, l, kz, λ; EPS0)
+
+                    M[snlj, end - ExNo] += -bx21snl(wp, n, b3)
+                    M[snlj, end - EyNo] += by21snl(wp, b5)
+                    M[snlj, end - EzNo] += by31snl(wp, wc, n, tanθ, csn, b3, b4)
+
+                    if l <= κz
+                        b3_lp1 = b3snl(p, n, l + 1, kz, λ; EPS0)
+                        M[snlj, end - EzNo] += by33snl(wp, wc, n, tanθ, b3_lp1)
+                    end
                 end
+            elseif jj == l + 1
+                if MatrixNo == 1
+                    b2 = b2snl(p, n, l, kz, λ; EPS0)
+                    b4 = b4snl(p, n, l, kz, λ; EPS0)
 
-                if jj == l
-                    if MatrixNo == 1
-                        b1 = b1snl(p, n, l, kz, λ; EPS0)
-                        b2 = b2snl(p, n, l, kz, λ; EPS0)
-                        b3 = b3snl(p, n, l, kz, λ; EPS0)
+                    M[snlj, end - ExNo] += bx12snl(wp, n, b2)
+                    M[snlj, end - EyNo] += bx22snl(wp, n, b4)
+                    M[snlj, end - EzNo] += bx32snl(wp, wc, n, tanθ, csn, b2)
+                else
+                    b4 = b4snl(p, n, l, kz, λ; EPS0)
+                    b6 = b6snl(p, n, l, kz, λ; EPS0)
 
-                        M[snlj, end - ExNo] += bx11snl(wp, n, b1)
-                        M[snlj, end - EyNo] += bx21snl(wp, n, b3)
-                        M[snlj, end - EzNo] += bx31snl(wp, wc, n, tanθ, csn, b1, b2)
-
-                        if l <= κz
-                            b1_lp1 = b1snl(p, n, l + 1, kz, λ; EPS0)
-                            M[snlj, end - EzNo] += bx33snl(wp, wc, n, tanθ, b1_lp1)
-                        end
-                    else
-                        b3 = b3snl(p, n, l, kz, λ; EPS0)
-                        b4 = b4snl(p, n, l, kz, λ; EPS0)
-                        b5 = b5snl(p, n, l, kz, λ; EPS0)
-
-                        M[snlj, end - ExNo] += -bx21snl(wp, n, b3)
-                        M[snlj, end - EyNo] += by21snl(wp, b5)
-                        M[snlj, end - EzNo] += by31snl(wp, wc, n, tanθ, csn, b3, b4)
-
-                        if l <= κz
-                            b3_lp1 = b3snl(p, n, l + 1, kz, λ; EPS0)
-                            M[snlj, end - EzNo] += by33snl(wp, wc, n, tanθ, b3_lp1)
-                        end
-                    end
-                elseif jj == l + 1
-                    if MatrixNo == 1
-                        b2 = b2snl(p, n, l, kz, λ; EPS0)
-                        b4 = b4snl(p, n, l, kz, λ; EPS0)
-
-                        M[snlj, end - ExNo] += bx12snl(wp, n, b2)
-                        M[snlj, end - EyNo] += bx22snl(wp, n, b4)
-                        M[snlj, end - EzNo] += bx32snl(wp, wc, n, tanθ, csn, b2)
-                    else
-                        b4 = b4snl(p, n, l, kz, λ; EPS0)
-                        b6 = b6snl(p, n, l, kz, λ; EPS0)
-
-                        M[snlj, end - ExNo] += -bx22snl(wp, n, b4)
-                        M[snlj, end - EyNo] += by22snl(wp, b6)
-                        M[snlj, end - EzNo] += by32snl(wp, wc, n, tanθ, csn, b4)
-                    end
+                    M[snlj, end - ExNo] += -bx22snl(wp, n, b4)
+                    M[snlj, end - EyNo] += by22snl(wp, b6)
+                    M[snlj, end - EzNo] += by32snl(wp, wc, n, tanθ, csn, b4)
                 end
             end
+
         end
     end
 
-    for idx_n in 1:(2 * N + 1)
-        for l in 1:(κz + 1)
-            snl1 = _pbk_snl_index(params, s, idx_n, l, 1, N)
-            M[len_sub, firstIndex + snl1] += 1
-        end
+    for idx_n in 1:(2 * N + 1), l in 1:(κz + 1)
+        snl1 = _pbk_snl_index(params, s, idx_n, l, 1, N)
+        M[len_sub, firstIndex + snl1] += 1
     end
 
     if s == length(params)
@@ -300,56 +300,52 @@ function _pbk_add_species_Mz!(
     tanθ = kx / kz
     for (idx_n, n) in enumerate(-N:N)
         csn = _csn(p, n, kz)
-        for l in 1:lmax(κz)
-            for jj in 1:(l + 1)
-                snlj = _pbk_snl_index(params, s, idx_n, l, jj, N)
+        for l in 1:lmax(κz), jj in 1:(l + 1)
+            snlj = _pbk_snl_index(params, s, idx_n, l, jj, N)
 
-                M[snlj, firstIndex + snlj] += csn
-                if jj < l + 1
-                    M[snlj, firstIndex + snlj + 1] += 1
+            M[snlj, firstIndex + snlj] += csn
+            if jj < l + 1
+                M[snlj, firstIndex + snlj + 1] += 1
+            end
+
+            if jj == l
+                b1 = b1snl(p, n, l, kz, λ; EPS0)
+                b2 = b2snl(p, n, l, kz, λ; EPS0)
+                b3 = b3snl(p, n, l, kz, λ; EPS0)
+                b4 = b4snl(p, n, l, kz, λ; EPS0)
+
+                M[snlj, end - ExNo] += bx31snl(wp, wc, n, tanθ, csn, b1, b2)
+                M[snlj, end - EyNo] += -by31snl(wp, wc, n, tanθ, csn, b3, b4)
+                M[snlj, end - EzNo] += bz31snl(wp, wc, n, tanθ, csn, b1, b2)
+
+                if l <= κz
+                    b1_lp1 = b1snl(p, n, l + 1, kz, λ; EPS0)
+                    b2_lp1 = b2snl(p, n, l + 1, kz, λ; EPS0)
+                    b3_lp1 = b3snl(p, n, l + 1, kz, λ; EPS0)
+
+                    M[snlj, end - ExNo] += bx33snl(wp, wc, n, tanθ, b1_lp1)
+                    M[snlj, end - EyNo] += -by33snl(wp, wc, n, tanθ, b3_lp1)
+                    M[snlj, end - EzNo] += bz33snl(wp, wc, n, tanθ, csn, b1_lp1, b2_lp1)
                 end
 
-                if jj == l
-                    b1 = b1snl(p, n, l, kz, λ; EPS0)
-                    b2 = b2snl(p, n, l, kz, λ; EPS0)
-                    b3 = b3snl(p, n, l, kz, λ; EPS0)
-                    b4 = b4snl(p, n, l, kz, λ; EPS0)
-
-                    M[snlj, end - ExNo] += bx31snl(wp, wc, n, tanθ, csn, b1, b2)
-                    M[snlj, end - EyNo] += -by31snl(wp, wc, n, tanθ, csn, b3, b4)
-                    M[snlj, end - EzNo] += bz31snl(wp, wc, n, tanθ, csn, b1, b2)
-
-                    if l <= κz
-                        b1_lp1 = b1snl(p, n, l + 1, kz, λ; EPS0)
-                        b2_lp1 = b2snl(p, n, l + 1, kz, λ; EPS0)
-                        b3_lp1 = b3snl(p, n, l + 1, kz, λ; EPS0)
-
-                        M[snlj, end - ExNo] += bx33snl(wp, wc, n, tanθ, b1_lp1)
-                        M[snlj, end - EyNo] += -by33snl(wp, wc, n, tanθ, b3_lp1)
-                        M[snlj, end - EzNo] += bz33snl(wp, wc, n, tanθ, csn, b1_lp1, b2_lp1)
-                    end
-
-                    if l <= κz - 1
-                        b1_lp2 = b1snl(p, n, l + 2, kz, λ; EPS0)
-                        M[snlj, end - EzNo] += bz34snl(wp, wc, tanθ, b1_lp2)
-                    end
-                elseif jj == l + 1
-                    b2 = b2snl(p, n, l, kz, λ; EPS0)
-                    b4 = b4snl(p, n, l, kz, λ; EPS0)
-
-                    M[snlj, end - ExNo] += bx32snl(wp, wc, n, tanθ, csn, b2)
-                    M[snlj, end - EyNo] += -by32snl(wp, wc, n, tanθ, csn, b4)
-                    M[snlj, end - EzNo] += bz32snl(wp, wc, n, tanθ, csn, b2)
+                if l <= κz - 1
+                    b1_lp2 = b1snl(p, n, l + 2, kz, λ; EPS0)
+                    M[snlj, end - EzNo] += bz34snl(wp, wc, tanθ, b1_lp2)
                 end
+            elseif jj == l + 1
+                b2 = b2snl(p, n, l, kz, λ; EPS0)
+                b4 = b4snl(p, n, l, kz, λ; EPS0)
+
+                M[snlj, end - ExNo] += bx32snl(wp, wc, n, tanθ, csn, b2)
+                M[snlj, end - EyNo] += -by32snl(wp, wc, n, tanθ, csn, b4)
+                M[snlj, end - EzNo] += bz32snl(wp, wc, n, tanθ, csn, b2)
             end
         end
     end
 
-    for idx_n in 1:(2 * N + 1)
-        for l in 1:lmax(κz)
-            snl1 = _pbk_snl_index(params, s, idx_n, l, 1, N)
-            M[len_sub, firstIndex + snl1] += 1
-        end
+    for idx_n in 1:(2 * N + 1), l in 1:lmax(κz)
+        snl1 = _pbk_snl_index(params, s, idx_n, l, 1, N)
+        M[len_sub, firstIndex + snl1] += 1
     end
 
     if s == length(params)
@@ -359,31 +355,6 @@ function _pbk_add_species_Mz!(
     return nothing
 end
 
-function _pbk_Mxy(params, kx, kz; N, kw...)
-    len_sub = _pbk_len_sub(params, N)
-    len_col = 3 * len_sub + 6
-    M = zeros(ComplexF64, len_sub, len_col)
-    for s in eachindex(params)
-        _pbk_add_species_Mxy!(
-            M,
-            params, s, kx, kz;
-            len_sub, N, kw...
-        )
-    end
-    return M
-end
-
-function _pbk_Mz(params, kx, kz; N, kw...)
-    len_sub = _pbk_len_sub(params, N)
-    len_col = 3 * len_sub + 6
-    M = zeros(ComplexF64, len_sub, len_col)
-
-    for s in eachindex(params)
-        _pbk_add_species_Mz!(M, params, s, kx, kz; len_sub, N, kw...)
-    end
-
-    return M
-end
 
 function build_pbk_dispersion_matrix(species, B0, kx, kz; N = 2, EPS0 = 1.0e-2, c2 = c0^2)
     species = _pbk_species_list(species)
@@ -394,12 +365,21 @@ function build_pbk_dispersion_matrix(species, B0, kx, kz; N = 2, EPS0 = 1.0e-2, 
     bx10_by20 = 1im * ε0 * wp2_sum
     by20 = bx10_by20
 
-    Mx = _pbk_Mxy(params, kx, kz; MatrixNo = 1, ExNo = 5, EyNo = 4, EzNo = 3, ExyNo = 5, bx10_by20, EPS0, N)
-    My = _pbk_Mxy(params, kx, kz; MatrixNo = 2, ExNo = 5, EyNo = 4, EzNo = 3, ExyNo = 4, bx10_by20, EPS0, N)
-    Mz = _pbk_Mz(params, kx, kz; MatrixNo = 3, ExNo = 5, EyNo = 4, EzNo = 3, by20, EPS0, N)
+    M = @no_escape begin
+        len_col = 3 * len_sub + 6
+        Mx = @alloc(ComplexF64, len_sub, len_col) |> zero!
+        My = @alloc(ComplexF64, len_sub, len_col) |> zero!
+        Mz = @alloc(ComplexF64, len_sub, len_col) |> zero!
+        O = @alloc(ComplexF64, 6, len_col) |> zero!
 
-    O = zeros(ComplexF64, 6, size(Mz, 2))
-    M = vcat(Mx, My, Mz, O)
+        for s in eachindex(params)
+            _pbk_add_species_Mxy!(Mx, params, s, kx, kz; MatrixNo = 1, ExNo = 5, EyNo = 4, EzNo = 3, ExyNo = 5, bx10_by20, EPS0, N, len_sub)
+            _pbk_add_species_Mxy!(My, params, s, kx, kz; MatrixNo = 2, ExNo = 5, EyNo = 4, EzNo = 3, ExyNo = 4, bx10_by20, EPS0, N, len_sub)
+            _pbk_add_species_Mz!(Mz, params, s, kx, kz; MatrixNo = 3, ExNo = 5, EyNo = 4, EzNo = 3, by20, EPS0, N, len_sub)
+        end
+
+        vcat(Mx, My, Mz, O)
+    end
 
     idx_Jx = len_sub
     idx_Jy = 2 * len_sub
