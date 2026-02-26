@@ -2,7 +2,7 @@ module PlasmaBO
 
 using SpecialFunctions
 using SpecialFunctions: gamma, erf, erfc
-using QuadGK: quadgk
+using QuadGK: quadgk, quadgk!
 using Bumper: @no_escape, @alloc
 using LinearAlgebra
 using Tullio: @tullio

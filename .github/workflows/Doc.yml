@@ -34,3 +34,5 @@ jobs:
     steps:
       - name: Build and deploy Documenter.jl docs
         uses: JuliaSpacePhysics/actions/DocsDocumenter@main
+        env:
+          JULIA_NUM_THREADS: auto,1
