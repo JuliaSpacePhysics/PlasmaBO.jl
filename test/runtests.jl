@@ -13,9 +13,7 @@ include("test_track.jl")
 
     B0 = 96.24e-9  # [Tesla]
     T = 51 # [eV]
-    # Ring beam electrons (10% density)
     ring_beam = Maxwellian(:e, 1.0e5, T; vdz = 0.1, vdr = 0.05)
-    # Background electrons (90% density)
     background = Maxwellian(:e, 9.0e5, T)
 
     species = [ring_beam, background]
@@ -23,6 +21,7 @@ include("test_track.jl")
     # Compute normalization
     wce = abs(B0 * q / me)
     lambdaD = Debye_length(species)
+    kn = 1 / lambdaD
 
     # Wave vector: k*λD = 0.03, θ = 40°
     k = 0.03 / lambdaD
@@ -30,10 +29,23 @@ include("test_track.jl")
     kx = k * sin(θ)
     kz = k * cos(θ)
 
-    # Solve using matrix eigenvalue method
-    # J=12 provides good accuracy (J-pole approximation order)
     ωs = solve(species, B0, kx, kz; N = 6, J = 12)
     @test filter(ω -> isfinite(ω) && imag(ω) > 0.001 * wce, ωs) ./ wce ≈ [0.6229290799953453 + 0.15687749193741884im]
+
+    @testset "Dispersion Curve Scan" begin
+        k_ranges = (0.01:0.05:0.3) .* kn
+        sol = solve(species, B0, k_ranges, θ; N = 6)
+
+        initial_points = [
+            (0.1 * kn, 0.3im * wce),
+            (0.1 * kn, 0.1im * wce),
+            (0.2 * kn, 0.25im * wce),
+        ]
+
+        branches = track.(sol, initial_points)
+        ω_maxs = [maximum(imag.(b[2])) for b in branches]
+        @test ω_maxs ≈ [5425.78665660744, 1740.4141552857307, 5425.78665660744]
+    end
 end
 
 @testset "Fluid vs Kinetic: cold plasma limit" begin

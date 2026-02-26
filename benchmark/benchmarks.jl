@@ -12,9 +12,7 @@ SUITE["Umeda2012"] = BenchmarkGroup()
 let
     B0 = 96.24e-9  # [Tesla]
     T = 51 # [eV]
-    # Ring beam electrons (10% density)
     ring_beam = Maxwellian(:e, 1.0e5, T; vdz = 0.1, vdr = 0.05)
-    # Background electrons (90% density)
     background = Maxwellian(:e, 9.0e5, T)
 
     species = [ring_beam, background]
@@ -22,6 +20,7 @@ let
     # Compute normalization
     wce = abs(B0 * q / me)
     lambdaD = Debye_length(species)
+    kn = 1 / lambdaD
 
     # Wave vector: k*λD = 0.03, θ = 40°
     k = 0.03 / lambdaD
@@ -30,6 +29,17 @@ let
     kz = k * cos(θ)
 
     SUITE["Umeda2012"]["solve"] = @benchmarkable solve($species, $B0, $kx, $kz; N = 6, J = 12)
+
+    k_ranges = (0.01:0.05:0.3) .* kn
+    SUITE["Umeda2012"]["scan"] = @benchmarkable solve($species, $B0, $k_ranges, $θ; N = 6)
+
+    sol = solve(species, B0, k_ranges, θ; N = 6)
+    initial_points = [
+        (0.1 * kn, 0.3im * wce),
+        (0.1 * kn, 0.1im * wce),
+        (0.2 * kn, 0.25im * wce),
+    ]
+    SUITE["Umeda2012"]["track"] = @benchmarkable track($sol, $initial_points)
 end
 
 # ==============================================================================
