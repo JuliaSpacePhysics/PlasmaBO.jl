@@ -39,7 +39,7 @@ let
         (0.1 * kn, 0.1im * wce),
         (0.2 * kn, 0.25im * wce),
     ]
-    SUITE["Umeda2012"]["track"] = @benchmarkable track($sol, $initial_points)
+    SUITE["Umeda2012"]["track"] = @benchmarkable track.($sol, $initial_points)
 end
 
 # ==============================================================================
