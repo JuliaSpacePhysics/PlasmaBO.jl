@@ -3,9 +3,10 @@ module PlasmaBO
 using SpecialFunctions
 using SpecialFunctions: gamma, erf, erfc
 using QuadGK: quadgk
+using Bumper: @no_escape, @alloc
 using LinearAlgebra
 using Tullio: @tullio
-using ProgressMeter: @showprogress
+using ProgressMeter: @showprogress, next!
 using ChargedParticles: charge, mass, charge_number, mass_number, particle, ParticleLike
 import ChargedParticles as CP
 using Unitful
