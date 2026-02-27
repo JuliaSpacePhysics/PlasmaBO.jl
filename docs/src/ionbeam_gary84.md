@@ -61,7 +61,9 @@ Te_eV = 1.0 * Tm_eV
 
 θ = 0.0
 k_norm = 1 / sqrt(2) * ωcp / vm
-k_ranges = (0.01:0.01:0.2) .* (ωcp / vm)
+# Note that the step size of k needs to be small enough
+# to accurately capture the dispersion relation.
+k_ranges = (0.01:0.001:0.2) .* (ωcp / vm)
 
 v0_vals   = [0.0, 10.0, 20.0, 30.0] .* vm
 v0_labels = [L"v_0 = 0",
@@ -72,15 +74,26 @@ v0_labels = [L"v_0 = 0",
 # v0=0: real seed targets the stable R-wave (Alfvén branch)
 # v0>0: imaginary seed hunts the growing beam-resonant mode
 initial_points = [
-    (0.1 * ωcp / vm, 0.1 * ωcp),
+    (0.1 * ωcp / vm, 0.15 * ωcp),
     (0.1 * ωcp / vm, 0.08im * ωcp),
-    (0.1 * ωcp / vm, 0.08im * ωcp),
-    (0.1 * ωcp / vm, 0.08im * ωcp),
+    (0.05 * ωcp / vm, 0.1im * ωcp),
+    (0.04 * ωcp / vm, 0.15im * ωcp),
 ]
 
-fig = Figure(size = (1000, 600), fontsize = 20)
+sols = map(v0_vals) do v0
+    v0m = -nb * v0 / (nm + nb)
+    v0b = v0m + v0
 
-for (idx, (v0, label)) in enumerate(zip(v0_vals, v0_labels))
+    main_ion = Maxwellian(:p, nm, Tm_eV; vdz = v0m / c0)
+    beam_ion = Maxwellian(:p, nb, Tb_eV; vdz = v0b / c0)
+    electron = Maxwellian(:e, ne, Te_eV)
+    species = (main_ion, beam_ion, electron)
+    solve(species, B0, k_ranges, θ; N = 3)
+end
+
+fig = Figure(size = (900, 600), fontsize = 20)
+
+for (idx, (sol, label)) in enumerate(zip(sols, v0_labels))
     row = (idx - 1) ÷ 2 + 1
     col = (idx - 1) % 2 + 1
 
@@ -89,15 +102,6 @@ for (idx, (v0, label)) in enumerate(zip(v0_vals, v0_labels))
     col == 1 ? (ax.ylabel = L"$\omega\,/\,\omega_{cp}$") : hideydecorations!(ax, grid = false)
     row == 2 ? (ax.xlabel = L"$k\,r_{L,main}$") : hidexdecorations!(ax, grid = false)
 
-    v0m = -nb * v0 / (nm + nb)
-    v0b = v0m + v0
-
-    main_ion = Maxwellian(:p, nm, Tm_eV; vdz = v0m / c0)
-    beam_ion = Maxwellian(:p, nb, Tb_eV; vdz = v0b / c0)
-    electron = Maxwellian(:e, ne, Te_eV)
-    species  = (main_ion, beam_ion, electron)
-
-    sol = solve(species, B0, k_ranges, θ; N = 6, J = 12)
     # Tracking from given seeding points
     k_branch, ω_branch = track(sol, initial_points[idx])
     scatterlines!(ax, k_branch ./ k_norm, real.(ω_branch) ./ ωcp;
@@ -108,6 +112,8 @@ for (idx, (v0, label)) in enumerate(zip(v0_vals, v0_labels))
     xlims!(ax, 0, 0.2)
     ylims!(ax, 0, 0.4)
 end
+
+colgap!(fig.layout, 30)
 
 Legend(fig[3, 1:2],
     [LineElement(color = :royalblue, linestyle = :dot, linewidth = 2),
@@ -122,47 +128,87 @@ fig
 
 Requires either a high drift velocity or a high beam density.
 
-```@example gary84_mode2
+```@example gary84_fig2
 using PlasmaBO
 using PlasmaBO: c0, μ0, mp, q
 using CairoMakie
 
 vA_c = 1.0e-4
 beta_m = 1.0
-B0 = 1e-8
+B0 = 1e-8 # 10 nT
+
 vA = vA_c * c0
 ne = B0^2 / (vA^2 * μ0 * mp)
 ωcp = q * B0 / mp
 
-# Higher beam density ratio (e.g., 5%)
-nm = 0.95 * ne
-nb = 0.05 * ne
+nm = 0.99 * ne
+nb = 0.01 * ne
 Tm_eV = (beta_m * B0^2 / (2 * μ0) / nm) / q
-# thermal speed of main ions
-vm = sqrt(Tm_eV * q / mp)
+vm = sqrt(Tm_eV * q / mp)  # main ion thermal speed
 Tb_eV = 10.0 * Tm_eV
 Te_eV = 1.0 * Tm_eV
 
-# Higher drift speed, momentum-conserving
-v0 = 20.0 * vA
-v0m = -nb * v0 / (nm + nb)
-v0b = v0m + v0
-v_e = (nb / ne) * v0
-θ = 0.0 # Parallel propagation
+θ = 0.0
+k_norm = 1 / sqrt(2) * ωcp / vm
+k_ranges = (0.01:0.001:0.2) .* (ωcp / vm)
 
-main_ion = Maxwellian(:p, nm, Tm_eV; vdz=v0m/c0)
-beam_ion = Maxwellian(:p, nb, Tb_eV; vdz=v0b/c0)
-electron = Maxwellian(:e, ne, Te_eV; vdz=-v_e/c0)
-species = (main_ion, beam_ion, electron)
+v0_vals   = [0.0, 10.0, 20.0, 30.0] .* vm
+v0_labels = [L"v_0 = 0",
+             L"v_0 = 10\,v_m",
+             L"v_0 = 20\,v_m",
+             L"v_0 = 30\,v_m"]
 
-k_ranges = (0.01:0.02:1.0) .* (ωcp / vm)
-sol = solve(species, B0, k_ranges, θ; N=6)
+# The nonresonant mode is backward-propagating (ω_r < 0) and grows at low k.
+# Seed with imaginary ω to target the growing nonresonant branch.
+# For v0=0 there is no beam-driven nonresonant mode; target the stable Alfvén branch.
+initial_points = [
+    (0.1 * k_norm,  0.15 * ωcp),     # v0=0: stable Alfvén branch (real seed)
+    (0.1 * k_norm, -0.125im * ωcp),  # v0=10 vm: nonresonant mode (low k)
+    (0.02 * k_norm, 0.01im * ωcp),   # v0=20 vm: stronger nonresonant growth
+    (0.02 * k_norm, -0.025im * ωcp), # v0=30 vm: peak nonresonant instability
+]
 
-f, (ax1, ax2) = plot(sol, 1 / sqrt(2) * ωcp / vm, ωcp)
-ax1.ylabel = "Re(ω) / ωcp"
-ax2.ylabel = "Im(ω) / ωcp"
-ax2.xlabel = L"$k\, r_{L,main}$"
-f
+sols = map(v0_vals) do v0
+    v0m = -nb * v0 / (nm + nb)
+    v0b = v0m + v0
+
+    main_ion = Maxwellian(:p, nm, Tm_eV; vdz = v0m / c0)
+    beam_ion = Maxwellian(:p, nb, Tb_eV; vdz = v0b / c0)
+    electron = Maxwellian(:e, ne, Te_eV)
+    species = (main_ion, beam_ion, electron)
+    solve(species, B0, k_ranges, θ; N = 3)
+end
+
+fig = Figure(size = (900, 600), fontsize = 20)
+
+for (idx, (sol, label)) in enumerate(zip(sols, v0_labels))
+    row = (idx - 1) ÷ 2 + 1
+    col = (idx - 1) % 2 + 1
+
+    ax = Axis(fig[row, col], title = label)
+
+    col == 1 ? (ax.ylabel = L"$\omega\,/\,\omega_{cp}$") : hideydecorations!(ax, grid = false)
+    row == 2 ? (ax.xlabel = L"$k\,r_{L,main}$") : hidexdecorations!(ax, grid = false)
+
+    k_branch, ω_branch = track(sol, initial_points[idx])
+    scatterlines!(ax, k_branch ./ k_norm, real.(ω_branch) ./ ωcp;
+        linewidth = 2, color = :royalblue)
+    scatterlines!(ax, k_branch ./ k_norm, imag.(ω_branch) ./ ωcp;
+        linewidth = 2, color = :orangered)
+
+    xlims!(ax, 0, 0.2)
+    ylims!(ax, -0.2, 0.2)
+end
+
+colgap!(fig.layout, 30)
+
+Legend(fig[3, 1:2],
+    [LineElement(color = :royalblue, linestyle = :dot, linewidth = 2),
+     LineElement(color = :orangered, linestyle = :dot, linewidth = 2)],
+    [L"$\omega_r / \omega_{cp}$", L"$\gamma / \omega_{cp}$"],
+    orientation = :horizontal, framevisible = false)
+
+fig
 ```
 
 #### 3. Left-hand Resonant Ion Beam Instability
