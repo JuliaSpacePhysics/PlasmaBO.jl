@@ -60,7 +60,7 @@ Tb_eV = 10.0 * Tm_eV
 Te_eV = 1.0 * Tm_eV
 
 θ = 0.0
-k_norm = 1 / sqrt(2) * ωcp / vm
+k_norm = ωcp / vm
 # Note that the step size of k needs to be small enough
 # to accurately capture the dispersion relation.
 k_ranges = (0.01:0.001:0.2) .* (ωcp / vm)
@@ -149,7 +149,7 @@ Tb_eV = 10.0 * Tm_eV
 Te_eV = 1.0 * Tm_eV
 
 θ = 0.0
-k_norm = 1 / sqrt(2) * ωcp / vm
+k_norm = ωcp / vm
 k_ranges = (0.01:0.001:0.2) .* (ωcp / vm)
 
 v0_vals   = [0.0, 10.0, 20.0, 30.0] .* vm
@@ -249,7 +249,7 @@ species = (main_ion, beam_ion, electron)
 k_ranges = (0.01:0.02:1.0) .* (ωcp / vm)
 sol = solve(species, B0, k_ranges, θ; N=6)
 
-f, (ax1, ax2) = plot(sol, 1 / sqrt(2) * ωcp / vm, ωcp)
+f, (ax1, ax2) = plot(sol, ωcp / vm, ωcp)
 ax1.ylabel = "Re(ω) / ωcp"
 ax2.ylabel = "Im(ω) / ωcp"
 ax2.xlabel = L"$k\, r_{L,main}$"
@@ -293,7 +293,7 @@ species = (main_ion, beam_ion, electron)
 k_ranges = (0.01:0.05:1.0) .* (ωcp / vm)
 sol = solve(species, B0, k_ranges, θ; N=6)
 
-f, (ax1, ax2) = plot(sol, 1 / sqrt(2) * ωcp / vm, ωcp)
+f, (ax1, ax2) = plot(sol, ωcp / vm, ωcp)
 ax1.ylabel = "Re(ω) / ωcp"
 ax2.ylabel = "Im(ω) / ωcp"
 ax2.xlabel = L"$k\, r_{L,main}$"
@@ -339,7 +339,7 @@ species = (main_ion, beam_ion, electron)
 k_ranges = (0.01:0.02:2.0) .* (ωcp / vm)
 sol = solve(species, B0, k_ranges, θ; N=6)
 
-f, (ax1, ax2) = plot(sol, 1 / sqrt(2) * ωcp / vm, ωcp)
+f, (ax1, ax2) = plot(sol, ωcp / vm, ωcp)
 ax1.ylabel = "Re(ω) / ωcp"
 ax2.ylabel = "Im(ω) / ωcp"
 ax2.xlabel = L"$k\, r_{L,main}$"
