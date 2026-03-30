@@ -17,6 +17,7 @@ makedocs(;
     pages = [
         "Home" => "index.md",
         "Ring beam instability" => "ringbeam_Umeda12.md",
+        "Ion beam instability" => "ionbeam_gary84.md",
         "Firehose instability" => "firehose_Astfalk17.md",
         "Mirror mode" => "mirror_mode.md",
         "Ion cyclotron emission" => "ice_Irvine18.md",
