@@ -32,12 +32,11 @@ These baseline parameters are used throughout the study unless otherwise specifi
 
 ## Simulating Specific Modes in PlasmaBO.jl
 
-Based on the parameter sets defined in Gary et al. (1984), here are complete `PlasmaBO.jl` configurations to demonstrate each instability mode.
+Based on the parameter sets defined in [garyElectromagneticIonBeam1984](@citet), here are complete `PlasmaBO.jl` configurations to demonstrate each instability mode.
 
 ### Right-Hand Resonant Ion Beam Instability
 
-The following reproduces Gary et al. (1984) Figure 1, showing all four drift velocities in a 2×2 layout with $\omega_r/\omega_{cp}$ and $\gamma/\omega_{cp}$ plotted together on each panel. The wave number is normalized by the thermal proton gyroradius.
-Note that $\frac{r_L}{d_i} = \frac{v_{ti}}{v_A} = \sqrt{\beta/2}$. For comparing with the original paper Figure 1, we normalize the wave number by $r_L$ instead of $d_i$. Also note that $a_m$ is used for $r_L$ in the original paper.
+The following reproduces Figure 1, showing all four drift velocities in a 2×2 layout with $\omega_r/\omega_{cp}$ and $\gamma/\omega_{cp}$ plotted together on each panel. The wave number is normalized by the thermal proton gyroradius $r_L$ (i.e. $a_m$ in the original paper). Note that $\frac{r_L}{d_i} = \frac{v_{ti}}{v_A} = \sqrt{\beta/2}$.
 
 ```@example gary84_fig1
 using PlasmaBO
@@ -214,7 +213,7 @@ fig
 #### 3. Left-hand Resonant Ion Beam Instability
 
 This instability operates efficiently for hot, diffuse beam distributions where $T_b = 100 T_m$.
-The setup generates the 4-panel layout corresponding to Figure 7 in [garyElectromagneticIonBeam1984](@citet).
+The setup generates the 4-panel layout corresponding to Figure 7.
 A secondary axis is used because the growth rate $\gamma$ is scaled an order of magnitude smaller than the real frequency.
 
 ```@example gary84_mode3
@@ -344,7 +343,7 @@ fig
 
 #### 5. Oblique Instabilities (Right & Left)
 
-When examining oblique propagation at a large drift speed ($v_0 = 30 v_m$), higher-order cyclotron resonances emerge. This calculates the growth rate against the propagation angle $\theta$ for the Left Oblique mode at $k a_m = 0.44$, recreating Figure 10 in [garyElectromagneticIonBeam1984](@citet) which highlights the $m=2$ peak.
+When examining oblique propagation at a large drift speed ($v_0 = 30 v_m$), higher-order cyclotron resonances emerge. This calculates the growth rate against the propagation angle $\theta$ for the Left Oblique mode at $k a_m = 0.44$, recreating Figure 10 which highlights the $m=2$ peak.
 
 ```@example gary84_mode5
 using PlasmaBO
