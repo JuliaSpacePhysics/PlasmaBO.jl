@@ -150,7 +150,7 @@ Te_eV = 1.0 * Tm_eV
 
 θ = 0.0
 k_norm = ωcp / vm
-k_ranges = (0.01:0.001:0.2) .* (ωcp / vm)
+k_ranges = (0.01:0.001:0.2) .* k_norm
 
 v0_vals   = [0.0, 10.0, 20.0, 30.0] .* vm
 v0_labels = [L"v_0 = 0",
@@ -163,9 +163,9 @@ v0_labels = [L"v_0 = 0",
 # For v0=0 there is no beam-driven nonresonant mode; target the stable Alfvén branch.
 initial_points = [
     (0.1 * k_norm,  0.15 * ωcp),     # v0=0: stable Alfvén branch (real seed)
-    (0.1 * k_norm, -0.125im * ωcp),  # v0=10 vm: nonresonant mode (low k)
-    (0.02 * k_norm, 0.01im * ωcp),   # v0=20 vm: stronger nonresonant growth
-    (0.02 * k_norm, -0.025im * ωcp), # v0=30 vm: peak nonresonant instability
+    (0.1 * k_norm, 0.1 * ωcp + 0.001im * ωcp),  # v0=10 vm: nonresonant mode (low k)
+    (0.02 * k_norm, 0.0 + 0.1im * ωcp),   # v0=20 vm: stronger nonresonant growth
+    (0.02 * k_norm, 0.0 + 0.25im * ωcp), # v0=30 vm: peak nonresonant instability
 ]
 
 sols = map(v0_vals) do v0
@@ -212,7 +212,11 @@ fig
 ```
 
 #### 3. Left-hand Resonant Ion Beam Instability
-Dominant for very hot, diffuse beam distributions.
+
+This instability operates efficiently for hot, diffuse beam distributions where $T_b = 100 T_m$.
+The setup generates the 4-panel layout corresponding to Figure 7 in [garyElectromagneticIonBeam1984](@citet).
+A secondary axis is used because the growth rate $\gamma$ is scaled an order of magnitude smaller than the real frequency.
+
 ```@example gary84_mode3
 using PlasmaBO
 using PlasmaBO: c0, μ0, mp, q
@@ -221,6 +225,7 @@ using CairoMakie
 vA_c = 1.0e-4
 beta_m = 1.0
 B0 = 1e-8
+
 vA = vA_c * c0
 ne = B0^2 / (vA^2 * μ0 * mp)
 ωcp = q * B0 / mp
@@ -228,36 +233,69 @@ ne = B0^2 / (vA^2 * μ0 * mp)
 nm = 0.99 * ne
 nb = 0.01 * ne
 Tm_eV = (beta_m * B0^2 / (2 * μ0) / nm) / q
-# thermal speed of main ions
 vm = sqrt(Tm_eV * q / mp)
-# Very large beam temperature
-Tb_eV = 1000.0 * Tm_eV
+Tb_eV = 100.0 * Tm_eV  # Diffuse beam distribution
 Te_eV = 1.0 * Tm_eV
 
-# Momentum-conserving drifts
-v0 = 10.0 * vA
-v0m = -nb * v0 / (nm + nb)
-v0b = v0m + v0
-v_e = (nb / ne) * v0
-θ = 0.0 # Parallel propagation
+θ = 0.0
+k_norm = ωcp / vm 
+k_ranges = (0.01:0.002:0.25) .* k_norm
 
-main_ion = Maxwellian(:p, nm, Tm_eV; vdz=v0m/c0)
-beam_ion = Maxwellian(:p, nb, Tb_eV; vdz=v0b/c0)
-electron = Maxwellian(:e, ne, Te_eV; vdz=-v_e/c0)
-species = (main_ion, beam_ion, electron)
+v0_vals   = [5.0, 10.0, 15.0, 20.0] .* vm
+v0_labels = [L"v_0 = 5\,v_m", L"v_0 = 10\,v_m", L"v_0 = 15\,v_m", L"v_0 = 20\,v_m"]
 
-k_ranges = (0.01:0.02:1.0) .* (ωcp / vm)
-sol = solve(species, B0, k_ranges, θ; N=6)
+initial_points = [
+    (0.1 * k_norm, 0.1 * ωcp + 0.001im * ωcp),
+    (0.1 * k_norm, 0.1 * ωcp + 0.005im * ωcp),
+    (0.1 * k_norm, 0.1 * ωcp + 0.005im * ωcp),
+    (0.1 * k_norm, 0.1 * ωcp + 0.005im * ωcp),
+]
 
-f, (ax1, ax2) = plot(sol, ωcp / vm, ωcp)
-ax1.ylabel = "Re(ω) / ωcp"
-ax2.ylabel = "Im(ω) / ωcp"
-ax2.xlabel = L"$k\, r_{L,main}$"
-f
+sols = map(v0_vals) do v0
+    v0m = -nb * v0 / (nm + nb)
+    v0b = v0m + v0
+
+    main_ion = Maxwellian(:p, nm, Tm_eV; vdz = v0m / c0)
+    beam_ion = Maxwellian(:p, nb, Tb_eV; vdz = v0b / c0)
+    electron = Maxwellian(:e, ne, Te_eV)
+    species = (main_ion, beam_ion, electron)
+    solve(species, B0, k_ranges, θ; N = 4)
+end
+
+fig = Figure(size = (900, 600), fontsize = 18)
+
+for (idx, (sol, label)) in enumerate(zip(sols, v0_labels))
+    row = (idx - 1) ÷ 2 + 1
+    col = (idx - 1) % 2 + 1
+
+    ax1 = Axis(fig[row, col], title = label)
+    ax2 = Axis(fig[row, col], yaxisposition = :right)
+    hidespines!(ax2)
+    hidexdecorations!(ax2)
+    
+    col == 1 ? (ax1.ylabel = L"$\omega_r\,/\,\omega_{cp}$") : hideydecorations!(ax1, grid = false)
+    col == 2 ? (ax2.ylabel = L"$\gamma\,/\,\omega_{cp}$") : hideydecorations!(ax2, grid = false)
+    row == 2 ? (ax1.xlabel = L"$k\,a_{m}$") : hidexdecorations!(ax1, grid = false)
+
+    k_branch, ω_branch = track(sol, initial_points[idx])
+    
+    lines!(ax1, k_branch ./ k_norm, real.(ω_branch) ./ ωcp; linewidth = 2, color = :royalblue)
+    scatter!(ax2, k_branch ./ k_norm, imag.(ω_branch) ./ ωcp; markersize = 6, color = :orangered)
+
+    xlims!(ax1, 0, 0.2)
+    xlims!(ax2, 0, 0.2)
+    ylims!(ax1, 0, 0.2)
+    ylims!(ax2, 0, 0.01) # Mode 3 growth rates are relatively small
+end
+
+colgap!(fig.layout, 30)
+fig
 ```
 
 #### 4. Ion Cyclotron Anisotropy Instability
-Driven by temperature anisotropy rather than drift velocity.
+
+Driven by temperature anisotropy rather than drift velocity. This mode persists even when the bulk drift velocity is zero.
+
 ```@example gary84_mode4
 using PlasmaBO
 using PlasmaBO: c0, μ0, mp, q
@@ -273,35 +311,41 @@ ne = B0^2 / (vA^2 * μ0 * mp)
 nm = 0.99 * ne
 nb = 0.01 * ne
 Tm_eV = (beta_m * B0^2 / (2 * μ0) / nm) / q
-# thermal speed of main ions
 vm = sqrt(Tm_eV * q / mp)
 Tb_eV = 10.0 * Tm_eV
 Te_eV = 1.0 * Tm_eV
 
-# Zero drift speed
-θ = 0.0 # Parallel propagation
+θ = 0.0
 
-# Temperature anisotropy T_perp / T_parallel = 4
+# Driving the instability via temperature anisotropy
 Tparallel_b = 1.0 * Tb_eV
-Tperp_b = 4.0 * Tb_eV
+Tperp_b = 10.0 * Tb_eV
 
 main_ion = Maxwellian(:p, nm, Tm_eV)
 beam_ion = Maxwellian(:p, nb, Tparallel_b, Tperp_b)
 electron = Maxwellian(:e, ne, Te_eV)
 species = (main_ion, beam_ion, electron)
 
-k_ranges = (0.01:0.05:1.0) .* (ωcp / vm)
-sol = solve(species, B0, k_ranges, θ; N=6)
+k_norm = ωcp / vm 
+k_ranges = (0.01:0.01:1.0) .* k_norm
+sol = solve(species, B0, k_ranges, θ; N = 6)
 
-f, (ax1, ax2) = plot(sol, ωcp / vm, ωcp)
-ax1.ylabel = "Re(ω) / ωcp"
-ax2.ylabel = "Im(ω) / ωcp"
-ax2.xlabel = L"$k\, r_{L,main}$"
-f
+fig = Figure(size = (800, 400), fontsize = 18)
+ax1 = Axis(fig[1, 1], ylabel = L"$\omega_r / \omega_{cp}$", xlabel = L"$k\,a_{m}$")
+ax2 = Axis(fig[1, 2], ylabel = L"$\gamma / \omega_{cp}$", xlabel = L"$k\,a_{m}$")
+
+k_branch, ω_branch = track(sol, (0.2 * k_norm, 0.1im * ωcp))
+
+lines!(ax1, k_branch ./ k_norm, real.(ω_branch) ./ ωcp, linewidth = 2, color = :royalblue)
+lines!(ax2, k_branch ./ k_norm, imag.(ω_branch) ./ ωcp, linewidth = 2, color = :orangered)
+
+fig
 ```
 
 #### 5. Oblique Instabilities (Right & Left)
-Require very high drift velocities and oblique propagation angles.
+
+When examining oblique propagation at a large drift speed ($v_0 = 30 v_m$), higher-order cyclotron resonances emerge. This calculates the growth rate against the propagation angle $\theta$ for the Left Oblique mode at $k a_m = 0.44$, recreating Figure 10 in [garyElectromagneticIonBeam1984](@citet) which highlights the $m=2$ peak.
+
 ```@example gary84_mode5
 using PlasmaBO
 using PlasmaBO: c0, μ0, mp, q
@@ -310,6 +354,7 @@ using CairoMakie
 vA_c = 1.0e-4
 beta_m = 1.0
 B0 = 1e-8
+
 vA = vA_c * c0
 ne = B0^2 / (vA^2 * μ0 * mp)
 ωcp = q * B0 / mp
@@ -317,31 +362,35 @@ ne = B0^2 / (vA^2 * μ0 * mp)
 nm = 0.99 * ne
 nb = 0.01 * ne
 Tm_eV = (beta_m * B0^2 / (2 * μ0) / nm) / q
-# thermal speed of main ions
 vm = sqrt(Tm_eV * q / mp)
 Tb_eV = 10.0 * Tm_eV
 Te_eV = 1.0 * Tm_eV
 
-# Corresponds to 30 v_m in the paper (for beta_m = 1)
-v0 = 21.2 * vA
+v0 = 30.0 * vm
 v0m = -nb * v0 / (nm + nb)
 v0b = v0m + v0
-v_e = (nb / ne) * v0
-# Oblique propagation angle
-θ = π / 4
 
-main_ion = Maxwellian(:p, nm, Tm_eV; vdz=v0m/c0)
-beam_ion = Maxwellian(:p, nb, Tb_eV; vdz=v0b/c0)
-electron = Maxwellian(:e, ne, Te_eV; vdz=-v_e/c0)
+main_ion = Maxwellian(:p, nm, Tm_eV; vdz = v0m / c0)
+beam_ion = Maxwellian(:p, nb, Tb_eV; vdz = v0b / c0)
+electron = Maxwellian(:e, ne, Te_eV)
 species = (main_ion, beam_ion, electron)
 
-# Scanning over a highly oblique angle
-k_ranges = (0.01:0.02:2.0) .* (ωcp / vm)
-sol = solve(species, B0, k_ranges, θ; N=6)
+k_target = 0.44 * ωcp / vm
+θ_vals = range(66, 84, length = 40) .* (π / 180)
 
-f, (ax1, ax2) = plot(sol, ωcp / vm, ωcp)
-ax1.ylabel = "Re(ω) / ωcp"
-ax2.ylabel = "Im(ω) / ωcp"
-ax2.xlabel = L"$k\, r_{L,main}$"
-f
+γ_vals = map(θ_vals) do θ
+    sol = solve(species, B0, [k_target], θ; N = 6)
+    # Extract the mode with the maximum growth rate at this configuration
+    maximum(imag.(sol.ωs[1]))
+end
+
+fig = Figure(size = (600, 400), fontsize = 18)
+ax = Axis(fig[1, 1], xlabel = L"$\theta$ (degrees)", ylabel = L"$\gamma / \omega_{cp}$", 
+          title = "Left Oblique Mode", xminorticksvisible = true)
+
+lines!(ax, θ_vals .* (180 / π), γ_vals ./ ωcp, linewidth = 2, color = :purple)
+
+xlims!(ax, 65, 83)
+ylims!(ax, 0.0, 0.08)
+fig
 ```
