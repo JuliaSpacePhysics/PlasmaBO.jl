@@ -4,7 +4,6 @@ using Gamma: gamma, loggamma
 using QuadGK: quadgk, quadgk!
 using Bumper: @no_escape, @alloc
 using LinearAlgebra
-using Tullio: @tullio
 using ProgressMeter: @showprogress, next!
 using ChargedParticles: charge, mass, charge_number, mass_number, particle, ParticleLike
 import ChargedParticles as CP
