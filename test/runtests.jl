@@ -167,3 +167,59 @@ end
     @test length(sol_pbk.ωs) == 80
     @test maximum(real.(sol_pbk.ωs[end])) / wce ≈ 3.0667420557507734
 end
+
+@testset "Polarization and Handedness Utilities" begin
+    using LinearAlgebra
+    # 1. Test utilities with synthetic vectors
+    # A vector where the last elements represent [Ex, Ey, Ez, Bx, By, Bz]
+    # For RCP/R-wave: Ey = i*Ex => P = i (imag(P) > 0)
+    v_rcp = [zeros(10)..., 1.0, 1.0im, 0.0, 0.0, 0.0, 0.0]
+    @test electric_field(v_rcp) == (1.0, 1.0im, 0.0)
+    @test magnetic_field(v_rcp) == (0.0, 0.0, 0.0)
+    @test polarization_ratio(v_rcp) == 1.0im
+    @test handedness(v_rcp) == :R
+
+    # For LCP/L-wave: Ey = -i*Ex => P = -i (imag(P) < 0)
+    v_lcp = [zeros(10)..., 1.0, -1.0im, 0.0, 0.0, 0.0, 0.0]
+    @test handedness(v_lcp) == :L
+
+    # For linear polarization: Ey = 0 => P = 0
+    v_lin = [zeros(10)..., 1.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    @test handedness(v_lin) == :linear
+
+    # 2. Test solver with eigenvectors=true
+    using PlasmaBO: qe, me, mp
+    B0 = 1.0e-4
+    n = 1.0e11
+    T = 1.0
+    
+    # Parallel propagation (along +z)
+    k = 1.0
+    kx, kz = 0.0, k
+
+    e_vdf = Maxwellian(:e, n, T)
+    fluid_species = [e_vdf, FluidSpecies(:p, n, T)]
+    
+    # Fluid solver test
+    decomp_fluid = solve(fluid_species, B0, kx, kz, BOFluid, true)
+    @test decomp_fluid isa Eigen
+    
+    # Kinetic solver test
+    kinetic_species = [e_vdf, Maxwellian(:p, n, T)]
+    decomp_kinetic = solve(kinetic_species, B0, kx, kz, BOHH, true; N = 2, J = 8)
+    @test decomp_kinetic isa Eigen
+    
+    # Check that we can extract polarization from the actual solved modes
+    ωs = decomp_fluid.values
+    V = decomp_fluid.vectors
+    
+    # Let's find any mode with a non-zero real frequency
+    idx = findfirst(ω -> isfinite(ω) && abs(real(ω)) > 1.0e3, ωs)
+    if idx !== nothing
+        v = V[:, idx]
+        Ex, Ey, Ez = electric_field(v)
+        @test isfinite(polarization_ratio(v))
+        @test handedness(v) in (:R, :L, :linear)
+    end
+end
+

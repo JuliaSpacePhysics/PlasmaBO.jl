@@ -38,27 +38,33 @@ Dispersion solver using the multi-fluid electromagnetic matrix formulation.
 """
 @kwdef struct BOFluid <: AbstractDispersionAlgorithm end
 
-function solve(pb::DispersionProblem, alg::BOPBK)
+function solve(pb::DispersionProblem, alg::BOPBK, eigenvectors::Bool = false)
     M = build_pbk_dispersion_matrix(pb.species, pb.B0, pb.kx, pb.kz; N = alg.N)
-    return eigvals!(M)
+    return eigenvectors ? eigen!(M) : eigvals!(M)
 end
 
 zero!(M) = fill!(M, zero(eltype(M)))
 
-function solve(pb::DispersionProblem, alg::BOHH)
+function solve(pb::DispersionProblem, alg::BOHH, eigenvectors::Bool = false)
     params = HHSolverParam.(pb.species, pb.B0)
     N, J = alg.N, alg.J
     n = _size(length(pb.species), N, J)
-    return @no_escape begin
-        M = @alloc(ComplexF64, n, n)
-        build_dispersion_matrix!(zero!(M), params, pb.kx, pb.kz; N, J)
-        eigvals!(M)
+    if eigenvectors
+        M = zeros(ComplexF64, n, n)
+        build_dispersion_matrix!(M, params, pb.kx, pb.kz; N, J)
+        return eigen!(M)
+    else
+        return @no_escape begin
+            M = @alloc(ComplexF64, n, n)
+            build_dispersion_matrix!(zero!(M), params, pb.kx, pb.kz; N, J)
+            eigvals!(M)
+        end
     end
 end
 
-function solve(pb::DispersionProblem, ::BOFluid)
+function solve(pb::DispersionProblem, ::BOFluid, eigenvectors::Bool = false)
     M = build_fluid_dispersion_matrix(pb.species, pb.kx, pb.kz, pb.B0)
-    return eigvals!(M)
+    return eigenvectors ? eigen!(M) : eigvals!(M)
 end
 
 function _ensemble_solve(f, pb)
@@ -120,8 +126,8 @@ See also: [`BOHH`](@ref), [`BOPBK`](@ref), [`BOFluid`](@ref)
 """
 function solve end
 
-function solve(species, B0, kx::Number, kz::Number, alg = BOHH; kw...)
-    return solve(DispersionProblem(species, B0, kx, kz), alg(; kw...))
+function solve(species, B0, kx::Number, kz::Number, alg = BOHH, eigenvectors::Bool = false; kw...)
+    return solve(DispersionProblem(species, B0, kx, kz), alg(; kw...), eigenvectors)
 end
 
 function solve(species, B0, ks, θs, alg = BOHH; kw...)
