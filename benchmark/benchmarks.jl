@@ -97,6 +97,16 @@ let
     SUITE["MirrorMode"]["solve"] = @benchmarkable solve($species, $B0, $kx, $kz)
 end
 
+SUITE["HermiteExpansion"] = BenchmarkGroup()
+
+let
+    bk = BiKappa2(:e, 1.0e6, 1.0, 200.0, 2555.0; sigma = 0.0)
+    g = gen_fv2d(bk)
+    SUITE["HermiteExpansion"]["BiKappa2"] = @benchmarkable hermite_expansion(
+        $(g.fv), $(g.vz[:, 1]), $(g.vx[1, :]), $(g.vtz), $(g.vtx); Nz = 16, Nx = 16
+    )
+end
+
 # ==============================================================================
 # PBK Solver
 # ==============================================================================
