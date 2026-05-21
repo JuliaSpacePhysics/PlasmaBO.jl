@@ -187,7 +187,7 @@ end
     v_lin = [zeros(10)..., 1.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     @test handedness(v_lin) == :linear
 
-    # 2. Test solver with eigenvectors=true
+    # 2. Test solver with dispersion_matrix and eigen!
     using PlasmaBO: qe, me, mp
     B0 = 1.0e-4
     n = 1.0e11
@@ -201,12 +201,14 @@ end
     fluid_species = [e_vdf, FluidSpecies(:p, n, T)]
     
     # Fluid solver test
-    decomp_fluid = solve(fluid_species, B0, kx, kz, BOFluid, true)
+    M_fluid = dispersion_matrix(fluid_species, B0, kx, kz, BOFluid)
+    decomp_fluid = eigen!(M_fluid)
     @test decomp_fluid isa Eigen
     
     # Kinetic solver test
     kinetic_species = [e_vdf, Maxwellian(:p, n, T)]
-    decomp_kinetic = solve(kinetic_species, B0, kx, kz, BOHH, true; N = 2, J = 8)
+    M_kinetic = dispersion_matrix(kinetic_species, B0, kx, kz, BOHH; N = 2, J = 8)
+    decomp_kinetic = eigen!(M_kinetic)
     @test decomp_kinetic isa Eigen
     
     # Check that we can extract polarization from the actual solved modes
