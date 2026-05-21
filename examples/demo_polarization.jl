@@ -49,7 +49,7 @@ D_L(ω) = 1.0 - (c0*k/ω)^2 - wpe2 / (ω * (ω + abs(wce))) - wpi2 / (ω * (ω -
 
 println("\nIdentified Modes & Physical Verification against Cold-Plasma Theory:")
 println("-------------------------------------------------------------------------------------------------------------------------------------------")
-@printf("%-5s | %-24s | %-12s | %-10s | %-10s | %-10s | %-36s\n", "Index", "Frequency ω (rad/s)", "E-field Norm", "Handedness", "Residual D", "Status", "Physical Description")
+@printf("%-5s | %-24s | %-12s | %-10s | %-12s | %-10s | %-10s | %-36s\n", "Index", "Frequency ω (rad/s)", "E-field Norm", "Handedness", "Pol Ratio", "Residual D", "Status", "Physical Description")
 println("-------------------------------------------------------------------------------------------------------------------------------------------")
 
 # Sort all 14 solutions by |real(ω)|
@@ -63,7 +63,7 @@ for i in sorted_indices
     Ex, Ey, Ez = electric_field(v)
     Bx, By, Bz = magnetic_field(v)
     E_norm = abs(Ex)^2 + abs(Ey)^2 + abs(Ez)^2
-    hand = handedness(v, ω; threshold = 1e-4)
+    hand = handedness(v, ω, kx, kz; threshold = 1e-4)
     
     # Residual and status defaults
     residual = NaN
@@ -128,12 +128,15 @@ for i in sorted_indices
     
     # Format residual string
     res_str = isnan(residual) ? "N/A" : @sprintf("%.2e", residual)
-    
-    @printf("%-5d | %-24s | %-12.2e | %-10s | %-10s | %-10s | %-36s\n", 
-            i, 
+    pol_ratio = polarization_ratio(v, kx, kz)
+    # Use absolute value for display; handle non-finite values gracefully
+    display_ratio = (isfinite(pol_ratio) ? abs(pol_ratio) : NaN)
+    @printf("%-5d | %-24s | %-12.2e | %-10s | %-12.2e | %-10s | %-10s | %-36s\n",
+            i,
             @sprintf("%.3e + %.3eim", real(ω), imag(ω)),
             E_norm,
             string(hand),
+            display_ratio,
             res_str,
             status,
             desc)

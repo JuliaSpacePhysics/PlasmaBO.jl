@@ -187,6 +187,18 @@ end
     v_lin = [zeros(10)..., 1.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     @test handedness(v_lin) == :linear
 
+    # 1b. Test oblique propagation (e.g. θ = 45° => kx = 1.0, kz = 1.0)
+    # E_perp = Ex * cos(θ) - Ez * sin(θ) = (Ex - Ez)/√2
+    # If we choose Ez = 0.0 and Ex = √2, then E_perp = 1.0.
+    # If we set Ey = 1.0im, then P_transverse = Ey / E_perp = 1.0im (RCP wave).
+    v_oblique = [zeros(10)..., sqrt(2), 1.0im, 0.0, 0.0, 0.0, 0.0]
+    @test polarization_ratio(v_oblique, 1.0, 1.0) ≈ 1.0im
+    @test polarization_ratio(v_oblique; kx = 1.0, kz = 1.0) ≈ 1.0im
+    @test handedness(v_oblique, 1.0, 1.0, 1.0) == :R
+    @test handedness(v_oblique, 1.0; kx = 1.0, kz = 1.0) == :R
+    @test handedness(v_oblique, -1.0, 1.0, 1.0) == :L  # negative frequency reverses handedness representation
+    @test handedness(v_oblique, -1.0; kx = 1.0, kz = 1.0) == :L
+
     # 2. Test solver with dispersion_matrix and eigen!
     using PlasmaBO: qe, me, mp
     B0 = 1.0e-4
