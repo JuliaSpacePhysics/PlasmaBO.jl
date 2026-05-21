@@ -1,5 +1,5 @@
 # Eigenvalue filtering and branch tracking for dispersion relations
-using DataInterpolations
+using FastInterpolations: pchip_interp, ExtendExtrap
 
 """
     BranchPoint{T}
@@ -52,8 +52,11 @@ end
 SurfaceBranchPoint(k, θ, ω) =
     SurfaceBranchPoint(k, θ, ω, _default_seed_locator(ω))
 
-# Interpolate complex values by treating real and imaginary parts independently
-function interpolate_complex(z_prev, x_prev, x_new; extrapolation = ExtrapolationType.Extension)
+# Interpolate complex values by treating real and imaginary parts independently.
+# Componentwise PCHIP is what we want — FastInterpolations does accept complex
+# y, but its slope rule on complex data doesn't reduce to the componentwise
+# answer the rest of this file is calibrated against.
+function interpolate_complex(z_prev, x_prev, x_new; extrap = ExtendExtrap())
     return if length(z_prev) == 1
         z_prev[1]
     elseif length(z_prev) == 2
@@ -62,10 +65,10 @@ function interpolate_complex(z_prev, x_prev, x_new; extrapolation = Extrapolatio
         x1, x2 = x_prev
         z1 + (z2 - z1) * (x_new - x1) / (x2 - x1)
     else
-        # PCHIP interpolation
-        itp_real = PCHIPInterpolation(real.(z_prev), x_prev; extrapolation)
-        itp_imag = PCHIPInterpolation(imag.(z_prev), x_prev; extrapolation)
-        complex(itp_real(x_new), itp_imag(x_new))
+        # PCHIP one-shot: avoids building two full interpolant objects per query.
+        yr = pchip_interp(x_prev, real.(z_prev), x_new; extrap)
+        yi = pchip_interp(x_prev, imag.(z_prev), x_new; extrap)
+        complex(yr, yi)
     end
 end
 
