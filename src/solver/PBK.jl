@@ -1,6 +1,7 @@
 module PBK
 using QuadGK: quadgk
-using SpecialFunctions: loggamma, gamma, besselj
+using SpecialFunctions: loggamma, gamma
+using Bessels: besselj
 using Bumper: @no_escape, @alloc
 using ..Constants
 

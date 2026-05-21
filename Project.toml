@@ -7,6 +7,7 @@ authors = ["Beforerr <zzj956959688@gmail.com> and contributors"]
 projects = ["test", "docs"]
 
 [deps]
+Bessels = "0e736298-9ec6-45e8-9647-e4fc86a2fe38"
 Bumper = "8ce10254-0962-460f-a3d8-1f77fea1446e"
 ChargedParticles = "e91dad46-2c06-47f2-8668-7ffa57fde2d9"
 DataInterpolations = "82cc6244-b520-54b8-b5a6-8a565e85f1d0"
@@ -24,6 +25,7 @@ Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
 PlasmaBOMakieExt = "Makie"
 
 [compat]
+Bessels = "0.2"
 Bumper = "0.7"
 ChargedParticles = "0.3.1"
 DataInterpolations = "8"
