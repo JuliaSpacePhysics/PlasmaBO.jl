@@ -45,7 +45,7 @@ f
 
 ### Plot the tracked PBK branches:
 
-Seeds at kρce = 0.1 are used to identify the branches: upper R-X, O(P), L-X, lower R-X
+Seeds at $kρ_{ce} = 0.1$ are used to identify the branches: upper R-X, O(P), L-X, lower R-X
 
 ```@example rlp
 seed_kρ = 0.1
@@ -81,7 +81,7 @@ Plot the tracked branches
 plot_branches(branches_HH, kn, wce)
 ```
 
-We can see that the results from the HH solver is very different than the PBK solver. It does not yield the same branches as the PBK solver due to the small parallel kappa index.
+We can see that the results from the HH solver is very different from the PBK solver. It does not yield the same branches as the PBK solver due to the small parallel kappa index.
 
 As a comparison, we solve it for a Maxwellian electron population:
 

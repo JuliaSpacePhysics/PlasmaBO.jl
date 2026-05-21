@@ -5,36 +5,38 @@
 
 [![Build Status](https://github.com/JuliaSpacePhysics/PlasmaBO.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/JuliaSpacePhysics/PlasmaBO.jl/actions/workflows/CI.yml?query=branch%3Amain)
 [![Coverage](https://codecov.io/gh/JuliaSpacePhysics/PlasmaBO.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/JuliaSpacePhysics/PlasmaBO.jl)
-[![Aqua](https://raw.githubusercontent.com/JuliaTesting/Aqua.jl/refs/heads/master/badge.svg)](https://github.com/JuliaTesting/Aqua.jl)
 
-**Installation**: at the Julia REPL, run `using Pkg; Pkg.add("PlasmaBO")`
+## Quickstart
 
-**Documentation**: [![Dev](https://img.shields.io/badge/docs-dev-blue.svg?logo=julia)](https://JuliaSpacePhysics.github.io/PlasmaBO.jl/dev/)
+`solve` returns all wave modes at once as eigenvalues of a matrix dispersion relation — no initial guess required. Define species, pick a solver (`BOHH` kinetic (Hermite-Hermite basis for arbitrary distributions), `BOPBK` product Bi-Kappa, `BOFluid` multi-fluid), and call:
 
+```julia
+using Pkg; Pkg.add("PlasmaBO")
+using PlasmaBO
 
-## Features and Roadmap
+B0 = 100e-9                       # background field [T]
+n, T = 8.7e6, 2.857e-3            # density [m^-3], temperature [eV]
+species = (Maxwellian(:p, n, T), Maxwellian(:e, n, T))
 
-- [x] Hermite-Hermite (HH) basis solver for arbitrary/analytic distributions
-    - [x] Maxwellian / BiMaxwellian
-    - [x] Kappa / BiKappa / product Bikappa
-- [x] BO-Product-Bi-Kappa (PBK) solver for kappa distributions
-    - [ ] Extend to non-integer κ (For integer κ, $Z_κ(ξ)$ has an exact finite closed-form expansion).
-- [ ] Generalized plasma dispersion function (GPDF)
-- [ ] Integration with [VelocityDistributionFunctions.jl](https://github.com/JuliaSpacePhysics/VelocityDistributionFunctions.jl) and observation / simulation data
-- [x] Multi-fluid solver
-- [ ] Faster eigenvalue solver using Krylov methods ([Arpack](https://github.com/JuliaLinearAlgebra/Arpack.jl) / [KrylovKit](https://github.com/Jutho/KrylovKit.jl), ref: [Eigen solvers](https://docs.sciml.ai/BifurcationKit/stable/eigensolver/))
-- [ ] GPU Acceleration / Parallelization / Sparse matrix optimizations
-- [ ] Reformulate as a `SciMLProblem` for use with `SciML` (ref: [LinearSolve](https://docs.sciml.ai/LinearSolve/stable/), [ApproxFun.jl](https://juliaapproximation.github.io/ApproxFun.jl/stable/generated/Eigenvalue/))
-- [ ] Relativistic support
-    - [ ] Rederive the dielectric/susceptibility tensor from the relativistic Vlasov–Maxwell equation expressed in momentum space;
-    - [ ] relativistic analogs of plasma dispersion function;
-    - [ ] Choose basis functions in momentum space (relativistic Maxwell–Jüttner weighted bases).
-- [ ] Better handling of long-tailed distributions
+# Single (kx, kz): returns Vector{ComplexF64} of all ω roots
+kx, kz = 0.0, 1e-6
+ωs = solve(species, B0, kx, kz)            # default: BOHH kinetic
+ωs_fluid = solve(species, B0, kx, kz, BOFluid)
+
+# Scan over |k| and propagation angle θ
+ks = 10 .^ range(-7, -4, length = 50)
+θs = deg2rad.(0:15:90)
+sol = solve(species, B0, ks, θs, BOHH)     # sol.ωs[ik, iθ] :: Vector{ComplexF64}
+```
+
+`ω = ωr + iγ`: `γ > 0` is an instability, `γ < 0` is damping. Use `Maxwellian` / `BiKappa` for kinetic species; `ChargedParticles.jl` shorthands like `Maxwellian("O-18 3+", n, T)` work for arbitrary ions.
+
+See [documentation](https://JuliaSpacePhysics.github.io/PlasmaBO.jl/dev/) for worked examples: cold plasma (kinetic vs fluid), ring-beam, firehose, ion-beam, and dispersion-surface tracking.
 
 ## Elsewhere
 
 - [hsxie/BO-Arbitrary](https://github.com/hsxie/boarbitrary/tree/main): Extension of the kinetic electromagnetic magnetized dispersion relation solver [PDRK](https://github.com/hsxie/pdrk)/[BO](https://github.com/hsxie/bo) to arbitrary distributions (MATLAB)
-    - [liangwang0734/xenon](https://github.com/liangwang0734/xenon): A matriX-based dispErsioN relatiON solver (Python). Very limited in functionality (only electrostatic for kinetic BiMaxwellian plasmas).
+  - [liangwang0734/xenon](https://github.com/liangwang0734/xenon): A matriX-based dispErsioN relatiON solver (Python). Very limited in functionality (only electrostatic for kinetic BiMaxwellian plasmas).
 - [LinearMaxwellVlasov.jl](https://github.com/jwscook/LinearMaxwellVlasov.jl): A Julia implementation of linear Maxwell-Vlasov solvers
 - [danielver02/ALPS](https://github.com/danielver02/ALPS): The Arbitrary Linear Plasma Solver that solves the Vlasov-Maxwell dispersion relation in hot (even relativistic) magnetised plasma (Fortran)
 - [pastfalk/LEOPARD](https://github.com/pastfalk/LEOPARD): Linear Electromagnetic Oscillations in Plasmas with Arbitrary Rotationally-symmetric Distributions (Fortran)
