@@ -116,7 +116,7 @@ function hermite_a0_to_a(a0lm)
     # with C_z = cHn[1:lmax, 1:lmax] and C_x = cHn[1:mmax, 1:mmax].
     Cz = @view cHn[1:lmax, 1:lmax]
     Cx = @view cHn[1:mmax, 1:mmax]
-    return @tullio alm[i, j] := Cz[k, i] * a0lm[k, l] * Cx[l, j]
+    return Cz' * a0lm * Cx
 end
 
 @inline function hermite_basis(ξ, l)
@@ -178,54 +178,112 @@ function hermite_expansion(
     # Accept either 1D vectors (preferred) or prebuilt 2D grids.
     vz_vec = ndims(vz) == 1 ? vz : view(vz, :, 1)
     vx_vec = ndims(vx) == 1 ? vx : view(vx, 1, :)
+    nz = length(vz_vec)
+    nx = length(vx_vec)
 
-    @assert size(fv, 1) == length(vz_vec) "Grid size mismatch: fv rows != length(vz)"
-    @assert size(fv, 2) == length(vx_vec) "Grid size mismatch: fv cols != length(vx)"
+    @assert size(fv, 1) == nz "Grid size mismatch: fv rows != length(vz)"
+    @assert size(fv, 2) == nx "Grid size mismatch: fv cols != length(vx)"
 
     # Grid spacing (assuming uniform)
     dvz = abs(vz_vec[2] - vz_vec[1])
     dvx = abs(vx_vec[2] - vx_vec[1])
 
-    # Normalized Hermite basis functions
-    u_m(x, m) = hermite_basis(x, dx, vtp, m)
-
-    # Precompute basis matrices.
-    nx = length(vx_vec)
-    Ueff = zeros(T, nx, Nx + 1)
-    lranges = 0:Nz
-    @tullio ρmat[i, lp1] := hermite_basis(vz_vec[i], dz, vtz, lranges[lp1])
-
     vx_is_half_space = minimum(vx_vec) >= 0
     vx0_is_first = abs(vx_vec[1]) <= sqrt(eps(real(T))) * max(one(T), abs(vx_vec[end]))
 
-    @views if vx_is_half_space
-        # Matlab: treat the first column (usually vx=0) separately.
-        if vx0_is_first
-            @tullio Ueff[i, mp] = (
-                i == 1 ? u_m(vx_vec[1], mp - 1) :
-                    (u_m(vx_vec[i], mp - 1) + u_m(-vx_vec[i], mp - 1))
-            )
+    Lmax = max(Nz, Nx)
+
+    return @no_escape begin
+        inv_nrm = @alloc(T, Lmax + 1)
+        _hermite_inv_norms!(inv_nrm, Lmax)
+
+        ρmat = @alloc(T, nz, Nz + 1)
+        _fill_basis_mat!(ρmat, vz_vec, dz, vtz, Nz, inv_nrm)
+
+        Ueff = @alloc(T, nx, Nx + 1)
+        if vx_is_half_space
+            _fill_basis_mat_mirrored!(Ueff, vx_vec, dx, vtp, Nx, inv_nrm, vx0_is_first)
         else
-            @tullio Ueff[i, mp] = u_m(vx_vec[i], mp - 1) + u_m(-vx_vec[i], mp - 1)
+            _fill_basis_mat!(Ueff, vx_vec, dx, vtp, Nx, inv_nrm)
         end
-    else
-        @tullio Ueff[i, mp] = u_m(vx_vec[i], mp - 1)
+
+        tmp = @alloc(T, Nz + 1, nx)
+        mul!(tmp, ρmat', fv)
+        a0lm = tmp * Ueff
+        a0lm .*= (dvz * dvx * 2 / (vtz * vtp))
+
+        bs = dx / vtp
+        As = exp(-bs^2) + sqrt(π) * bs * erfc(-bs)
+        cs0 = 1 / (sqrt(π^3) * vtz * vtp^2 * As)
+
+        alm = hermite_a0_to_a(a0lm)
+        alm ./= cs0
+
+        (; alm, a0lm)
     end
+end
 
-    a0lm = ρmat' * fv * Ueff
-    a0lm .*= (dvz * dvx * 2 / (vtz * vtp))
+# inv_nrm[l+1] = 1 / sqrt(2^l * l! * sqrt(π)); computed incrementally to avoid
+# factorial overflow and a repeated sqrt per level.
+function _hermite_inv_norms!(inv_nrm, lmax)
+    nrm = sqrt(sqrt(π))  # l = 0
+    @inbounds inv_nrm[1] = inv(nrm)
+    @inbounds for l in 1:lmax
+        nrm *= sqrt(2.0 * l)
+        inv_nrm[l + 1] = inv(nrm)
+    end
+    return inv_nrm
+end
 
-    # Normalization factor
-    bs = dx / vtp
-    As = exp(-bs^2) + sqrt(π) * bs * erfc(-bs)
-    cs0 = 1 / (sqrt(π^3) * vtz * vtp^2 * As)
+# Hermite recurrence H_{l+1} = 2ξ·H_l − 2l·H_{l-1}, with sentinel H_{-1}=0,
+# H_0=1. Writes ψ_l(ξ)·eξ·inv_nrm[l+1] into M[i, l+1] for l in 0:lmax.
+@inline function _psi_row!(M, i, ξ, eξ, lmax, inv_nrm)
+    @inbounds begin
+        H_prev, H_curr = zero(eltype(M)), one(eltype(M))
+        for l in 0:lmax
+            M[i, l + 1] = H_curr * eξ * inv_nrm[l + 1]
+            H_prev, H_curr = H_curr, 2 * ξ * H_curr - 2 * l * H_prev
+        end
+    end
+    return M
+end
 
-    # Convert to power-law basis
-    alm = hermite_a0_to_a(a0lm)
-    alm ./= cs0
+# Like _psi_row! but writes the sum of two recurrences in a single pass —
+# used for the mirrored (half-line) vx grid.
+@inline function _psi_row_pair!(M, i, ξp, eξp, ξm, eξm, lmax, inv_nrm)
+    @inbounds begin
+        Hp_prev, Hp_curr = zero(eltype(M)), one(eltype(M))
+        Hm_prev, Hm_curr = zero(eltype(M)), one(eltype(M))
+        for l in 0:lmax
+            M[i, l + 1] = (Hp_curr * eξp + Hm_curr * eξm) * inv_nrm[l + 1]
+            Hp_prev, Hp_curr = Hp_curr, 2 * ξp * Hp_curr - 2 * l * Hp_prev
+            Hm_prev, Hm_curr = Hm_curr, 2 * ξm * Hm_curr - 2 * l * Hm_prev
+        end
+    end
+    return M
+end
 
-    return (;
-        alm = alm,
-        a0lm = a0lm,
-    )
+function _fill_basis_mat!(M, vec, x0, μ, lmax, inv_nrm)
+    sq2 = sqrt(2.0)
+    for i in eachindex(vec)
+        ξ = sq2 * (vec[i] - x0) / μ
+        _psi_row!(M, i, ξ, exp(-ξ^2 / 2), lmax, inv_nrm)
+    end
+    return M
+end
+
+# Mirror -vec[i] into the same row; if vx0_first, row 1 is taken as-is (vx=0).
+function _fill_basis_mat_mirrored!(M, vec, x0, μ, lmax, inv_nrm, vx0_first)
+    sq2 = sqrt(2.0)
+    for i in eachindex(vec)
+        ξp = sq2 * (vec[i] - x0) / μ
+        eξp = exp(-ξp^2 / 2)
+        if vx0_first && i == 1
+            _psi_row!(M, i, ξp, eξp, lmax, inv_nrm)
+        else
+            ξm = sq2 * (-vec[i] - x0) / μ
+            _psi_row_pair!(M, i, ξp, eξp, ξm, exp(-ξm^2 / 2), lmax, inv_nrm)
+        end
+    end
+    return M
 end
