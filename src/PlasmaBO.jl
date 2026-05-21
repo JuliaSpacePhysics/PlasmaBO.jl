@@ -1,6 +1,6 @@
 module PlasmaBO
 
-using SpecialFunctions: gamma, erfc, loggamma
+using Gamma: gamma, loggamma
 using QuadGK: quadgk, quadgk!
 using Bumper: @no_escape, @alloc
 using LinearAlgebra
