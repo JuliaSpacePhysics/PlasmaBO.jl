@@ -1,12 +1,18 @@
 using BenchmarkTools
 using PlasmaBO
-using PlasmaBO: q, me, mp, qe
+using PlasmaBO: q, me, mp, qe, interpolate_complex
 
 const SUITE = BenchmarkGroup()
 
-# ==============================================================================
-# Umeda 2012 Case
-# ==============================================================================
+let
+    # PCHIP path: needs length(z_prev) ≥ 3; size matches a typical k-scan run.
+    x_prev = collect(range(0.0, 1.0; length = 16))
+    z_prev = ComplexF64.(2.0 .* x_prev .+ 1.0, 0.1 .* x_prev .+ 0.5 .* sin.(x_prev))
+    x_new = 1.05  # slight extrapolation, as in real tracking
+    SUITE["Track"]["interpolate_complex_pchip"] =
+        @benchmarkable interpolate_complex($z_prev, $x_prev, $x_new)
+end
+
 SUITE["Umeda2012"] = BenchmarkGroup()
 
 let
