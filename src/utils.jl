@@ -136,17 +136,17 @@ end
 
 function handedness(v; kx=0.0, kz=0.0, threshold=1e-5)
     if kx == 0.0 && kz == 0.0
-        return handedness(v, 1.0, 0.0, 1.0; threshold=threshold)
+        return handedness(v, 1.0, 0.0, 1.0; threshold)
     else
-        return handedness(v, 1.0, kx, kz; threshold=threshold)
+        return handedness(v, 1.0, kx, kz; threshold)
     end
 end
 
 function handedness(v, ω; kx=0.0, kz=0.0, threshold=1e-5)
     if kx == 0.0 && kz == 0.0
-        return handedness(v, ω, 0.0, 1.0; threshold=threshold)
+        return handedness(v, ω, 0.0, 1.0; threshold)
     else
-        return handedness(v, ω, kx, kz; threshold=threshold)
+        return handedness(v, ω, kx, kz; threshold)
     end
 end
 

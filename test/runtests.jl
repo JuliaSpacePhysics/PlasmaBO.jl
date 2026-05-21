@@ -235,5 +235,48 @@ end
         @test isfinite(polarization_ratio(v))
         @test handedness(v) in (:R, :L, :linear)
     end
+
+    # Helper to construct a minimal eigenvector with specified electric field components
+    function make_vector(Ex, Ey, Ez; Bx=0.0, By=0.0, Bz=0.0)
+        v = zeros(ComplexF64, 9)
+        # electric field components are at positions n-5, n-4, n-3 (4,5,6 for length 9)
+        v[4] = Ex
+        v[5] = Ey
+        v[6] = Ez
+        # magnetic field components (optional)
+        v[7] = Bx
+        v[8] = By
+        v[9] = Bz
+        return v
+    end
+
+    # 1. polarization_ratio with zero wavevector (kx=0, kz=0) should return Ey/Ex
+    v = make_vector(2.0 + 0im, 6.0 + 0im, 0.0)
+    @test isapprox(polarization_ratio(v, 0.0, 0.0), 3.0; atol=1e-12)
+
+    # 2. handedness returns :linear when fields are negligible
+    v = make_vector(0.0 + 0im, 0.0 + 0im, 0.0)
+    @test handedness(v, 1.0, 0.0, 1.0) == :linear
+
+    # 3. handedness returns :R when ellipticity > threshold
+    v = make_vector(1.0 + 0im, 0.5im, 0.0)  # Ey imaginary gives positive ellipticity
+    @test handedness(v, 1.0, 0.0, 1.0) == :R
+
+    # 4. handedness returns :L when ellipticity < -threshold
+    v = make_vector(1.0 + 0im, -0.5im, 0.0)  # Ey imaginary negative
+    @test handedness(v, 1.0, 0.0, 1.0) == :L
+
+    # 5. handedness returns :linear when ellipticity near zero
+    v = make_vector(1.0 + 0im, 0.0 + 0im, 0.0)  # purely real ratio -> ellipticity 0
+    @test handedness(v, 1.0, 0.0, 1.0) == :linear
+
+    # 6. Dispatch: handedness(v; kx, kz) forwards correctly
+    v = make_vector(1.0 + 0im, 0.5im, 0.0)
+    @test handedness(v; kx=0.0, kz=1.0) == handedness(v, 1.0, 0.0, 1.0)
+
+    # 7. Dispatch: handedness(v, ω; kx, kz) forwards correctly
+    v = make_vector(1.0 + 0im, 0.5im, 0.0)
+    ω = 2.0 + 0im
+    @test handedness(v, ω; kx=0.0, kz=1.0) == handedness(v, ω, 0.0, 1.0)
 end
 
