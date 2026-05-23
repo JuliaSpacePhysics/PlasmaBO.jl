@@ -24,6 +24,7 @@ makedocs(;
         "R/L/P modes (PBK solver)" => "rlp_Cattaert07.md",
         "Cold plasma (fluid vs kinetic solver)" => "cold_plasma.md",
         "Dispersion surface tracking" => "dispersion_surface.md",
+        "Wave polarization and handedness" => "demo_polarization.md",
         "Math notes" => "math_notes.md",
     ],
     plugins = [bib],
