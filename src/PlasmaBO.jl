@@ -19,6 +19,7 @@ export BranchPoint, SurfaceBranchPoint, track
 export hermite_expansion
 export PBK_param
 export BOPBK, BOHH, BOFluid
+export electric_field, magnetic_field, polarization_ratio, handedness, dispersion_matrix
 
 include("types.jl")
 include("utils.jl")
