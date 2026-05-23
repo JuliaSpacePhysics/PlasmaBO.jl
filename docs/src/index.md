@@ -96,7 +96,7 @@ Solving the kinetic dispersion relation is traditionally challenging because:
 
 ## Usage Examples
 
-Check out the [ring beam instability example](ringbeam_Umeda12.md) for detailed usage instructions, also see [firehose instability example](firehose_Astfalk17.md) for using with arbitrary velocity distributions, [BO-PBK example](rlp_Cattaert07.md) for using with kappa distributions (BO-PBK), [cold plasma example](cold_plasma.md) for comparing kinetic and fluid solvers, and [dispersion surface tracking example](dispersion_surface.md) for 2D scanning and mode tracking.
+Check out the [ring beam instability example](ringbeam_Umeda12.md) for detailed usage instructions, also see [firehose instability example](firehose_Astfalk17.md) for using with arbitrary velocity distributions, [BO-PBK example](rlp_Cattaert07.md) for using with kappa distributions (BO-PBK), [cold plasma example](cold_plasma.md) for comparing kinetic and fluid solvers, [dispersion surface tracking example](dispersion_surface.md) for 2D scanning and mode tracking, and [wave polarization and handedness example](demo_polarization.md) for analyzing wave modes in cold plasma.
 
 ### Solvers
 
