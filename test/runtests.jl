@@ -170,6 +170,8 @@ end
 
 @testset "Polarization and Handedness Utilities" begin
     using LinearAlgebra
+    electric_field(v) = (v[end-5], v[end-4], v[end-3])
+    magnetic_field(v) = (v[end-2], v[end-1], v[end])
     # 1. Test utilities with synthetic vectors
     # A vector where the last elements represent [Ex, Ey, Ez, Bx, By, Bz]
     # For RCP/R-wave: Ey = i*Ex => P = i (imag(P) > 0)

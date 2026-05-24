@@ -33,6 +33,7 @@ using PlasmaBO
 using PlasmaBO: c0, ε0, qe, me, mp
 using LinearAlgebra
 using Printf
+using Markdown
 
 # 1. Physics Setup
 B0 = 1.0e-4          # Background magnetic field along +z [Tesla]
@@ -44,25 +45,27 @@ k = 1.0
 kx = 0.0
 kz = k
 
-println("Parameters:")
-println("  - Background Magnetic Field (B0): ", B0, " T (along +z)")
-println("  - Plasma Density (n)            : ", n, " m^-3")
-println("  - Temperature (T)               : ", T, " eV")
-println("  - Wave Vector (kx, kz)          : (", kx, ", ", kz, ") m^-1")
+# Local helper functions to extract fields from fluid eigenvectors
+electric_field(v) = (v[end-5], v[end-4], v[end-3])
+magnetic_field(v) = (v[end-2], v[end-1], v[end])
 
 # Define species
 e_vdf = Maxwellian(:e, n, T)
 species = [e_vdf, FluidSpecies(:p, n, T)]
 
-println("\n1. Constructing the dispersion matrix using BOFluid solver...")
+# Construct the dispersion matrix using BOFluid solver
 M = dispersion_matrix(species, B0, kx, kz, BOFluid)
 
-println("2. Solving the eigenvalue problem (eigen!)...")
+# Solve the eigenvalue problem (eigen!)
 decomp = eigen!(M)
 ωs = decomp.values
 V = decomp.vectors
+```
 
-# Analytical Frequencies
+We analyze each of the 14 modes by examining their frequency, electric field norm, polarization ratio, and handedness, comparing them against analytical cold-plasma theory:
+
+```@example polarization
+# Analytical Frequencies and Dispersion relation functions
 wpe2 = n * qe^2 / (ε0 * me)
 wpi2 = n * qe^2 / (ε0 * mp)
 wce = qe * B0 / me     # Signed (negative for electrons)
@@ -70,14 +73,11 @@ wci = qe * B0 / mp     # Signed (positive for protons)
 wpe = sqrt(wpe2)
 wpi = sqrt(wpi2)
 
-# Dispersion function residuals
 D_R(ω) = 1.0 - (c0*k/ω)^2 - wpe2 / (ω * (ω - abs(wce))) - wpi2 / (ω * (ω + wci))
 D_L(ω) = 1.0 - (c0*k/ω)^2 - wpe2 / (ω * (ω + abs(wce))) - wpi2 / (ω * (ω - wci))
 
-println("\nIdentified Modes & Physical Verification against Cold-Plasma Theory:")
-println("-------------------------------------------------------------------------------------------------------------------------------------------")
-@printf("%-5s | %-24s | %-12s | %-10s | %-12s | %-10s | %-10s | %-36s\n", "Index", "Frequency ω (rad/s)", "E-field Norm", "Handedness", "Pol Ratio", "Residual D", "Status", "Physical Description")
-println("-------------------------------------------------------------------------------------------------------------------------------------------")
+header = ["Index", "Frequency ω (rad/s)", "E-field Norm", "Handedness", "Pol Ratio", "Residual D", "Status", "Physical Description"]
+rows = Any[]
 
 # Sort all 14 solutions by |real(ω)|
 sorted_indices = sort(1:length(ωs), by = i -> abs(real(ωs[i])))
@@ -95,13 +95,17 @@ for i in sorted_indices
     # Residual and status defaults
     residual = NaN
     status = "N/A"
-    mode_type = "EM Wave"
     desc = ""
     
     if abs(ω) < 1e1
-        mode_type = "Static"
         if abs(Bz) > 0.9
-            desc = "Static Longitudinal B-field (Bz)"
+            desc = "spurious ∇·B null mode (δBz)"
+        elseif abs(v[1]) > 0.9 && abs(v[5]) > 0.9
+            desc = "Static Neutral Plasma Perturbation (physical)"
+        elseif abs(v[1]) > 0.9
+            desc = "spurious Gauss's Law violation (static δne)"
+        elseif abs(v[5]) > 0.9
+            desc = "spurious Gauss's Law violation (static δnp)"
         else
             desc = "Static Neutral Plasma Perturbation"
         end
@@ -128,7 +132,6 @@ for i in sorted_indices
         end
         
         if E_norm < 1e-16
-            mode_type = "Uncoupled Gyro"
             residual = NaN
             status = "N/A"
             if abs(abs(ω) - abs(wci)) < 1e2
@@ -137,7 +140,6 @@ for i in sorted_indices
                 desc = "Uncoupled Species Gyration"
             end
         elseif hand == :linear
-            mode_type = "Electrostatic"
             desc = "Langmuir Wave " * (real(ω) > 0 ? "(+z)" : "(-z)")
         else
             # EM Waves
@@ -157,23 +159,36 @@ for i in sorted_indices
     res_str = isnan(residual) ? "N/A" : @sprintf("%.2e", residual)
     pol_ratio = polarization_ratio(v, kx, kz)
     # Use absolute value for display; handle non-finite values gracefully
-    display_ratio = (isfinite(pol_ratio) ? abs(pol_ratio) : NaN)
-    @printf("%-5d | %-24s | %-12.2e | %-10s | %-12.2e | %-10s | %-10s | %-36s\n",
-            i,
-            @sprintf("%.3e + %.3eim", real(ω), imag(ω)),
-            E_norm,
-            string(hand),
-            display_ratio,
-            res_str,
-            status,
-            desc)
+    display_ratio = isfinite(pol_ratio) ? @sprintf("%.2e", abs(pol_ratio)) : "NaN"
+    
+    push!(rows, [
+        string(i),
+        "`" * @sprintf("%.3e + %.3eim", real(ω), imag(ω)) * "`",
+        @sprintf("%.2e", E_norm),
+        string(hand),
+        display_ratio,
+        res_str,
+        status,
+        desc
+    ])
 end
-println("------------------------------------------------------------------------------------------------------------------")
-println("\nSummary of Physics Matching:")
-println("  - Electron plasma frequency (ωpe)  : ", @sprintf("%.3e", wpe), " rad/s")
-println("  - Ion cyclotron frequency (ωci)    : ", @sprintf("%.3e", wci), " rad/s")
-println("  - Electron cyclotron frequency(|ωce|): ", @sprintf("%.3e", abs(wce)), " rad/s")
-println("  - High-frequency EM wave speed (c*k) : ", @sprintf("%.3e", c0 * k), " rad/s")
-println("\nNote: Handedness is defined relative to the background magnetic field B0 (+z)")
-println("      assuming the wave convention e^(i*(k_z * z - ω * t)).")
+
+Markdown.MD(Markdown.Table([header, rows...], [:r, :l, :r, :c, :r, :r, :c, :l]))
+```
+
+### Summary of Characteristic Frequencies
+
+We can also inspect the physical characteristics and cyclotron/plasma frequencies of the system:
+
+```@example polarization
+summary_str = """ # hide
+**Characteristic Frequencies:** # hide
+- Electron plasma frequency (\$ω_{pe}\$): $(@sprintf("%.3e", wpe)) rad/s # hide
+- Ion cyclotron frequency (\$ω_{ci}\$): $(@sprintf("%.3e", wci)) rad/s # hide
+- Electron cyclotron frequency (\$|ω_{ce}|\$): $(@sprintf("%.3e", abs(wce))) rad/s # hide
+- High-frequency EM wave speed (\$c k\$): $(@sprintf("%.3e", c0 * k)) rad/s # hide
+
+*Note: Handedness is defined relative to the background magnetic field \$\\mathbf{B}_0\$ (\$+\\mathrm{z}\$) assuming the wave convention \$e^{i(k_z z - ω t)}\$.* # hide
+""" # hide
+Markdown.parse(summary_str) # hide
 ```

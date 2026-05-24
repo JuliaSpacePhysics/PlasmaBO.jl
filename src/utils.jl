@@ -14,7 +14,7 @@ function solve_with_threads(f, nthreads)
     end
 end
 
-function with_progress(f, prob; desc = "Solving dispersion (k, θ)...", dt = 1)
+function with_progress(f, prob; desc="Solving dispersion (k, θ)...", dt=1)
     θs = prob.θs
     ks = prob.ks
     carts = CartesianIndices((length(ks), length(θs)))
@@ -25,26 +25,6 @@ function with_progress(f, prob; desc = "Solving dispersion (k, θ)...", dt = 1)
         kx, kz = k .* sincos(θ)
         f(ik, iθ, kx, kz)
     end
-end
-
-"""
-    electric_field(eigenvector)
-
-Extract the electric field components `(Ex, Ey, Ez)` from an eigenvector.
-"""
-function electric_field(v)
-    n = length(v)
-    return (v[n-5], v[n-4], v[n-3])
-end
-
-"""
-    magnetic_field(eigenvector)
-
-Extract the magnetic field components `(Bx, By, Bz)` from an eigenvector.
-"""
-function magnetic_field(v)
-    n = length(v)
-    return (v[n-2], v[n-1], v[n])
 end
 
 """
@@ -59,7 +39,7 @@ If both `kx` and `kz` are zero (or omitted), it defaults to parallel propagation
 where the ratio simplifies to `Ey / Ex`.
 """
 function polarization_ratio(v, kx, kz)
-    Ex, Ey, Ez = electric_field(v)
+    Ex, Ey, Ez = v[end-5], v[end-4], v[end-3]
     k = sqrt(kx^2 + kz^2)
     if k == 0.0
         return Ey / Ex
@@ -98,8 +78,8 @@ Returns:
 * `:linear` (Linearly polarized or near-linear within the threshold)
 """
 function handedness(v, ω, kx, kz; threshold=1e-5)
-    Ex, Ey, Ez = electric_field(v)
-    
+    Ex, Ey, Ez = v[end-5], v[end-4], v[end-3]
+
     # Calculate transverse field component perpendicular to k in x-z plane
     k = sqrt(kx^2 + kz^2)
     if k == 0.0
@@ -109,7 +89,7 @@ function handedness(v, ω, kx, kz; threshold=1e-5)
         sin_θ = kx / k
         E_perp = Ex * cos_θ - Ez * sin_θ
     end
-    
+
     abs_E_perp = abs(E_perp)
     abs_Ey = abs(Ey)
     if abs_E_perp < 1e-10 && abs_Ey < 1e-10
@@ -117,7 +97,7 @@ function handedness(v, ω, kx, kz; threshold=1e-5)
     end
     P = Ey / E_perp
     abs_P = abs(P)
-    if abs_P < threshold || 1/abs_P < threshold
+    if abs_P < threshold || 1 / abs_P < threshold
         return :linear
     end
     # Physical handedness factors in the sign of real(ω) to reflect true time-domain rotation
