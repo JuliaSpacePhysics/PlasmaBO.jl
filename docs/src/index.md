@@ -123,7 +123,7 @@ f_s(v_\parallel,v_\perp)=\sum_{l,m} a_{lm} \rho_l(v_\parallel) u_m(v_\perp)
 using Hermite–Hermite (HH) bases. Hermite bases are Maxwellian-centered and accuracy degrades notably for **low κ (strong suprathermal tails)**.
 
 ```@docs; canonical = false
-BOPBK
+PlasmaBO.PBK.BOPBK
 BOHH
 BOFluid
 ```
@@ -147,5 +147,5 @@ Use **BO-Arbitrary** if the distribution is numerical (e.g., from spacecraft dat
 ```
 
 ```@autodocs
-Modules = [PlasmaBO]
+Modules = [PlasmaBO, PlasmaBO.PBK]
 ```

@@ -1,4 +1,9 @@
-# Electromagnetic fluid dispersion relation solver
+"""
+    BOFluid()
+
+Dispersion solver using the multi-fluid electromagnetic matrix formulation.
+"""
+@kwdef struct BOFluid <: AbstractDispersionAlgorithm end
 
 """
     FluidSpecies{T}
@@ -39,8 +44,7 @@ FluidSpecies(p::ParticleLike, args...; kw...) = FluidSpecies(args...; kw...)
 plasma_frequency(s::FluidSpecies) = plasma_frequency(s.q, s.n, s.m)
 
 # Matrix dimensions: 4 variables per species (n, vx, vy, vz) + 6 fields (Ex, Ey, Ez, Bx, By, Bz)
-_fluid_size(S::Int) = 4 * S + 6
-_fluid_size(species) = _fluid_size(length(species))
+matrix_size(::BOFluid, species) = 4 * length(species) + 6
 
 _gamma_z(s::FluidSpecies) = s.gamma_z
 _gamma_p(s::FluidSpecies) = s.gamma_p
@@ -103,20 +107,14 @@ function _assemble_fluid_species!(M, s, ind, SJ, kx, kz, B0)
     return nothing
 end
 
-function build_fluid_dispersion_matrix(species, args...; kw...)
-    NN = _fluid_size(species)
-    M = zeros(ComplexF64, NN, NN)
-    return build_fluid_dispersion_matrix!(M, species, args...; kw...)
-end
-
-# Build the fluid dispersion matrix in-place.
-function build_fluid_dispersion_matrix!(M, species, kx, kz, B0; c2 = c0^2)
+function dispersion_matrix!(M, pb::DispersionProblem, ::BOFluid; c2 = c0^2)
+    species, B0, kx, kz = pb.species, pb.B0, pb.kx, pb.kz
     S = length(species)
     SJ = 4 * S
     for i in 1:S
-        ind = (i - 1) * 4
-        _assemble_fluid_species!(M, species[i], ind, SJ, kx, kz, B0)
+        _assemble_fluid_species!(M, species[i], (i - 1) * 4, SJ, kx, kz, B0)
     end
     _B_E_part!(M, SJ, kx, kz; c2)
     return M
 end
+
