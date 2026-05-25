@@ -4,6 +4,20 @@ using Gamma: loggamma, gamma
 using Bessels: besselj
 using Bumper: @no_escape, @alloc
 using ..Constants
+using ..PlasmaBO: AbstractDispersionAlgorithm, DispersionProblem
+import ..PlasmaBO: dispersion_matrix, dispersion_matrix!, matrix_size
+
+"""
+    BOPBK(; N = 2)
+
+Dispersion solver using the PBK matrix formulation.
+
+`N` controls the truncation order of the cyclotron harmonic index used to build
+the dispersion matrix.
+"""
+@kwdef struct BOPBK <: AbstractDispersionAlgorithm
+    N::Int = 2
+end
 
 zero!(M) = fill!(M, zero(eltype(M)))
 
@@ -25,16 +39,9 @@ function PBK_param(s, B0)
     return (; u0, sigma, κz, κx, wp, wc, vtz, vtx, rhoc)
 end
 
-function _pbk_species_list(species)
-    species isa AbstractVector && return species
-    species isa Tuple && return species
-    return (species,)
-end
-
 _pbk_per_n(κ) = (κ + 1) * (κ + 4) ÷ 2
 
 function _pbk_len_total(species, Ns)
-    species = _pbk_species_list(species)
     len = 0
     for sp in species
         len += (2 * Ns + 1) * _pbk_per_n(Int(sp.κz))
@@ -45,7 +52,6 @@ end
 _pbk_len_sub(species, N) = _pbk_len_total(species, N) + 1
 
 function _pbk_species_offset(species, s, Ns)
-    species = _pbk_species_list(species)
     off = 0
     for i in 1:(s - 1)
         sp = species[i]
@@ -55,7 +61,6 @@ function _pbk_species_offset(species, s, Ns)
 end
 
 function _pbk_snl_index(species, s, idx_n, l, j, Ns)
-    species = _pbk_species_list(species)
     sp = species[s]
     idx_n < 1 || idx_n > 2 * Ns + 1 && error("idx_n out of range")
     l < 1 || l > Int(sp.κz) + 1 && error("l out of range")
@@ -356,30 +361,24 @@ function _pbk_add_species_Mz!(
     return nothing
 end
 
+matrix_size(alg::BOPBK, species) = 3 * _pbk_len_sub(species, alg.N) + 6
 
-function build_pbk_dispersion_matrix(species, B0, kx, kz; N = 2, EPS0 = 1.0e-2, c2 = c0^2)
-    species = _pbk_species_list(species)
+function dispersion_matrix!(M, pb::DispersionProblem, alg::BOPBK; EPS0 = 1.0e-2, c2 = c0^2)
+    species = pb.species
+    kx, kz = pb.kx, pb.kz
+    N = alg.N
     len_sub = _pbk_len_sub(species, N)
-    params = PBK_param.(species, B0)
-    wp2_sum = sum(sp.wp^2 for sp in params)
+    params = PBK_param.(species, pb.B0)
+    bx10_by20 = 1im * ε0 * sum(sp.wp^2 for sp in params)
 
-    bx10_by20 = 1im * ε0 * wp2_sum
-    by20 = bx10_by20
+    Mx = @view M[1:len_sub, :]
+    My = @view M[(len_sub + 1):(2 * len_sub), :]
+    Mz = @view M[(2 * len_sub + 1):(3 * len_sub), :]
 
-    M = @no_escape begin
-        len_col = 3 * len_sub + 6
-        Mx = @alloc(ComplexF64, len_sub, len_col) |> zero!
-        My = @alloc(ComplexF64, len_sub, len_col) |> zero!
-        Mz = @alloc(ComplexF64, len_sub, len_col) |> zero!
-        O = @alloc(ComplexF64, 6, len_col) |> zero!
-
-        for s in eachindex(params)
-            _pbk_add_species_Mxy!(Mx, params, s, kx, kz; MatrixNo = 1, ExNo = 5, EyNo = 4, EzNo = 3, ExyNo = 5, bx10_by20, EPS0, N, len_sub)
-            _pbk_add_species_Mxy!(My, params, s, kx, kz; MatrixNo = 2, ExNo = 5, EyNo = 4, EzNo = 3, ExyNo = 4, bx10_by20, EPS0, N, len_sub)
-            _pbk_add_species_Mz!(Mz, params, s, kx, kz; MatrixNo = 3, ExNo = 5, EyNo = 4, EzNo = 3, by20, EPS0, N, len_sub)
-        end
-
-        vcat(Mx, My, Mz, O)
+    for s in eachindex(params)
+        _pbk_add_species_Mxy!(Mx, params, s, kx, kz; MatrixNo = 1, ExNo = 5, EyNo = 4, EzNo = 3, ExyNo = 5, bx10_by20, EPS0, N, len_sub)
+        _pbk_add_species_Mxy!(My, params, s, kx, kz; MatrixNo = 2, ExNo = 5, EyNo = 4, EzNo = 3, ExyNo = 4, bx10_by20, EPS0, N, len_sub)
+        _pbk_add_species_Mz!(Mz, params, s, kx, kz; MatrixNo = 3, ExNo = 5, EyNo = 4, EzNo = 3, by20 = bx10_by20, EPS0, N, len_sub)
     end
 
     idx_Jx = len_sub
@@ -403,4 +402,6 @@ function build_pbk_dispersion_matrix(species, B0, kx, kz; N = 2, EPS0 = 1.0e-2, 
 
     return M
 end
+
+
 end

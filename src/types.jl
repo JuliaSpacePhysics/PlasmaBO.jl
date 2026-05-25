@@ -2,12 +2,9 @@ abstract type AbstractSolverParams end
 abstract type AbstractSolverSpecies end
 abstract type AbstractDispersionAlgorithm end
 
-
-function _species(species)
-    species isa AbstractVector && return species
-    species isa Tuple && return species
-    return (species,)
-end
+_species(species::AbstractVector) = species
+_species(species::Tuple) = species
+_species(species) = (species,)
 
 struct DispersionProblem{S, B, K}
     species::S

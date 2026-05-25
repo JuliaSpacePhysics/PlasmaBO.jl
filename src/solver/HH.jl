@@ -1,4 +1,20 @@
-# Matrix eigenvalue solver for plasma dispersion relations
+"""
+    BOHH(; N = 2, J = 8)
+
+Dispersion solver using the Hermite-Hermite (HH) basis expansion.
+
+`N` controls the truncation order of the cyclotron harmonic index.
+`J` controls the truncation order of the number of poles for Z-function approximation
+
+This method transforms the dispersion relation into a matrix eigenvalue problem
+using J-pole approximation for the plasma dispersion function, allowing
+simultaneous computation of all wave modes.
+"""
+@kwdef struct BOHH <: AbstractDispersionAlgorithm
+    N::Int = 2
+    J::Int = 8
+end
+
 struct HHSolverParam{T}
     wc::T                       # Cyclotron frequency
     wp::T                      # Plasma frequency
@@ -240,12 +256,20 @@ end
 # Indices SNJ3+1 to SNJ3+6:    E_x, E_y, E_z, B_x, B_y, B_z
 # where SNJ1 = SNJ + S (SNJ pole velocities + S species auxiliary j's)
 
-# Compute matrix dimensions
-_size(S::Int, N, J) = 3 * (S * (2 * N + 1) * J + S) + 6
+matrix_size(alg::BOHH, species) = let S = length(species)
+    3 * (S * (2 * alg.N + 1) * alg.J + S) + 6
+end
 
-function build_dispersion_matrix!(M, params, kx, kz; N = 2, J = 8, c2 = c0^2)
+prepare(::BOHH, species, B0) = map(species) do sp
+    HHSolverParam(sp, B0)
+end
+
+function dispersion_matrix!(M, pb::DispersionProblem, alg::BOHH; c2 = c0^2)
+    params = prepare(alg, pb.species, pb.B0)
+    kx, kz = pb.kx, pb.kz
+    N = alg.N
     S = length(params)
-    (; J, bzj, czj) = get_jpole_coefficients(J)
+    (; J, bzj, czj) = get_jpole_coefficients(alg.J)
 
     # Handle singularities
     kx = kx == 0.0 ? 1.0e-30 : kx
@@ -314,3 +338,4 @@ function _B_E_part!(M, idx, kx, kz; c2 = c0^2)
     M[idx + 6, idx + 2] = kx
     return M
 end
+

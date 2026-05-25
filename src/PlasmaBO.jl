@@ -17,9 +17,13 @@ export HHSolverParam
 export FluidSpecies
 export BranchPoint, SurfaceBranchPoint, track
 export hermite_expansion
-export PBK_param
 export BOPBK, BOHH, BOFluid
 export electric_field, magnetic_field, polarization_ratio, handedness, dispersion_matrix
+
+function dispersion_matrix end
+function dispersion_matrix! end
+function matrix_size end
+prepare(alg, species, B0) = species
 
 include("types.jl")
 include("utils.jl")
