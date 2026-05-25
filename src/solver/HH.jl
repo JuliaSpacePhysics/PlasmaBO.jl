@@ -61,171 +61,143 @@ function HHSolverParam(q, m, n, B0, vtz, vtp, vdz, vdr, alm)
     return HHSolverParam{T}(wc, wp, ρc, vtz, vtp, vdz, vdr, alm)
 end
 
-function _compute_sums(j, cⱼ, cj_l, alm, Aₙ, Bₙ, Cₙ, dr, Ils)
+# Precompute alm-weighted m-sums (independent of j) used inside the (n, j)-loop.
+# Γₙ is the combined integral buffer from `_compute_integral_matrices!` with the
+# component layout (A,p=1; A,p=2; B,p=1; B,p=2; C,p=1; C,p=2) along rows. For each
+# l ∈ 0:l_max and component k ∈ {A=1, B=2, C=3}:
+#   Tₗ[k, l+1] = Σₘ alm[l+1,m+1] · (2·Γₙ[2k-1,m+3] - m·Γₙ[2k-1,m+1])   (derivative form)
+#   Uₗ[k, l+1] = Σₘ alm[l+1,m+1] · Γₙ[2k,   m+2]                       (p=2 form)
+function _precompute_lm_sums!(Tₗ, Uₗ, alm, Γₙ)
     l_max, m_max = size(alm) .- 1
-
-    sum11tmp1, sum11tmp2, sum11tmp3 = 0.0im, 0.0im, 0.0im
-    sum12tmp1, sum12tmp2 = 0.0im, 0.0im
-    sum22tmp1, sum22tmp2, sum22tmp3 = 0.0im, 0.0im, 0.0im
-    sum13tmp1, sum13tmp2 = 0.0im, 0.0im
-    sum23tmp1, sum23tmp2 = 0.0im, 0.0im
-    sum33tmp1, sum33tmp2, sum33tmp3 = 0.0im, 0.0im, 0.0im
-
-    for l in 0:l_max
-        cˡ = cj_l[j, l + 2]
-        cˡ⁺¹ = cⱼ * cˡ
-        cˡ⁺² = cⱼ * cˡ⁺¹
-        cˡ⁺³ = cⱼ * cˡ⁺²
-        cˡ⁻¹ = l >= 1 ? cj_l[j, l - 1 + 2] : 0.0im
-        dZl = 2 * cˡ⁺¹ - l * cˡ⁻¹
-        dZlc = dZl * cⱼ
-
+    @inbounds for l in 0:l_max
+        ta = tb = tc = 0.0
+        ua = ub = uc = 0.0
         for m in 0:m_max
-            aₗₘ = alm[l + 1, m + 1]
-            idx_m = m + 2
-            idx_mp1 = idx_m + 1
-            idx_mm1 = idx_m - 1
-
-            dAm = 2 * Aₙ[idx_mp1, 1] - m * Aₙ[idx_mm1, 1]
-            dBm = 2 * Bₙ[idx_mp1, 1] - m * Bₙ[idx_mm1, 1]
-            dCm = 2 * Cₙ[idx_mp1, 1] - m * Cₙ[idx_mm1, 1]
-
-            sum11tmp1 += aₗₘ * cˡ * dAm
-            sum11tmp2 += aₗₘ * dZl * Aₙ[idx_m, 2]
-
-            sum12tmp1 += aₗₘ * cˡ * dBm
-            sum12tmp2 += aₗₘ * dZl * Bₙ[idx_m, 2]
-
-            sum22tmp1 += aₗₘ * cˡ * dCm
-            sum22tmp2 += aₗₘ * dZl * Cₙ[idx_m, 2]
-
-            sum13tmp1 += aₗₘ * (dr * cˡ + cˡ⁺¹) * dAm
-            sum13tmp2 += aₗₘ * (dZlc + dr * dZl) * Aₙ[idx_m, 2]
-
-            sum23tmp1 += aₗₘ * (dr * cˡ + cˡ⁺¹) * dBm
-            sum23tmp2 += aₗₘ * (dZlc + dr * dZl) * Bₙ[idx_m, 2]
-
-            sum33tmp1 += aₗₘ * (dr^2 * cˡ + 2 * dr * cˡ⁺¹ + cˡ⁺²) * dAm
-            sum33tmp2 += aₗₘ * (dr^2 * dZl + 2 * dr * dZlc + (2 * cˡ⁺³ - l * cˡ⁺¹)) * Aₙ[idx_m, 2]
-
-            if j == 1
-                Iₗ, Iₗ₊₁, Iₗ₊₂ = Ils[l + 1], Ils[l + 2], Ils[l + 3]
-                Iₗ₋₁ = l >= 1 ? Ils[l] : 0.0
-                sum11tmp3 += aₗₘ * Iₗ * dAm
-                sum22tmp3 += aₗₘ * Iₗ * dCm
-                sum33tmp3 += aₗₘ * (dr * (2 * Iₗ₊₁ - l * Iₗ₋₁) + (2 * Iₗ₊₂ - l * Iₗ)) * Aₙ[idx_m, 2]
-            end
+            a = alm[l + 1, m + 1]
+            ta += a * (2 * Γₙ[1, m + 3] - m * Γₙ[1, m + 1])
+            ua += a * Γₙ[2, m + 2]
+            tb += a * (2 * Γₙ[3, m + 3] - m * Γₙ[3, m + 1])
+            ub += a * Γₙ[4, m + 2]
+            tc += a * (2 * Γₙ[5, m + 3] - m * Γₙ[5, m + 1])
+            uc += a * Γₙ[6, m + 2]
         end
+        Tₗ[1, l + 1] = ta; Tₗ[2, l + 1] = tb; Tₗ[3, l + 1] = tc
+        Uₗ[1, l + 1] = ua; Uₗ[2, l + 1] = ub; Uₗ[3, l + 1] = uc
     end
-
-    return (
-        sum11tmp1, sum11tmp2, sum11tmp3,
-        sum12tmp1, sum12tmp2,
-        sum22tmp1, sum22tmp2, sum22tmp3,
-        sum13tmp1, sum13tmp2,
-        sum23tmp1, sum23tmp2,
-        sum33tmp1, sum33tmp2, sum33tmp3,
-    )
+    return nothing
 end
 
 function _assemble_species!(
-        M, Aₙ, Bₙ, Cₙ, Ils,
-        snj,
-        kx, kz, SNJ1, SNJ3,
-        as,
-        cj, bzj, cj_l,
+        M, Γₙ, Ils, Tₗ, Uₗ,
+        snj, kx, kz, SNJ1, SNJ3,
+        as, cj, bzj, cj_l,
         wc, wp2, vtz, vtp, vdz, d, R, alm,
         N, J,
     )
     l_max, m_max = size(alm) .- 1
-
-    b11, b12, b13, b22, b23, b33 = ntuple(_ -> 0.0im, 6)
+    b11 = b12 = b13 = b22 = b23 = b33 = 0.0im
 
     vr = vtp / vtz
     dr = vdz / vtz
+    vr2 = vr * vr
+    kzvtz = kz * vtz
+    kzvtp = kz * vtp
+    vtzp = vtz / vtp
 
     Ils .= funIn.(0:(l_max + 2))
+
     for n in -N:N
-        Aₙ .= 0
-        Bₙ .= 0
-        Cₙ .= 0
+        Γₙ .= 0
         nw_c = n * wc
         nwkp = nw_c / (kx * vtp)
+        _compute_integral_matrices!(Γₙ, n, as, d, m_max)
+        Γₙ .*= 2.0 / R
 
-        _compute_integral_matrices!(Aₙ, Bₙ, Cₙ, n, as, d, m_max)
-        Aₙ .*= 2.0 / R
-        Bₙ .*= 2.0 / R
-        Cₙ .*= 2.0 / R
+        _precompute_lm_sums!(Tₗ, Uₗ, alm, Γₙ)
+
+        # j == 1 contributes per-n terms to species coefficients b11, b22, b33.
+        # Lifted out of the j-loop since none of its factors depend on j.
+        s11_3 = s22_3 = s33_3 = 0.0
+        @inbounds for l in 0:l_max
+            Iₗ = Ils[l + 1]
+            Iₗ₊₁ = Ils[l + 2]
+            Iₗ₊₂ = Ils[l + 3]
+            Iₗ₋₁ = l >= 1 ? Ils[l] : 0.0
+            s11_3 += Iₗ * Tₗ[1, l + 1]
+            s22_3 += Iₗ * Tₗ[3, l + 1]
+            s33_3 += (dr * (2 * Iₗ₊₁ - l * Iₗ₋₁) + (2 * Iₗ₊₂ - l * Iₗ)) * Uₗ[1, l + 1]
+        end
+        b11 -= wp2 * nwkp^2 * s11_3
+        b22 -= wp2 * s22_3
+        b33 -= wp2 * s33_3
 
         for j in 1:J
             snj += 1
             cⱼ = cj[j]
+            cnj = cⱼ * kzvtz + kz * vdz + nw_c
 
-            cnj = cⱼ * kz * vtz + kz * vdz + nw_c
+            s11_1 = s11_2 = 0.0im
+            s12_1 = s12_2 = 0.0im
+            s22_1 = s22_2 = 0.0im
+            s13_1 = s13_2 = 0.0im
+            s23_1 = s23_2 = 0.0im
+            s33_1 = s33_2 = 0.0im
+            @inbounds for l in 0:l_max
+                cˡ = cj_l[j, l + 1]
+                cˡ⁺¹ = cⱼ * cˡ
+                cˡ⁺² = cⱼ * cˡ⁺¹
+                cˡ⁺³ = cⱼ * cˡ⁺²
+                cˡ⁻¹ = l >= 1 ? cj_l[j, l] : 0.0im
+                dZl = 2 * cˡ⁺¹ - l * cˡ⁻¹
+                dZlc = dZl * cⱼ
+                f13a = dr * cˡ + cˡ⁺¹
+                f13b = dZlc + dr * dZl
+                f33a = dr * dr * cˡ + 2 * dr * cˡ⁺¹ + cˡ⁺²
+                f33b = dr * dr * dZl + 2 * dr * dZlc + (2 * cˡ⁺³ - l * cˡ⁺¹)
 
-            (
-                sum11tmp1, sum11tmp2, sum11tmp3,
-                sum12tmp1, sum12tmp2,
-                sum22tmp1, sum22tmp2, sum22tmp3,
-                sum13tmp1, sum13tmp2,
-                sum23tmp1, sum23tmp2,
-                sum33tmp1, sum33tmp2, sum33tmp3,
-            ) = _compute_sums(j, cⱼ, cj_l, alm, Aₙ, Bₙ, Cₙ, dr, Ils)
+                tA = Tₗ[1, l + 1]; uA = Uₗ[1, l + 1]
+                tB = Tₗ[2, l + 1]; uB = Uₗ[2, l + 1]
+                tC = Tₗ[3, l + 1]; uC = Uₗ[3, l + 1]
 
-            if j == 1
-                nwkp = nw_c / (kx * vtp)
-                b11 -= wp2 * nwkp^2 * sum11tmp3
-                b22 -= wp2 * sum22tmp3
-                b33 -= wp2 * sum33tmp3
+                s11_1 += cˡ * tA;   s11_2 += dZl * uA
+                s12_1 += cˡ * tB;   s12_2 += dZl * uB
+                s22_1 += cˡ * tC;   s22_2 += dZl * uC
+                s13_1 += f13a * tA; s13_2 += f13b * uA
+                s23_1 += f13a * tB; s23_2 += f13b * uB
+                s33_1 += f33a * tA; s33_2 += f33b * uA
             end
 
             tmp = wp2 * bzj[j] / cnj
+            p11 = nwkp^2 * (nw_c * s11_1 + kzvtz * vr2 * s11_2) * tmp
+            p12 = 1im * nwkp * (nw_c * s12_1 + kzvtz * vr2 * s12_2) * tmp
+            p22 = (nw_c * s22_1 + kzvtz * vr2 * s22_2) * tmp
+            p13 = nwkp * (vtzp * nw_c * s13_1 + kzvtp * s13_2) * tmp
+            p23 = -1im * (vtzp * nw_c * s23_1 + kzvtp * s23_2) * tmp
+            p33 = vtzp * (vtzp * nw_c * s33_1 + kzvtp * s33_2) * tmp
 
-            kzvtz = kz * vtz
-            kzvtp = kz * vtp
-            vr2 = vr * vr
-
-            p11snj = nwkp^2 * (nw_c * sum11tmp1 + kzvtz * vr2 * sum11tmp2) * tmp
-            p12snj = 1im * nwkp * (nw_c * sum12tmp1 + kzvtz * vr2 * sum12tmp2) * tmp
-            p21snj = -p12snj
-            p22snj = (nw_c * sum22tmp1 + kzvtz * vr2 * sum22tmp2) * tmp
-            p13snj = nwkp * ((vtz / vtp) * nw_c * sum13tmp1 + kzvtp * sum13tmp2) * tmp
-            p31snj = p13snj
-            p23snj = -1im * ((vtz / vtp) * nw_c * sum23tmp1 + kzvtp * sum23tmp2) * tmp
-            p32snj = -p23snj
-            p33snj = (vtz / vtp) * ((vtz / vtp) * nw_c * sum33tmp1 + kzvtp * sum33tmp2) * tmp
-
-            jjx = snj + 0 * SNJ1
-            jjy = snj + 1 * SNJ1
+            jjx = snj
+            jjy = snj + SNJ1
             jjz = snj + 2 * SNJ1
 
-            # # v_snjx equation: ω v_snjx = c_snj v_snjx + b_snj11 E_x + b_snj12 E_y + b_snj13 E_z
             M[jjx, jjx] = cnj
-            M[jjx, (SNJ3 + 1):(SNJ3 + 3)] .= (p11snj, p12snj, p13snj)
-
-            # v_snjy equation
+            M[jjx, (SNJ3 + 1):(SNJ3 + 3)] .= (p11, p12, p13)
             M[jjy, jjy] = cnj
-            M[jjy, (SNJ3 + 1):(SNJ3 + 3)] .= (p21snj, p22snj, p23snj)
-
-            # v_snjz equation
+            M[jjy, (SNJ3 + 1):(SNJ3 + 3)] .= (-p12, p22, p23)   # p21 = -p12
             M[jjz, jjz] = cnj
-            M[jjz, (SNJ3 + 1):(SNJ3 + 3)] .= (p31snj, p32snj, p33snj)
+            M[jjz, (SNJ3 + 1):(SNJ3 + 3)] .= (p13, -p23, p33)   # p31 = p13, p32 = -p23
 
-            b11 -= p11snj
-            b12 -= p12snj
-            b13 -= p13snj
-            b22 -= p22snj
-            b23 -= p23snj
-            b33 -= p33snj
+            b11 -= p11
+            b12 -= p12
+            b13 -= p13
+            b22 -= p22
+            b23 -= p23
+            b33 -= p33
         end
     end
     return snj, (b11, b12, b13, b22, b23, b33)
 end
 
-function _assemble_species!(
-        M, param, snj, kx, kz,
-        SNJ1, SNJ3, czj, bzj, czj_l, N, J
-    )
+function _assemble_species!(M, param, snj, kx, kz, SNJ1, SNJ3, czj, bzj, czj_l, N, J)
     as = kx * param.ρc * sqrt(2) # Perpendicular wavenumber parameter
     vtp = param.vtp
     d = param.vdr / vtp
@@ -235,12 +207,13 @@ function _assemble_species!(
     l_max, m_max = size(alm) .- 1
 
     return @no_escape begin
-        Aₙ = @alloc(Float64, m_max + 4, 2) # Γ_{a,n,m,p}
-        Bₙ = @alloc(Float64, m_max + 4, 2) # Γ_{b,n,m,p}
-        Cₙ = @alloc(Float64, m_max + 4, 2) # Γ_{c,n,m,p}
+        Γₙ = @alloc(Float64, 6, m_max + 4)
         Ils = @alloc(Float64, l_max + 3)
+        Tₗ = @alloc(Float64, 3, l_max + 1)
+        Uₗ = @alloc(Float64, 3, l_max + 1)
         _assemble_species!(
-            M, Aₙ, Bₙ, Cₙ, Ils, snj, kx, kz, SNJ1, SNJ3, as, czj, bzj, czj_l,
+            M, Γₙ, Ils, Tₗ, Uₗ,
+            snj, kx, kz, SNJ1, SNJ3, as, czj, bzj, czj_l,
             param.wc, wp2, param.vtz, vtp, param.vdz, d, R, alm,
             N, J
         )
@@ -283,13 +256,13 @@ function dispersion_matrix!(M, pb::DispersionProblem, alg::BOHH; c2 = c0^2)
 
     max_lsmax = maximum(p -> size(p.aslm, 1) - 1, params)
 
-    # Column 1 is never read; columns 2..max_lsmax+5 hold czj^0..czj^(max_lsmax+3).
+    # czj_l[j, l + 1] holds czj[j]^l for l in 0:(max_lsmax + 3).
     @no_escape begin
-        czj_l = @alloc(ComplexF64, J, max_lsmax + 5)
+        czj_l = @alloc(ComplexF64, J, max_lsmax + 4)
         @inbounds for j in 1:J
-            czj_l[j, 2] = one(ComplexF64)
+            czj_l[j, 1] = one(ComplexF64)
             for l in 1:(max_lsmax + 3)
-                czj_l[j, l + 2] = czj_l[j, l + 1] * czj[j]
+                czj_l[j, l + 1] = czj_l[j, l] * czj[j]
             end
         end
 
