@@ -25,6 +25,7 @@ makedocs(;
         "Cold plasma (fluid vs kinetic solver)" => "cold_plasma.md",
         "Dispersion surface tracking" => "dispersion_surface.md",
         "Wave polarization and handedness" => "demo_polarization.md",
+        "Relativistic Langmuir (experimental)" => "relativistic.md",
         "Math notes" => "math_notes.md",
     ],
     plugins = [bib],
