@@ -14,16 +14,34 @@ function solve_with_threads(f, nthreads)
     end
 end
 
-function with_progress(f, prob; desc = "Solving dispersion (k, θ)...", dt = 1)
+# Emits ProgressLogging-protocol messages when `progress=true`.
+function with_progress(f, prob;
+        progress = false,
+        name = "Solving dispersion (k, θ)...",
+        progress_steps = 1)
     θs = prob.θs
     ks = prob.ks
     carts = CartesianIndices((length(ks), length(θs)))
-    return @showprogress dt = dt desc = desc Threads.@threads for id in carts
-        ik, iθ = Tuple(id)
-        k = ks[ik]
-        θ = θs[iθ]
-        kx, kz = k .* sincos(θ)
-        f(ik, iθ, kx, kz)
+    if !progress
+        Threads.@threads for id in carts
+            ik, iθ = Tuple(id)
+            kx, kz = ks[ik] .* sincos(θs[iθ])
+            f(ik, iθ, kx, kz)
+        end
+        return
+    end
+    total = length(carts)
+    counter = Threads.Atomic{Int}(0)
+    @withprogress name = name begin
+        Threads.@threads for id in carts
+            ik, iθ = Tuple(id)
+            kx, kz = ks[ik] .* sincos(θs[iθ])
+            f(ik, iθ, kx, kz)
+            done = Threads.atomic_add!(counter, 1) + 1
+            if done == total || done % progress_steps == 0
+                @logprogress done / total
+            end
+        end
     end
 end
 

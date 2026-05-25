@@ -53,11 +53,18 @@ kz = k * cos(θ)
 
 ## Dispersion Curve Scan
 
-Scan k*λD from 0.01 to 0.3
+Scan k*λD from 0.01 to 0.3. Pass `progress=true` to emit
+[ProgressLogging](https://github.com/JuliaLogging/ProgressLogging.jl)-protocol messages.
+
+```@example matrix
+# Route progress to stdout so Documenter @example captures it.
+using Logging, TerminalLoggers
+global_logger(TerminalLogger(stdout, LogLevel(-1)))
+```
 
 ```@repl matrix
 k_ranges = (0.01:0.005:0.3) .* kn;
-sol = solve(species, B0, k_ranges, θ; N=6)
+sol = solve(species, B0, k_ranges, θ; N=6, progress=true, progress_steps=6)
 ```
 
 ```@example matrix

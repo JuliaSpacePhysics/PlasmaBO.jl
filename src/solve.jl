@@ -27,11 +27,14 @@ function _ensemble_solve(f, pb)
     return DispersionSolution(ks, θs, ωs)
 end
 
-function solve(pb::EnsembleProblem, alg)
+function solve(pb::EnsembleProblem, alg;
+        progress = false,
+        progress_name = "Solving dispersion (k, θ)...",
+        progress_steps = 4)
     return _ensemble_solve(pb) do ωs
         species = prepare(alg, pb.species, pb.B0)
         n = matrix_size(alg, species)
-        with_progress(pb) do ik, iθ, kx, kz
+        with_progress(pb; progress, name = progress_name, progress_steps) do ik, iθ, kx, kz
             @no_escape begin
                 M = @alloc(ComplexF64, n, n)
                 sub = DispersionProblem(species, pb.B0, kx, kz)
@@ -63,6 +66,11 @@ function solve(species, B0, kx::Number, kz::Number, alg = BOHH; kw...)
     return solve(DispersionProblem(species, B0, kx, kz), alg(; kw...))
 end
 
-function solve(species, B0, ks, θs, alg = BOHH; kw...)
-    return solve(EnsembleProblem(species, B0, ks, θs), alg(; kw...))
+function solve(species, B0, ks, θs, alg = BOHH;
+        progress = false,
+        progress_name = "Solving dispersion (k, θ)...",
+        progress_steps = 1,
+        kw...)
+    return solve(EnsembleProblem(species, B0, ks, θs), alg(; kw...);
+        progress, progress_name, progress_steps)
 end
