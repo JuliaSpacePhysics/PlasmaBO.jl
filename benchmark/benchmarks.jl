@@ -130,3 +130,21 @@ let
 
     SUITE["PBKSolver"]["solve"] = @benchmarkable solve($electron, $B0, $ks, $θ, BOPBK)
 end
+
+
+# Matrix Construction - isolating matrix assembly from eigensolve that dominates `solve`.
+SUITE["BuildMatrix"] = BenchmarkGroup()
+
+let
+    B0 = 1.0e-6
+    electron = BiKappa2(:e, 2.43e6, 1.0, 200.0, 2555.0; sigma = 0.0)
+    wce = abs(B0 * q / me)
+    ρce = electron.vtp / wce
+    kn = 1 / ρce
+    θ = deg2rad(30)
+    kx = 0.1 * kn * cos(θ)
+    kz = 0.1 * kn * sin(θ)
+
+    SUITE["BuildMatrix"]["HH"] = @benchmarkable dispersion_matrix($electron, $B0, $kx, $kz, BOHH)
+    SUITE["BuildMatrix"]["PBK"] = @benchmarkable dispersion_matrix($electron, $B0, $kx, $kz, BOPBK)
+end
