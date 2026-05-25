@@ -35,6 +35,12 @@ include("integral.jl")
 include("hermite_expansion.jl")
 include("solve.jl")
 include("track.jl")
+include("relativistic.jl")
+using .RelativisticLongitudinal
+
+export RelativisticLongitudinal
+export solve_relativistic_direct, solve_relativistic_matrix, solve_maxwellian_matrix
+export juttner_dielectric, langmuir_root, omega0_asymptotic
 
 function plot_branches end
 
