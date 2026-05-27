@@ -4,42 +4,57 @@ include("solver/fluid.jl")
 
 zero!(M) = fill!(M, zero(eltype(M)))
 
+# Promoted real (floating-point) element type carried by a problem.
+function _realtype(::DispersionProblem{S, B, K}) where {S, B, K}
+    return float(promote_type(B, K))
+end
+function _realtype(::EnsembleProblem{S, B, Ks, Θs}) where {S, B, Ks, Θs}
+    return float(promote_type(B, eltype(Ks), eltype(Θs)))
+end
+
+_complex_type(pb) = Complex{_realtype(pb)}
+
 function dispersion_matrix(pb::DispersionProblem, alg; kw...)
     n = matrix_size(alg, pb.species)
-    return dispersion_matrix!(zeros(ComplexF64, n, n), pb, alg; kw...)
+    CT = _complex_type(pb)
+    return dispersion_matrix!(zeros(CT, n, n), pb, alg; kw...)
 end
+
+# LAPACK eigvals! accepts UnsafeArray views; GenericLinearAlgebra's Householder
+# does not. Aliasing the Bumper buffer via `unsafe_wrap(Array, ...)` segfaults
+# during a later GC mark (Householder intermediates outlive the @no_escape
+# block), so we copy. The copy is negligible next to the extended-precision
+# eigvals! itself.
+_for_eigvals(M::AbstractMatrix{<:Union{ComplexF32, ComplexF64}}) = M
+_for_eigvals(M::AbstractMatrix) = Matrix(M)
 
 function solve(pb::DispersionProblem, alg)
+    CT = _complex_type(pb)
     n = matrix_size(alg, pb.species)
     return @no_escape begin
-        M = @alloc(ComplexF64, n, n)
+        M = @temp_array(CT, n, n)
         dispersion_matrix!(zero!(M), pb, alg)
-        eigvals!(M)
+        eigvals!(_for_eigvals(M))
     end
-end
-
-function _ensemble_solve(f, pb)
-    ks, θs = pb.ks, pb.θs
-    ωs = Matrix{Vector{ComplexF64}}(undef, length(ks), length(θs))
-    solve_with_threads(1) do
-        f(ωs)
-    end
-    return DispersionSolution(ks, θs, ωs)
 end
 
 function solve(pb::EnsembleProblem, alg)
-    return _ensemble_solve(pb) do ωs
-        species = prepare(alg, pb.species, pb.B0)
+    T = _realtype(pb)
+    CT = Complex{T}
+    ωs = Matrix{Vector{CT}}(undef, length(pb.ks), length(pb.θs))
+    solve_with_threads(1) do
+        species = prepare(alg, pb.species, pb.B0, T)
         n = matrix_size(alg, species)
         with_progress(pb) do ik, iθ, kx, kz
             @no_escape begin
-                M = @alloc(ComplexF64, n, n)
+                M = @temp_array(CT, n, n)
                 sub = DispersionProblem(species, pb.B0, kx, kz)
                 dispersion_matrix!(zero!(M), sub, alg)
-                ωs[ik, iθ] = eigvals!(M)
+                ωs[ik, iθ] = eigvals!(_for_eigvals(M))
             end
         end
     end
+    return DispersionSolution(pb.ks, pb.θs, ωs)
 end
 
 """

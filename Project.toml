@@ -4,7 +4,7 @@ version = "0.2.1"
 authors = ["Beforerr <zzj956959688@gmail.com> and contributors"]
 
 [workspace]
-projects = ["test", "docs"]
+projects = ["test", "docs", "benchmark"]
 
 [deps]
 Bessels = "0e736298-9ec6-45e8-9647-e4fc86a2fe38"
@@ -19,9 +19,11 @@ Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 
 [weakdeps]
 Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
+SpecialFunctions = "276daf66-3868-5448-9aa4-cd146d93841b"
 
 [extensions]
 PlasmaBOMakieExt = "Makie"
+PlasmaBOSpecialFunctionsExt = "SpecialFunctions"
 
 [compat]
 Bessels = "0.2"
@@ -33,5 +35,6 @@ LinearAlgebra = "1"
 Makie = "0.23, 0.24"
 ProgressMeter = "1"
 QuadGK = "2"
+SpecialFunctions = "2"
 Unitful = "1"
 julia = "1.10"

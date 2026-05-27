@@ -1,6 +1,5 @@
 module PlasmaBO
 
-using Gamma: gamma, loggamma
 using QuadGK: quadgk, quadgk!
 using Bumper: @no_escape, @alloc
 using LinearAlgebra
@@ -23,7 +22,7 @@ export electric_field, magnetic_field, polarization_ratio, handedness, dispersio
 function dispersion_matrix end
 function dispersion_matrix! end
 function matrix_size end
-prepare(alg, species, B0) = species
+prepare(alg, species, B0, ::Type) = species
 
 include("types.jl")
 include("utils.jl")
@@ -31,6 +30,7 @@ include("constants.jl"); using .Constants
 include("formulary.jl")
 include("distributions/distributions.jl")
 include("Jpole.jl")
+include("special.jl")
 include("integral.jl")
 include("hermite_expansion.jl")
 include("solve.jl")

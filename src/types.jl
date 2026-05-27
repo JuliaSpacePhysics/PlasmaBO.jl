@@ -12,9 +12,10 @@ struct DispersionProblem{S, B, K}
     kx::K
     kz::K
 
-    function DispersionProblem(species, B0, kx, kz)
+    function DispersionProblem(species, B0, kx::K1, kz::K2) where {K1, K2}
         species = _species(species)
-        return new{typeof(species), typeof(B0), typeof(kx)}(species, B0, kx, kz)
+        K = promote_type(K1, K2)
+        return new{typeof(species), typeof(B0), K}(species, B0, K(kx), K(kz))
     end
 end
 

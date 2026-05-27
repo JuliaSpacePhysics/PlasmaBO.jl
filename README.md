@@ -33,6 +33,10 @@ sol = solve(species, B0, ks, θs, BOHH)     # sol.ωs[ik, iθ] :: Vector{Complex
 
 See [documentation](https://JuliaSpacePhysics.github.io/PlasmaBO.jl/dev/) for worked examples: cold plasma (kinetic vs fluid), ring-beam, firehose, ion-beam, and dispersion-surface tracking.
 
+## Experiments
+
+- [`arbitrary_precision/`](experiments/arbitrary_precision/) — `BOHH`/`BOFluid`/`BOPBK` assembly and solve at `Float64`, `Double64`, and `BigFloat`.
+
 ## Elsewhere
 
 - [hsxie/BO-Arbitrary](https://github.com/hsxie/boarbitrary/tree/main): Extension of the kinetic electromagnetic magnetized dispersion relation solver [PDRK](https://github.com/hsxie/pdrk)/[BO](https://github.com/hsxie/bo) to arbitrary distributions (MATLAB)

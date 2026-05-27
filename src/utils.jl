@@ -1,6 +1,8 @@
-# Complementary error function via libopenlibm — same path SpecialFunctions uses for Float64.
-erfc(x::Float64) = ccall((:erfc, Base.Math.libm), Float64, (Float64,), x)
-erfc(x::Real) = erfc(float(Float64(x)))
+macro temp_array(T, dims...)
+    return esc(:(isbitstype($T) ? @alloc($T, $(dims...)) : zeros($T, $(dims...))))
+end
+
+_realtype(::Type{Complex{T}}) where {T} = T
 
 # Execute function `f` with specified BLAS thread count, restoring previous setting afterward.
 function solve_with_threads(f, nthreads)

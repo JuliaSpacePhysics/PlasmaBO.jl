@@ -146,6 +146,57 @@ end
     @test r.alm[5, 5] ≈ 0.001927003106303287 rtol = 1.0e-10
 end
 
+@testset "Arbitrary-precision solve" begin
+    using DoubleFloats
+    using GenericLinearAlgebra
+    using LinearAlgebra
+    using SpecialFunctions
+
+    N, J = 1, 4
+    sp(::Type{T}) where {T} = (HHSolverParam{T}(
+        one(T), one(T), one(T), one(T), one(T), zero(T), zero(T), ones(T, 1, 1),
+    ),)
+
+    # BOHH: assembly eltype follows promoted (B0, kx, kz)
+    asm(::Type{T}) where {T} = dispersion_matrix(sp(T), one(T), T(0.2), T(0.1), BOHH; N, J)
+    M64 = asm(Float64)
+    Md = asm(Double64)
+    Mbig = setprecision(128) do; asm(BigFloat) end
+    @test (eltype(M64), eltype(Md), eltype(Mbig)) ===
+          (ComplexF64, Complex{Double64}, Complex{BigFloat})
+
+    # Solve: LAPACK for F32/F64, GenericLinearAlgebra for Double64/BigFloat.
+    slv(::Type{T}) where {T} = solve(sp(T), one(T), T(0.2), T(0.1), BOHH; N, J)
+    ω32 = slv(Float32)
+    ωd = slv(Double64)
+    ωbig = setprecision(128) do; slv(BigFloat) end
+    @test eltype(ω32) === ComplexF32 && all(isfinite, ω32)
+    @test eltype(ωd) === Complex{Double64} && all(isfinite, ωd)
+    @test eltype(ωbig) === Complex{BigFloat} && all(isfinite, ωbig)
+
+    # Susceptibility block (the 3x3 species sum on the field columns) converges
+    # to the BigFloat reference much faster in extended precision.
+    SNJ = (2N + 1) * J
+    SNJ1 = SNJ + 1
+    block(M) = M[[SNJ + 1, SNJ + SNJ1 + 1, SNJ + 2SNJ1 + 1], (3SNJ1 + 1):(3SNJ1 + 3)]
+    Bref = setprecision(256) do; block(asm(BigFloat)) end
+    err(M) = norm(Complex{BigFloat}.(block(M)) - Bref) / norm(Bref)
+    @test err(Md) < err(M64) * big"1e-10"
+
+    # BOFluid: same generic path; precision follows wave-parameter promotion.
+    @test eltype(solve((FluidSpecies(1.0, 1.0),), big"1", big"0.2", big"0.1", BOFluid)) === Complex{BigFloat}
+    @test eltype(solve((FluidSpecies(1.0f0, 1.0f0),), 1.0f0, 0.2f0, 0.1f0, BOFluid)) === ComplexF32
+
+    # BOPBK assembly follows promoted precision (Double64/BigFloat eigvals
+    # convergence is a separate concern of the BiKappa kernel).
+    bk = BiKappa2(:e, 1.0e6, 1.0, 200.0, 2555.0; sigma = 0.0)
+    @test eltype(dispersion_matrix(bk, 1.0e-6, 1.0e-7, 2.0e-7, BOPBK; N = 1)) === ComplexF64
+    @test eltype(dispersion_matrix(bk, Double64(1.0e-6), Double64(1.0e-7), Double64(2.0e-7), BOPBK; N = 1)) === Complex{Double64}
+    @test eltype(setprecision(128) do
+        dispersion_matrix(bk, big"1e-6", big"1e-7", big"2e-7", BOPBK; N = 1)
+    end) === Complex{BigFloat}
+end
+
 @testset "PBK Solver" begin
     using PlasmaBO: q, me
 
@@ -273,4 +324,3 @@ end
     # Dispatch: handedness(v, ω; kx, kz) with explicit kwargs (covers L145)
     @test handedness(v_rcp, ω; kx=0.0, kz=1.0) == handedness(v_rcp, ω, 0.0, 1.0)
 end
-
