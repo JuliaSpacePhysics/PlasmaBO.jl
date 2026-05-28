@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Ion beam instability · PlasmaBO.jl</title><meta name="title" content="Ion beam instability · PlasmaBO.jl"/><meta property="og:title" content="Ion beam instability · PlasmaBO.jl"/><meta property="twitter:title" content="Ion beam instability · PlasmaBO.jl"/><meta name="description" content="Documentation for PlasmaBO.jl."/><meta property="og:description" content="Documentation for PlasmaBO.jl."/><meta property="twitter:description" content="Documentation for PlasmaBO.jl."/><meta property="og:url" content="https://JuliaSpacePhysics.github.io/PlasmaBO.jl/ionbeam_gary84/"/><meta property="twitter:url" content="https://JuliaSpacePhysics.github.io/PlasmaBO.jl/ionbeam_gary84/"/><link rel="canonical" href="https://JuliaSpacePhysics.github.io/PlasmaBO.jl/ionbeam_gary84/"/><script data-outdated-warner src="../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../search_index.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script></head><body>
+<!-- NAVBAR START -->
+<style>
+    html {
+        scroll-padding-top: calc(55px + 1rem);
+    }
+
+    /* Documenter css tweaks */
+    .docs-sidebar {
+        margin-top: 3.75rem;
+    }
+
+    #documenter {
+        margin-top: 3.75rem;
+    }
+
+    .docs-version-selector {
+        margin-bottom: 60px !important;
+    }
+
+    @media screen and (max-width: 1056px) {
+        .docs-version-selector {
+            margin-bottom: 60px !important;
+        }
+
+        .docs-sidebar {
+            margin-top: 0 !important;
+        }
+    }
+    /* Documenter css tweaks ends here */
+
+    :root {
+        --heading-color: white;
+        --item-color: rgb(165, 165, 165);
+        --primary-bg: #f8f9fa;  /* Light gray to match Quarto's default navbar */
+        --navbar-text: #212529;  /* Dark text color for better contrast */
+        --hover-color: #e9ecef;  /* Slightly darker gray for hover state */
+        --deprecated-bg: #ff4d4d;
+        --deprecated-text: white;
+    }
+
+    .ext-navigation {
+        position: fixed;
+        height: 3.75rem;
+        top: 0;
+        width: 100%;
+        background-color: var(--primary-bg);
+        color: var(--navbar-text);
+        z-index: 1000;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        display: flex;
+        align-items: center;
+        padding: 0 1.0625rem;
+        transition: transform 0.3s;
+    }
+
+    .ext-navbar-logo {
+        margin-left: 0.625rem;
+    }
+
+    .ext-nav-links {
+        display: flex;
+        align-items: center;
+        list-style-type: none;
+        margin: 0;
+        padding: 0;
+        flex-grow: 1;
+    }
+
+    .ext-nav-links li {
+        margin-left: 1rem !important;
+    }
+
+    .ext-nav-link {
+        color: var(--navbar-text) !important;
+        text-decoration: none;
+        font-size: 1.0625rem !important;
+        transition: color 0.2s ease;
+        cursor: pointer;
+    }
+
+    .ext-nav-link:hover,
+    .ext-navbar-item-single a:hover {
+        color: var(--hover-color) !important;
+        text-decoration: none !important;
+    }
+    
+    .ext-navigation a {
+        text-decoration: none !important;
+    }
+
+    .ext-navbar-item-single a {
+        color: var(--navbar-text) !important;
+    }
+
+    .ext-menu-toggle {
+        display: none;
+        font-size: 1.5rem;
+        color: white;
+        cursor: pointer;
+    }
+
+    .ext-dropdown {
+        display: none;
+        grid-template-columns: 1fr 1fr 1fr 1fr;
+        grid-template-rows: auto auto auto;
+        padding: 1.875rem;
+        position: absolute;
+        width: 100%;
+        left: 0;
+        background-color: var(--primary-bg);
+        line-height: 1.875rem;
+        opacity: 0;
+        transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+        transform: translateY(-0.625rem);
+    }
+
+    #library-handler::after {
+        content: "▼";
+        font-size: 0.6875rem;
+        margin-left: 0.3125rem;
+        transition: transform 0.3s ease-in-out;
+    }
+
+    #library-handler.open::after {
+        content: "▲";
+    }
+
+    .ext-dropdown.show {
+        display: grid;
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    .ext-dropdown ul {
+        height: auto;
+        width: 12.5rem;
+        margin-bottom: 1.25rem;
+    }
+
+    .ext-dropdown ul li {
+        text-align: left;
+        display: flex;
+        align-items: center;
+    }
+
+    .navbar-sub-item {
+        list-style: none;
+    }
+
+    .ext-dropdown ul a li {
+        color: var(--item-color);
+        width: 15.625rem;
+        border-radius: 3px;
+        padding: 0.125rem 0.625rem;
+        transition: background-color 0.2s ease;
+        text-decoration: none !important;
+    }
+
+    .ext-dropdown ul a li:hover {
+        background-color: rgba(107, 107, 107, 0.5);
+    }
+
+    .ext-dropdown-item-heading {
+        /* color: var(--heading-color); */
+        text-align: center;
+    }
+
+    .deprecated-badge {
+        background-color: var(--deprecated-bg);
+        color: var(--deprecated-text);
+        font-size: 0.75rem;
+        padding: 0.125rem 0.375rem;
+        border-radius: 3px;
+        margin-left: 0.5rem;
+        line-height: 1;
+    }
+
+    /* Responsive styling */
+    @media (max-width: 966px) {
+        .ext-dropdown {
+            grid-template-columns: 1fr 1fr 1fr;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .ext-nav-links {
+            display: none;
+            flex-direction: column;
+            width: 100%;
+            background-color: var(--primary-bg);
+            position: absolute;
+            top: 3.75rem;
+            left: 0;
+            padding: 0.625rem 0;
+            height: auto;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: rgb(141, 141, 141) grey;
+        }
+
+        .ext-nav-links.show {
+            display: flex;
+        }
+
+        .ext-nav-links li {
+            margin: 0.625rem 0;
+            text-align: center;
+        }
+
+        .ext-menu-toggle {
+            display: block;
+            margin-left: auto;
+        }
+
+        .ext-navigation.hide {
+            transform: translateY(-3.75rem);
+        }
+
+        .ext-dropdown {
+            place-content: center;
+            text-align: center;
+            grid-template-columns: 1fr;
+            line-height: 1.25rem;
+            padding: 0.625rem;
+        }
+
+        .ext-dropdown ul {
+            width: 100%;
+            text-align: center;
+            margin-bottom: 0.3125rem;
+        }
+
+        .ext-dropdown ul li {
+            text-align: center;
+            /* justify-content: center; */
+        }
+
+        .ext-dropdown ul a li {
+            width: 100%;
+        }
+
+        .ext-dropdown ul a li:hover {
+            background-color: var(--primary-bg);
+            /* color: #fff; */
+        }
+
+        /* Modified scroll bar */
+        .ext-nav-links::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        .ext-nav-links::-webkit-scrollbar-track {
+            box-shadow: inset 0 0 5px grey;
+        }
+
+        .ext-nav-links::-webkit-scrollbar-thumb {
+            background: rgb(141, 141, 141);
+            border-radius: 3px;
+        }
+
+        .ext-nav-links::-webkit-scrollbar-thumb:hover {
+            background: #9b9b9b;
+        }
+    }
+</style>
+<nav class="ext-navigation">
+    <a href="https://juliaspacephysics.github.io"></a>
+    <a style="color: #212529 !important; font-size: 21.25px !important; margin-left: 10px;" href="https://juliaspacephysics.github.io">JuliaSpacePhysics</a>
+    <ul class="ext-nav-links">
+        <li>
+            <p class="ext-nav-link" id="library-handler">Ecosystem</p>
+            <div class="ext-dropdown" id="ext-dropdown-items">
+                <ul>
+                    <li class="ext-dropdown-item-heading">Core</li>
+                    <a href="https://juliaspacephysics.github.io/SPEDAS.jl"><li>SPEDAS.jl</li></a>
+                    <a href="https://juliaspacephysics.github.io/SpaceDataModel.jl"><li>SpaceDataModel.jl</li></a>
+                    <a href="https://juliaspacephysics.github.io/GeoCotrans.jl"><li>GeoCotrans.jl</li></a>
+                    <a href="https://henry2004y.github.io/TestParticle.jl/"><li>TestParticle.jl</li></a>
+                </ul>
+                <ul>
+                    <li class="ext-dropdown-item-heading">Data</li>
+                    <a href="https://juliaspacephysics.github.io/CDFDatasets.jl/"><li>CDFDatasets.jl</li></a>
+                    <a href="https://juliaspacephysics.github.io/CDAWeb.jl/"><li>CDAWeb.jl</li></a>
+                    <a href="https://sciqlop.github.io/Speasy.jl/"><li>Speasy.jl</li></a>
+                    <a href="https://juliaspacephysics.github.io/HAPIClient.jl/"><li>HAPIClient.jl</li></a>
+                    <a href="https://juliaspacephysics.github.io/Madrigal.jl/"><li>Madrigal.jl</li></a>
+                    <a href="https://github.com/JuliaSpacePhysics/PySPEDAS.jl"><li>PySPEDAS.jl</li></a>
+                    <a href="https://juliaspacephysics.github.io/SunPy.jl/"><li>SunPy.jl</li></a>
+                    <a href="https://juliaspacephysics.github.io/CommonDataFormat.jl/"><li>CommonDataFormat.jl</li></a>
+                </ul>
+                <ul>
+                    <li class="ext-dropdown-item-heading">Domain</li>
+                    <a href="https://juliaspacephysics.github.io/SpaceWeather.jl"><li>SpaceWeather.jl</li></a>
+                    <a href="https://juliaspacephysics.github.io/SolarEnergeticParticle.jl"><li>SolarEnergeticParticle.jl (Helio)</li></a>
+                    <a href="https://juliaspacephysics.github.io/GeoAACGM.jl"><li>GeoAACGM.jl (ITM)</li></a>
+                    <a href="https://juliaspacephysics.github.io/IRBEM.jl"><li>IRBEM.jl (Magnetosphere)</li></a>
+                    <a href="https://juliaspacephysics.github.io/TsyganenkoModels.jl"><li>TsyganenkoModels.jl (Magnetosphere)</li></a>
+                </ul>
+                <!-- Enable when more mission-specific packages are available -->
+                <ul>
+                    <li class="ext-dropdown-item-heading">Mission-specific</li>
+                    <a href="https://juliaspacephysics.github.io/EISCATData.jl"><li>EISCATData.jl</li></a>
+                    <a href="https://juliaspacephysics.github.io/ELFINData.jl"><li>ELFINData.jl</li></a>
+                    <a href="https://juliaspacephysics.github.io/DMSPData.jl"><li>DMSPData.jl</li></a>
+                </ul>
+               
+                <ul>
+                    <li class="ext-dropdown-item-heading">General Analysis</li>
+                    <a href="https://juliaplasma.github.io/PlasmaFormulary.jl"><li>JuliaPlasma/PlasmaFormulary.jl</li></a>
+                    <a href="https://juliaplasma.github.io/ChargedParticles.jl"><li>JuliaPlasma/ChargedParticles.jl</li></a>
+                    <a href="https://juliaspacephysics.github.io/VelocityDistributionFunctions.jl"><li>VelocityDistributionFunctions.jl</li></a>
+                    <a href="https://juliaspacephysics.github.io/PlasmaWaves.jl"><li>PlasmaWaves.jl</li></a>
+                    <a href="https://juliaspacephysics.github.io/PlasmaBO.jl"><li>PlasmaBO.jl</li></a>
+                    <a href="https://github.com/JuliaSpacePhysics/SpacePhysicsMakie.jl"><li>SpacePhysicsMakie.jl</li></a>
+                </ul>
+            </div>
+        </li>
+        <li><a href="https://juliaspacephysics.github.io/tutorials/">Tutorials</a></li>
+    </ul>
+    <a href="https://github.com/JuliaSpacePhysics">
+        <svg width="32px" height="32px" viewBox="-8.2 -8.2 36.40 36.40" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" fill="#000000">
+            <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+            <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+            <g id="SVGRepo_iconCarrier">
+                <title>github [#142]</title>
+                <desc>JuliaSpacePhysics</desc>
+                <defs></defs>
+                <g id="Page-1" stroke-width="0.0002" fill="none" fill-rule="evenodd">
+                    <g id="Dribbble-Light-Preview" transform="translate(-140.000000, -7559.000000)" fill="#ffffff">
+                        <g id="icons" transform="translate(56.000000, 160.000000)">
+                            <path
+                                d="M94,7399 C99.523,7399 104,7403.59 104,7409.253 C104,7413.782 101.138,7417.624 97.167,7418.981 C96.66,7419.082 96.48,7418.762 96.48,7418.489 C96.48,7418.151 96.492,7417.047 96.492,7415.675 C96.492,7414.719 96.172,7414.095 95.813,7413.777 C98.04,7413.523 100.38,7412.656 100.38,7408.718 C100.38,7407.598 99.992,7406.684 99.35,7405.966 C99.454,7405.707 99.797,7404.664 99.252,7403.252 C99.252,7403.252 98.414,7402.977 96.505,7404.303 C95.706,7404.076 94.85,7403.962 94,7403.958 C93.15,7403.962 92.295,7404.076 91.497,7404.303 C89.586,7402.977 88.746,7403.252 88.746,7403.252 C88.203,7404.664 88.546,7405.707 88.649,7405.966 C88.01,7406.684 87.619,7407.598 87.619,7408.718 C87.619,7412.646 89.954,7413.526 92.175,7413.785 C91.889,7414.041 91.63,7414.493 91.54,7415.156 C90.97,7415.418 89.522,7415.871 88.63,7414.304 C88.63,7414.304 88.101,7413.319 87.097,7413.247 C87.097,7413.247 86.122,7413.234 87.029,7413.87 C87.029,7413.87 87.684,7414.185 88.139,7415.37 C88.139,7415.37 88.726,7417.2 91.508,7416.58 C91.513,7417.437 91.522,7418.245 91.522,7418.489 C91.522,7418.76 91.338,7419.077 90.839,7418.982 C86.865,7417.627 84,7413.783 84,7409.253 C84,7403.59 88.478,7399 94,7399"
+                                id="github-[#142]">
+                            </path>
+                        </g>
+                    </g>
+                </g>
+            </g>
+        </svg>
+    </a>
+    <span class="ext-menu-toggle">&#9776;</span>
+</nav>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const menuToggle = document.querySelector(".ext-menu-toggle");
+        const navLinks = document.querySelector(".ext-nav-links");
+        const nav = document.querySelector(".ext-navigation");
+        const navigationHandler = document.getElementById("library-handler");
+        const navigationItemsContainer =
+            document.getElementById("ext-dropdown-items");
+        let lastScrollY = window.scrollY;
+
+        function setAppropriateHeight() {
+            if (window.innerWidth <= 768) {
+                const viewportHeight = window.innerHeight;
+                const navHeight = nav.offsetHeight;
+                navLinks.style.maxHeight = `${viewportHeight - navHeight}px`;
+                navLinks.style.overflowY = "auto";
+            } else {
+                navLinks.style.maxHeight = "";
+                navLinks.style.overflowY = "";
+            }
+        }
+
+        // Toggle main menu for mobile
+        menuToggle.addEventListener("click", () => {
+            navLinks.classList.toggle("show");
+            if (navLinks.classList.contains("show")) {
+                setAppropriateHeight();
+                // Ensure the dropdown is hidden when menu is first opened
+                navigationItemsContainer.style.display = "none";
+                navigationItemsContainer.classList.remove("show");
+            }
+        });
+
+        // Close menus if clicked outside
+        document.addEventListener("click", (event) => {
+            if (
+                !navLinks.contains(event.target) &&
+                !menuToggle.contains(event.target)
+            ) {
+                navLinks.classList.remove("show");
+                navigationItemsContainer.classList.remove("show");
+                navigationHandler.classList.remove("open");
+            }
+        });
+
+        // Hide navigation bar on scroll down in mobile view
+        window.addEventListener("scroll", () => {
+            if (window.innerWidth <= 768) {
+                nav.classList.toggle("hide", window.scrollY > lastScrollY);
+                lastScrollY = window.scrollY;
+            }
+        });
+
+        // Library API script
+        navigationHandler.addEventListener("click", (event) => {
+            event.preventDefault(); // Prevent default action of the link
+            if (navigationItemsContainer.classList.contains("show")) {
+                navigationItemsContainer.classList.remove("show");
+                navigationHandler.classList.remove("open");
+                setTimeout(() => {
+                    navigationItemsContainer.style.display = "none";
+                }, 500); // Match the timeout to the CSS transition duration
+            } else {
+                navigationItemsContainer.style.display = "grid";
+                navigationHandler.classList.add("open");
+                setTimeout(() => {
+                    navigationItemsContainer.classList.add("show");
+                }, 10); // Delay to ensure the display change takes effect before adding class
+            }
+            setAppropriateHeight(); // Recalculate height when dropdown changes
+        });
+
+        // Handle window resize
+        window.addEventListener("resize", setAppropriateHeight);
+
+        // Initial setup
+        setAppropriateHeight();
+    });
+</script>
+<!-- NAVBAR END -->
+<div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../">PlasmaBO.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../">Home</a></li><li><a class="tocitem" href="../ringbeam_Umeda12/">Ring beam instability</a></li><li class="is-active"><a class="tocitem" href>Ion beam instability</a><ul class="internal"><li><a class="tocitem" href="#Reference-Distribution-Function-Parameters"><span>Reference Distribution Function Parameters</span></a></li><li><a class="tocitem" href="#Simulating-Specific-Modes-in-PlasmaBO.jl"><span>Simulating Specific Modes in PlasmaBO.jl</span></a></li></ul></li><li><a class="tocitem" href="../firehose_Astfalk17/">Firehose instability</a></li><li><a class="tocitem" href="../mirror_mode/">Mirror mode</a></li><li><a class="tocitem" href="../ice_Irvine18/">Ion cyclotron emission</a></li><li><a class="tocitem" href="../rlp_Cattaert07/">R/L/P modes (PBK solver)</a></li><li><a class="tocitem" href="../cold_plasma/">Cold plasma (fluid vs kinetic solver)</a></li><li><a class="tocitem" href="../dispersion_surface/">Dispersion surface tracking</a></li><li><a class="tocitem" href="../demo_polarization/">Wave polarization and handedness</a></li><li><a class="tocitem" href="../math_notes/">Math notes</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Ion beam instability</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Ion beam instability</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/JuliaSpacePhysics/PlasmaBO.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/JuliaSpacePhysics/PlasmaBO.jl/blob/main/docs/src/ionbeam_gary84.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Ion-Beam-Instability-(Gary-et-al.-1984)"><a class="docs-heading-anchor" href="#Ion-Beam-Instability-(Gary-et-al.-1984)">Ion Beam Instability (Gary et al. 1984)</a><a id="Ion-Beam-Instability-(Gary-et-al.-1984)-1"></a><a class="docs-heading-anchor-permalink" href="#Ion-Beam-Instability-(Gary-et-al.-1984)" title="Permalink"></a></h1><p>This page reproduces the dispersion relations from the classical paper (<a href="../#garyElectromagneticIonBeam1984">Gary <em>et al.</em> [6]</a>): Gary, S. P., Smith, C. W., Lee, M. A., Goldstein, M. L., &amp; Forslund, D. W. (1984). Electromagnetic ion beam instabilities. <em>Physics of Fluids</em>, 27(7), 1852-1862.</p><h2 id="Reference-Distribution-Function-Parameters"><a class="docs-heading-anchor" href="#Reference-Distribution-Function-Parameters">Reference Distribution Function Parameters</a><a id="Reference-Distribution-Function-Parameters-1"></a><a class="docs-heading-anchor-permalink" href="#Reference-Distribution-Function-Parameters" title="Permalink"></a></h2><p>These baseline parameters are used throughout the study unless otherwise specified.</p><p><strong>Global Parameters:</strong></p><ul><li>Main ion beta (<span>$\beta_m$</span>): 1.00</li><li>Ratio of Alfvén speed to the speed of light (<span>$v_A/c$</span>): <span>$1.0 \times 10^{-4}$</span></li></ul><p><strong>Species Parameters:</strong></p><table><tr><th style="text-align: left">Component</th><th style="text-align: left">Density Ratio (<span>$n_j/n_e$</span>)</th><th style="text-align: left">Mass Ratio (<span>$m_j/m_e$</span>)</th><th style="text-align: left">Temp Ratio (<span>$T_j/T_m$</span>)</th><th style="text-align: left">Anisotropy (<span>$T_{\perp j}/T_{\parallel j}$</span>)</th></tr><tr><td style="text-align: left">Main ions (m)</td><td style="text-align: left">0.99</td><td style="text-align: left">1836</td><td style="text-align: left">1.00</td><td style="text-align: left">1.00</td></tr><tr><td style="text-align: left">Beam ions (b)</td><td style="text-align: left">0.01</td><td style="text-align: left">1836</td><td style="text-align: left">10.00</td><td style="text-align: left">1.00</td></tr><tr><td style="text-align: left">Electrons (e)</td><td style="text-align: left">1.00</td><td style="text-align: left">1</td><td style="text-align: left">1.00</td><td style="text-align: left">1.00</td></tr></table><h3 id="Summary-of-Electromagnetic-Ion-Beam-Instabilities"><a class="docs-heading-anchor" href="#Summary-of-Electromagnetic-Ion-Beam-Instabilities">Summary of Electromagnetic Ion Beam Instabilities</a><a id="Summary-of-Electromagnetic-Ion-Beam-Instabilities-1"></a><a class="docs-heading-anchor-permalink" href="#Summary-of-Electromagnetic-Ion-Beam-Instabilities" title="Permalink"></a></h3><table><tr><th style="text-align: left">Instability Name</th><th style="text-align: left">Propagation</th><th style="text-align: left">Polarization</th><th style="text-align: left">Resonance Type</th><th style="text-align: left">Dominant Conditions</th></tr><tr><td style="text-align: left">Right-hand resonant</td><td style="text-align: left">Parallel</td><td style="text-align: left">Right-hand circular (P = +1)</td><td style="text-align: left">Beam resonant (<span>$|ζ_b| \approx 1$</span>)</td><td style="text-align: left">Modest <span>$v_0/v_A$</span>, <span>$T_b/T_m$</span>, and <span>$n_b/n_p$</span>; resonant at large <span>$k$</span></td></tr><tr><td style="text-align: left">Right-hand nonresonant</td><td style="text-align: left">Antiparallel</td><td style="text-align: left">Right-hand circular (P = -1 for <span>$\omega_r &lt; 0$</span>)</td><td style="text-align: left">Nonresonant (<span>$|ζ_j| &gt; 1$</span>)</td><td style="text-align: left">Sufficiently large <span>$n_b/n_p$</span> or <span>$v_0/v_A$</span>; <span>$T_b &gt; T_m$</span></td></tr><tr><td style="text-align: left">Left-hand resonant</td><td style="text-align: left">Parallel</td><td style="text-align: left">Left-hand circular</td><td style="text-align: left">Beam resonant (<span>$|ζ_b| &lt; 1$</span>)</td><td style="text-align: left">Large <span>$T_b/T_m$</span> (diffuse distributions); lower threshold than right-hand nonresonant</td></tr><tr><td style="text-align: left">Ion cyclotron anisotropy</td><td style="text-align: left">Antiparallel</td><td style="text-align: left">Left-hand circular</td><td style="text-align: left">Resonant</td><td style="text-align: left">Driven by temperature anisotropy (<span>$T_{\perp}/T_{\parallel} &gt; 1$</span>, e.g., 4 to 9); modest <span>$v_0/v_A$</span>; persists at <span>$v_0=0$</span></td></tr><tr><td style="text-align: left">Right oblique</td><td style="text-align: left">Oblique to <span>$\mathbf{B}$</span></td><td style="text-align: left">Right-hand elliptic (P &gt; 0)</td><td style="text-align: left">Higher harmonic resonant (<span>$m = 2, 3...$</span>)</td><td style="text-align: left">High <span>$v_0/v_A$</span> (e.g., <span>$v_0 = 30 v_m$</span>); free energy well above threshold of field-aligned mode</td></tr><tr><td style="text-align: left">Left oblique</td><td style="text-align: left">Oblique to <span>$\mathbf{B}$</span></td><td style="text-align: left">Left-hand elliptic (P &lt; 0)</td><td style="text-align: left">Higher harmonic resonant (<span>$m = 2, 3...$</span>)</td><td style="text-align: left">High drift speed (<span>$v_0 = 30 v_m$</span>); faster growth than right oblique <span>$m=2$</span></td></tr></table><h2 id="Simulating-Specific-Modes-in-PlasmaBO.jl"><a class="docs-heading-anchor" href="#Simulating-Specific-Modes-in-PlasmaBO.jl">Simulating Specific Modes in PlasmaBO.jl</a><a id="Simulating-Specific-Modes-in-PlasmaBO.jl-1"></a><a class="docs-heading-anchor-permalink" href="#Simulating-Specific-Modes-in-PlasmaBO.jl" title="Permalink"></a></h2><p>Based on the parameter sets defined in <a href="../#garyElectromagneticIonBeam1984">Gary <em>et al.</em> [6]</a>, here are complete <code>PlasmaBO.jl</code> configurations to demonstrate each instability mode.</p><h3 id="Right-Hand-Resonant-Ion-Beam-Instability"><a class="docs-heading-anchor" href="#Right-Hand-Resonant-Ion-Beam-Instability">Right-Hand Resonant Ion Beam Instability</a><a id="Right-Hand-Resonant-Ion-Beam-Instability-1"></a><a class="docs-heading-anchor-permalink" href="#Right-Hand-Resonant-Ion-Beam-Instability" title="Permalink"></a></h3><p>The following reproduces Figure 1, showing all four drift velocities in a 2×2 layout with <span>$\omega_r/\omega_{cp}$</span> and <span>$\gamma/\omega_{cp}$</span> plotted together on each panel. The wave number is normalized by the thermal proton gyroradius <span>$r_L$</span> (i.e. <span>$a_m$</span> in the original paper). Note that <span>$\frac{r_L}{d_i} = \frac{v_{ti}}{v_A} = \sqrt{\beta/2}$</span>.</p><pre><code class="language-julia hljs">using PlasmaBO
+using PlasmaBO: c0, μ0, mp, q
+using CairoMakie
+
+vA_c = 1.0e-4
+beta_m = 1.0
+B0 = 1e-8 # 10 nT
+
+vA = vA_c * c0
+ne = B0^2 / (vA^2 * μ0 * mp)
+ωcp = q * B0 / mp
+
+nm = 0.99 * ne
+nb = 0.01 * ne
+Tm_eV = (beta_m * B0^2 / (2 * μ0) / nm) / q
+vm = sqrt(Tm_eV * q / mp)  # main ion thermal speed
+Tb_eV = 10.0 * Tm_eV
+Te_eV = 1.0 * Tm_eV
+
+θ = 0.0
+k_norm = ωcp / vm
+# Note that the step size of k needs to be small enough
+# to accurately capture the dispersion relation.
+k_ranges = (0.01:0.001:0.2) .* (ωcp / vm)
+
+v0_vals   = [0.0, 10.0, 20.0, 30.0] .* vm
+v0_labels = [L&quot;v_0 = 0&quot;,
+             L&quot;v_0 = 10\,v_m&quot;,
+             L&quot;v_0 = 20\,v_m&quot;,
+             L&quot;v_0 = 30\,v_m&quot;]
+
+# v0=0: real seed targets the stable R-wave (Alfvén branch)
+# v0&gt;0: imaginary seed hunts the growing beam-resonant mode
+initial_points = [
+    (0.1 * ωcp / vm, 0.15 * ωcp),
+    (0.1 * ωcp / vm, 0.08im * ωcp),
+    (0.05 * ωcp / vm, 0.1im * ωcp),
+    (0.04 * ωcp / vm, 0.15im * ωcp),
+]
+
+sols = map(v0_vals) do v0
+    v0m = -nb * v0 / (nm + nb)
+    v0b = v0m + v0
+
+    main_ion = Maxwellian(:p, nm, Tm_eV; vdz = v0m / c0)
+    beam_ion = Maxwellian(:p, nb, Tb_eV; vdz = v0b / c0)
+    electron = Maxwellian(:e, ne, Te_eV)
+    species = (main_ion, beam_ion, electron)
+    solve(species, B0, k_ranges, θ; N = 3)
+end
+
+fig = Figure(size = (900, 600), fontsize = 20)
+
+for (idx, (sol, label)) in enumerate(zip(sols, v0_labels))
+    row = (idx - 1) ÷ 2 + 1
+    col = (idx - 1) % 2 + 1
+
+    ax = Axis(fig[row, col], title = label)
+
+    col == 1 ? (ax.ylabel = L&quot;$\omega\,/\,\omega_{cp}$&quot;) : hideydecorations!(ax, grid = false)
+    row == 2 ? (ax.xlabel = L&quot;$k\,r_{L,main}$&quot;) : hidexdecorations!(ax, grid = false)
+
+    # Tracking from given seeding points
+    k_branch, ω_branch = track(sol, initial_points[idx])
+    scatterlines!(ax, k_branch ./ k_norm, real.(ω_branch) ./ ωcp;
+        linewidth = 2, color = :royalblue)
+    scatterlines!(ax, k_branch ./ k_norm, imag.(ω_branch) ./ ωcp;
+        linewidth = 2, color = :orangered)
+
+    xlims!(ax, 0, 0.2)
+    ylims!(ax, 0, 0.4)
+end
+
+colgap!(fig.layout, 30)
+
+Legend(fig[3, 1:2],
+    [LineElement(color = :royalblue, linestyle = :dot, linewidth = 2),
+     LineElement(color = :orangered, linestyle = :dot, linewidth = 2)],
+    [L&quot;$\omega_r / \omega_{cp}$&quot;, L&quot;$\gamma / \omega_{cp}$&quot;],
+    orientation = :horizontal, framevisible = false)
+
+fig</code></pre><img src="f7058c25.png" alt="Example block output"/><h3 id="Right-hand-Nonresonant-Ion-Beam-Instability"><a class="docs-heading-anchor" href="#Right-hand-Nonresonant-Ion-Beam-Instability">Right-hand Nonresonant Ion Beam Instability</a><a id="Right-hand-Nonresonant-Ion-Beam-Instability-1"></a><a class="docs-heading-anchor-permalink" href="#Right-hand-Nonresonant-Ion-Beam-Instability" title="Permalink"></a></h3><p>Requires either a high drift velocity or a high beam density.</p><pre><code class="language-julia hljs">using PlasmaBO
+using PlasmaBO: c0, μ0, mp, q
+using CairoMakie
+
+vA_c = 1.0e-4
+beta_m = 1.0
+B0 = 1e-8 # 10 nT
+
+vA = vA_c * c0
+ne = B0^2 / (vA^2 * μ0 * mp)
+ωcp = q * B0 / mp
+
+nm = 0.99 * ne
+nb = 0.01 * ne
+Tm_eV = (beta_m * B0^2 / (2 * μ0) / nm) / q
+vm = sqrt(Tm_eV * q / mp)  # main ion thermal speed
+Tb_eV = 10.0 * Tm_eV
+Te_eV = 1.0 * Tm_eV
+
+θ = 0.0
+k_norm = ωcp / vm
+k_ranges = (0.01:0.001:0.2) .* k_norm
+
+v0_vals   = [0.0, 10.0, 20.0, 30.0] .* vm
+v0_labels = [L&quot;v_0 = 0&quot;,
+             L&quot;v_0 = 10\,v_m&quot;,
+             L&quot;v_0 = 20\,v_m&quot;,
+             L&quot;v_0 = 30\,v_m&quot;]
+
+# The nonresonant mode is backward-propagating (ω_r &lt; 0) and grows at low k.
+# Seed with imaginary ω to target the growing nonresonant branch.
+# For v0=0 there is no beam-driven nonresonant mode; target the stable Alfvén branch.
+initial_points = [
+    (0.1 * k_norm,  0.15 * ωcp),     # v0=0: stable Alfvén branch (real seed)
+    (0.1 * k_norm, 0.1 * ωcp + 0.001im * ωcp),  # v0=10 vm: nonresonant mode (low k)
+    (0.02 * k_norm, 0.0 + 0.1im * ωcp),   # v0=20 vm: stronger nonresonant growth
+    (0.02 * k_norm, 0.0 + 0.25im * ωcp), # v0=30 vm: peak nonresonant instability
+]
+
+sols = map(v0_vals) do v0
+    v0m = -nb * v0 / (nm + nb)
+    v0b = v0m + v0
+
+    main_ion = Maxwellian(:p, nm, Tm_eV; vdz = v0m / c0)
+    beam_ion = Maxwellian(:p, nb, Tb_eV; vdz = v0b / c0)
+    electron = Maxwellian(:e, ne, Te_eV)
+    species = (main_ion, beam_ion, electron)
+    solve(species, B0, k_ranges, θ; N = 3)
+end
+
+fig = Figure(size = (900, 600), fontsize = 20)
+
+for (idx, (sol, label)) in enumerate(zip(sols, v0_labels))
+    row = (idx - 1) ÷ 2 + 1
+    col = (idx - 1) % 2 + 1
+
+    ax = Axis(fig[row, col], title = label)
+
+    col == 1 ? (ax.ylabel = L&quot;$\omega\,/\,\omega_{cp}$&quot;) : hideydecorations!(ax, grid = false)
+    row == 2 ? (ax.xlabel = L&quot;$k\,r_{L,main}$&quot;) : hidexdecorations!(ax, grid = false)
+
+    k_branch, ω_branch = track(sol, initial_points[idx])
+    scatterlines!(ax, k_branch ./ k_norm, real.(ω_branch) ./ ωcp;
+        linewidth = 2, color = :royalblue)
+    scatterlines!(ax, k_branch ./ k_norm, imag.(ω_branch) ./ ωcp;
+        linewidth = 2, color = :orangered)
+
+    xlims!(ax, 0, 0.2)
+    ylims!(ax, -0.2, 0.2)
+end
+
+colgap!(fig.layout, 30)
+
+Legend(fig[3, 1:2],
+    [LineElement(color = :royalblue, linestyle = :dot, linewidth = 2),
+     LineElement(color = :orangered, linestyle = :dot, linewidth = 2)],
+    [L&quot;$\omega_r / \omega_{cp}$&quot;, L&quot;$\gamma / \omega_{cp}$&quot;],
+    orientation = :horizontal, framevisible = false)
+
+fig</code></pre><img src="5895e531.png" alt="Example block output"/><h4 id="3.-Left-hand-Resonant-Ion-Beam-Instability"><a class="docs-heading-anchor" href="#3.-Left-hand-Resonant-Ion-Beam-Instability">3. Left-hand Resonant Ion Beam Instability</a><a id="3.-Left-hand-Resonant-Ion-Beam-Instability-1"></a><a class="docs-heading-anchor-permalink" href="#3.-Left-hand-Resonant-Ion-Beam-Instability" title="Permalink"></a></h4><p>This instability operates efficiently for hot, diffuse beam distributions where <span>$T_b = 100 T_m$</span>. The setup generates the 4-panel layout corresponding to Figure 7. A secondary axis is used because the growth rate <span>$\gamma$</span> is scaled an order of magnitude smaller than the real frequency.</p><pre><code class="language-julia hljs">using PlasmaBO
+using PlasmaBO: c0, μ0, mp, q
+using CairoMakie
+
+vA_c = 1.0e-4
+beta_m = 1.0
+B0 = 1e-8
+
+vA = vA_c * c0
+ne = B0^2 / (vA^2 * μ0 * mp)
+ωcp = q * B0 / mp
+
+nm = 0.99 * ne
+nb = 0.01 * ne
+Tm_eV = (beta_m * B0^2 / (2 * μ0) / nm) / q
+vm = sqrt(Tm_eV * q / mp)
+Tb_eV = 100.0 * Tm_eV  # Diffuse beam distribution
+Te_eV = 1.0 * Tm_eV
+
+θ = 0.0
+k_norm = ωcp / vm
+k_ranges = (0.01:0.002:0.25) .* k_norm
+
+v0_vals   = [5.0, 10.0, 15.0, 20.0] .* vm
+v0_labels = [L&quot;v_0 = 5\,v_m&quot;, L&quot;v_0 = 10\,v_m&quot;, L&quot;v_0 = 15\,v_m&quot;, L&quot;v_0 = 20\,v_m&quot;]
+
+initial_points = [
+    (0.1 * k_norm, 0.1 * ωcp + 0.001im * ωcp),
+    (0.1 * k_norm, 0.1 * ωcp + 0.005im * ωcp),
+    (0.1 * k_norm, 0.1 * ωcp + 0.005im * ωcp),
+    (0.1 * k_norm, 0.1 * ωcp + 0.005im * ωcp),
+]
+
+sols = map(v0_vals) do v0
+    v0m = -nb * v0 / (nm + nb)
+    v0b = v0m + v0
+
+    main_ion = Maxwellian(:p, nm, Tm_eV; vdz = v0m / c0)
+    beam_ion = Maxwellian(:p, nb, Tb_eV; vdz = v0b / c0)
+    electron = Maxwellian(:e, ne, Te_eV)
+    species = (main_ion, beam_ion, electron)
+    solve(species, B0, k_ranges, θ; N = 4)
+end
+
+fig = Figure(size = (900, 600), fontsize = 18)
+
+for (idx, (sol, label)) in enumerate(zip(sols, v0_labels))
+    row = (idx - 1) ÷ 2 + 1
+    col = (idx - 1) % 2 + 1
+
+    ax1 = Axis(fig[row, col], title = label)
+    ax2 = Axis(fig[row, col], yaxisposition = :right)
+    hidespines!(ax2)
+    hidexdecorations!(ax2)
+
+    col == 1 ? (ax1.ylabel = L&quot;$\omega_r\,/\,\omega_{cp}$&quot;) : hideydecorations!(ax1, grid = false)
+    col == 2 ? (ax2.ylabel = L&quot;$\gamma\,/\,\omega_{cp}$&quot;) : hideydecorations!(ax2, grid = false)
+    row == 2 ? (ax1.xlabel = L&quot;$k\,a_{m}$&quot;) : hidexdecorations!(ax1, grid = false)
+
+    k_branch, ω_branch = track(sol, initial_points[idx])
+
+    lines!(ax1, k_branch ./ k_norm, real.(ω_branch) ./ ωcp; linewidth = 2, color = :royalblue)
+    scatter!(ax2, k_branch ./ k_norm, imag.(ω_branch) ./ ωcp; markersize = 6, color = :orangered)
+
+    xlims!(ax1, 0, 0.2)
+    xlims!(ax2, 0, 0.2)
+    ylims!(ax1, 0, 0.2)
+    ylims!(ax2, 0, 0.01) # Mode 3 growth rates are relatively small
+end
+
+colgap!(fig.layout, 30)
+fig</code></pre><img src="046c0d05.png" alt="Example block output"/><h4 id="4.-Ion-Cyclotron-Anisotropy-Instability"><a class="docs-heading-anchor" href="#4.-Ion-Cyclotron-Anisotropy-Instability">4. Ion Cyclotron Anisotropy Instability</a><a id="4.-Ion-Cyclotron-Anisotropy-Instability-1"></a><a class="docs-heading-anchor-permalink" href="#4.-Ion-Cyclotron-Anisotropy-Instability" title="Permalink"></a></h4><p>Driven by temperature anisotropy rather than drift velocity. This mode persists even when the bulk drift velocity is zero.</p><pre><code class="language-julia hljs">using PlasmaBO
+using PlasmaBO: c0, μ0, mp, q
+using CairoMakie
+
+vA_c = 1.0e-4
+beta_m = 1.0
+B0 = 1e-8
+vA = vA_c * c0
+ne = B0^2 / (vA^2 * μ0 * mp)
+ωcp = q * B0 / mp
+
+nm = 0.99 * ne
+nb = 0.01 * ne
+Tm_eV = (beta_m * B0^2 / (2 * μ0) / nm) / q
+vm = sqrt(Tm_eV * q / mp)
+Tb_eV = 10.0 * Tm_eV
+Te_eV = 1.0 * Tm_eV
+
+θ = 0.0
+
+# Driving the instability via temperature anisotropy
+Tparallel_b = 1.0 * Tb_eV
+Tperp_b = 10.0 * Tb_eV
+
+main_ion = Maxwellian(:p, nm, Tm_eV)
+beam_ion = Maxwellian(:p, nb, Tparallel_b, Tperp_b)
+electron = Maxwellian(:e, ne, Te_eV)
+species = (main_ion, beam_ion, electron)
+
+k_norm = ωcp / vm
+k_ranges = (0.01:0.01:1.0) .* k_norm
+sol = solve(species, B0, k_ranges, θ; N = 6)
+
+fig = Figure(size = (800, 400), fontsize = 18)
+ax1 = Axis(fig[1, 1], ylabel = L&quot;$\omega_r / \omega_{cp}$&quot;, xlabel = L&quot;$k\,a_{m}$&quot;)
+ax2 = Axis(fig[1, 2], ylabel = L&quot;$\gamma / \omega_{cp}$&quot;, xlabel = L&quot;$k\,a_{m}$&quot;)
+
+k_branch, ω_branch = track(sol, (0.2 * k_norm, 0.1im * ωcp))
+
+lines!(ax1, k_branch ./ k_norm, real.(ω_branch) ./ ωcp, linewidth = 2, color = :royalblue)
+lines!(ax2, k_branch ./ k_norm, imag.(ω_branch) ./ ωcp, linewidth = 2, color = :orangered)
+
+fig</code></pre><img src="0ba4ceec.png" alt="Example block output"/><h4 id="5.-Oblique-Instabilities-(Right-and-Left)"><a class="docs-heading-anchor" href="#5.-Oblique-Instabilities-(Right-and-Left)">5. Oblique Instabilities (Right &amp; Left)</a><a id="5.-Oblique-Instabilities-(Right-and-Left)-1"></a><a class="docs-heading-anchor-permalink" href="#5.-Oblique-Instabilities-(Right-and-Left)" title="Permalink"></a></h4><p>When examining oblique propagation at a large drift speed (<span>$v_0 = 30 v_m$</span>), higher-order cyclotron resonances emerge. This calculates the growth rate against the propagation angle <span>$\theta$</span> for the Left Oblique mode at <span>$k a_m = 0.44$</span>, recreating Figure 10 which highlights the <span>$m=2$</span> peak.</p><pre><code class="language-julia hljs">using PlasmaBO
+using PlasmaBO: c0, μ0, mp, q
+using CairoMakie
+
+vA_c = 1.0e-4
+beta_m = 1.0
+B0 = 1e-8
+
+vA = vA_c * c0
+ne = B0^2 / (vA^2 * μ0 * mp)
+ωcp = q * B0 / mp
+
+nm = 0.99 * ne
+nb = 0.01 * ne
+Tm_eV = (beta_m * B0^2 / (2 * μ0) / nm) / q
+vm = sqrt(Tm_eV * q / mp)
+Tb_eV = 10.0 * Tm_eV
+Te_eV = 1.0 * Tm_eV
+
+v0 = 30.0 * vm
+v0m = -nb * v0 / (nm + nb)
+v0b = v0m + v0
+
+main_ion = Maxwellian(:p, nm, Tm_eV; vdz = v0m / c0)
+beam_ion = Maxwellian(:p, nb, Tb_eV; vdz = v0b / c0)
+electron = Maxwellian(:e, ne, Te_eV)
+species = (main_ion, beam_ion, electron)
+
+k_target = 0.44 * ωcp / vm
+θ_vals = range(66, 84, length = 40) .* (π / 180)
+
+γ_vals = map(θ_vals) do θ
+    sol = solve(species, B0, [k_target], θ; N = 6)
+    # Extract the mode with the maximum growth rate at this configuration
+    maximum(imag.(sol.ωs[1]))
+end
+
+fig = Figure(size = (600, 400), fontsize = 18)
+ax = Axis(fig[1, 1], xlabel = L&quot;$\theta$ (degrees)&quot;, ylabel = L&quot;$\gamma / \omega_{cp}$&quot;,
+          title = &quot;Left Oblique Mode&quot;, xminorticksvisible = true)
+
+lines!(ax, θ_vals .* (180 / π), γ_vals ./ ωcp, linewidth = 2, color = :purple)
+
+xlims!(ax, 65, 83)
+ylims!(ax, 0.0, 0.08)
+fig</code></pre><img src="137d86e6.png" alt="Example block output"/></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../ringbeam_Umeda12/">« Ring beam instability</a><a class="docs-footer-nextpage" href="../firehose_Astfalk17/">Firehose instability »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Monday 25 May 2026 19:09">Monday 25 May 2026</span>. Using Julia version 1.12.6.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
