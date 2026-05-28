@@ -1,431 +1,9 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Wave polarization and handedness · PlasmaBO.jl</title><meta name="title" content="Wave polarization and handedness · PlasmaBO.jl"/><meta property="og:title" content="Wave polarization and handedness · PlasmaBO.jl"/><meta property="twitter:title" content="Wave polarization and handedness · PlasmaBO.jl"/><meta name="description" content="Documentation for PlasmaBO.jl."/><meta property="og:description" content="Documentation for PlasmaBO.jl."/><meta property="twitter:description" content="Documentation for PlasmaBO.jl."/><meta property="og:url" content="https://JuliaSpacePhysics.github.io/PlasmaBO.jl/demo_polarization/"/><meta property="twitter:url" content="https://JuliaSpacePhysics.github.io/PlasmaBO.jl/demo_polarization/"/><link rel="canonical" href="https://JuliaSpacePhysics.github.io/PlasmaBO.jl/demo_polarization/"/><script data-outdated-warner src="../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../search_index.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script></head><body>
-<!-- NAVBAR START -->
-<style>
-    html {
-        scroll-padding-top: calc(55px + 1rem);
-    }
-
-    /* Documenter css tweaks */
-    .docs-sidebar {
-        margin-top: 3.75rem;
-    }
-
-    #documenter {
-        margin-top: 3.75rem;
-    }
-
-    .docs-version-selector {
-        margin-bottom: 60px !important;
-    }
-
-    @media screen and (max-width: 1056px) {
-        .docs-version-selector {
-            margin-bottom: 60px !important;
-        }
-
-        .docs-sidebar {
-            margin-top: 0 !important;
-        }
-    }
-    /* Documenter css tweaks ends here */
-
-    :root {
-        --heading-color: white;
-        --item-color: rgb(165, 165, 165);
-        --primary-bg: #f8f9fa;  /* Light gray to match Quarto's default navbar */
-        --navbar-text: #212529;  /* Dark text color for better contrast */
-        --hover-color: #e9ecef;  /* Slightly darker gray for hover state */
-        --deprecated-bg: #ff4d4d;
-        --deprecated-text: white;
-    }
-
-    .ext-navigation {
-        position: fixed;
-        height: 3.75rem;
-        top: 0;
-        width: 100%;
-        background-color: var(--primary-bg);
-        color: var(--navbar-text);
-        z-index: 1000;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        display: flex;
-        align-items: center;
-        padding: 0 1.0625rem;
-        transition: transform 0.3s;
-    }
-
-    .ext-navbar-logo {
-        margin-left: 0.625rem;
-    }
-
-    .ext-nav-links {
-        display: flex;
-        align-items: center;
-        list-style-type: none;
-        margin: 0;
-        padding: 0;
-        flex-grow: 1;
-    }
-
-    .ext-nav-links li {
-        margin-left: 1rem !important;
-    }
-
-    .ext-nav-link {
-        color: var(--navbar-text) !important;
-        text-decoration: none;
-        font-size: 1.0625rem !important;
-        transition: color 0.2s ease;
-        cursor: pointer;
-    }
-
-    .ext-nav-link:hover,
-    .ext-navbar-item-single a:hover {
-        color: var(--hover-color) !important;
-        text-decoration: none !important;
-    }
-    
-    .ext-navigation a {
-        text-decoration: none !important;
-    }
-
-    .ext-navbar-item-single a {
-        color: var(--navbar-text) !important;
-    }
-
-    .ext-menu-toggle {
-        display: none;
-        font-size: 1.5rem;
-        color: white;
-        cursor: pointer;
-    }
-
-    .ext-dropdown {
-        display: none;
-        grid-template-columns: 1fr 1fr 1fr 1fr;
-        grid-template-rows: auto auto auto;
-        padding: 1.875rem;
-        position: absolute;
-        width: 100%;
-        left: 0;
-        background-color: var(--primary-bg);
-        line-height: 1.875rem;
-        opacity: 0;
-        transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
-        transform: translateY(-0.625rem);
-    }
-
-    #library-handler::after {
-        content: "▼";
-        font-size: 0.6875rem;
-        margin-left: 0.3125rem;
-        transition: transform 0.3s ease-in-out;
-    }
-
-    #library-handler.open::after {
-        content: "▲";
-    }
-
-    .ext-dropdown.show {
-        display: grid;
-        opacity: 1;
-        transform: translateY(0);
-    }
-
-    .ext-dropdown ul {
-        height: auto;
-        width: 12.5rem;
-        margin-bottom: 1.25rem;
-    }
-
-    .ext-dropdown ul li {
-        text-align: left;
-        display: flex;
-        align-items: center;
-    }
-
-    .navbar-sub-item {
-        list-style: none;
-    }
-
-    .ext-dropdown ul a li {
-        color: var(--item-color);
-        width: 15.625rem;
-        border-radius: 3px;
-        padding: 0.125rem 0.625rem;
-        transition: background-color 0.2s ease;
-        text-decoration: none !important;
-    }
-
-    .ext-dropdown ul a li:hover {
-        background-color: rgba(107, 107, 107, 0.5);
-    }
-
-    .ext-dropdown-item-heading {
-        /* color: var(--heading-color); */
-        text-align: center;
-    }
-
-    .deprecated-badge {
-        background-color: var(--deprecated-bg);
-        color: var(--deprecated-text);
-        font-size: 0.75rem;
-        padding: 0.125rem 0.375rem;
-        border-radius: 3px;
-        margin-left: 0.5rem;
-        line-height: 1;
-    }
-
-    /* Responsive styling */
-    @media (max-width: 966px) {
-        .ext-dropdown {
-            grid-template-columns: 1fr 1fr 1fr;
-        }
-    }
-
-    @media (max-width: 768px) {
-        .ext-nav-links {
-            display: none;
-            flex-direction: column;
-            width: 100%;
-            background-color: var(--primary-bg);
-            position: absolute;
-            top: 3.75rem;
-            left: 0;
-            padding: 0.625rem 0;
-            height: auto;
-            overflow-y: auto;
-            scrollbar-width: thin;
-            scrollbar-color: rgb(141, 141, 141) grey;
-        }
-
-        .ext-nav-links.show {
-            display: flex;
-        }
-
-        .ext-nav-links li {
-            margin: 0.625rem 0;
-            text-align: center;
-        }
-
-        .ext-menu-toggle {
-            display: block;
-            margin-left: auto;
-        }
-
-        .ext-navigation.hide {
-            transform: translateY(-3.75rem);
-        }
-
-        .ext-dropdown {
-            place-content: center;
-            text-align: center;
-            grid-template-columns: 1fr;
-            line-height: 1.25rem;
-            padding: 0.625rem;
-        }
-
-        .ext-dropdown ul {
-            width: 100%;
-            text-align: center;
-            margin-bottom: 0.3125rem;
-        }
-
-        .ext-dropdown ul li {
-            text-align: center;
-            /* justify-content: center; */
-        }
-
-        .ext-dropdown ul a li {
-            width: 100%;
-        }
-
-        .ext-dropdown ul a li:hover {
-            background-color: var(--primary-bg);
-            /* color: #fff; */
-        }
-
-        /* Modified scroll bar */
-        .ext-nav-links::-webkit-scrollbar {
-            width: 5px;
-        }
-
-        .ext-nav-links::-webkit-scrollbar-track {
-            box-shadow: inset 0 0 5px grey;
-        }
-
-        .ext-nav-links::-webkit-scrollbar-thumb {
-            background: rgb(141, 141, 141);
-            border-radius: 3px;
-        }
-
-        .ext-nav-links::-webkit-scrollbar-thumb:hover {
-            background: #9b9b9b;
-        }
-    }
-</style>
-<nav class="ext-navigation">
-    <a href="https://juliaspacephysics.github.io"></a>
-    <a style="color: #212529 !important; font-size: 21.25px !important; margin-left: 10px;" href="https://juliaspacephysics.github.io">JuliaSpacePhysics</a>
-    <ul class="ext-nav-links">
-        <li>
-            <p class="ext-nav-link" id="library-handler">Ecosystem</p>
-            <div class="ext-dropdown" id="ext-dropdown-items">
-                <ul>
-                    <li class="ext-dropdown-item-heading">Core</li>
-                    <a href="https://juliaspacephysics.github.io/SPEDAS.jl"><li>SPEDAS.jl</li></a>
-                    <a href="https://juliaspacephysics.github.io/SpaceDataModel.jl"><li>SpaceDataModel.jl</li></a>
-                    <a href="https://juliaspacephysics.github.io/GeoCotrans.jl"><li>GeoCotrans.jl</li></a>
-                    <a href="https://henry2004y.github.io/TestParticle.jl/"><li>TestParticle.jl</li></a>
-                </ul>
-                <ul>
-                    <li class="ext-dropdown-item-heading">Data</li>
-                    <a href="https://juliaspacephysics.github.io/CDFDatasets.jl/"><li>CDFDatasets.jl</li></a>
-                    <a href="https://juliaspacephysics.github.io/CDAWeb.jl/"><li>CDAWeb.jl</li></a>
-                    <a href="https://sciqlop.github.io/Speasy.jl/"><li>Speasy.jl</li></a>
-                    <a href="https://juliaspacephysics.github.io/HAPIClient.jl/"><li>HAPIClient.jl</li></a>
-                    <a href="https://juliaspacephysics.github.io/Madrigal.jl/"><li>Madrigal.jl</li></a>
-                    <a href="https://github.com/JuliaSpacePhysics/PySPEDAS.jl"><li>PySPEDAS.jl</li></a>
-                    <a href="https://juliaspacephysics.github.io/SunPy.jl/"><li>SunPy.jl</li></a>
-                    <a href="https://juliaspacephysics.github.io/CommonDataFormat.jl/"><li>CommonDataFormat.jl</li></a>
-                </ul>
-                <ul>
-                    <li class="ext-dropdown-item-heading">Domain</li>
-                    <a href="https://juliaspacephysics.github.io/SpaceWeather.jl"><li>SpaceWeather.jl</li></a>
-                    <a href="https://juliaspacephysics.github.io/SolarEnergeticParticle.jl"><li>SolarEnergeticParticle.jl (Helio)</li></a>
-                    <a href="https://juliaspacephysics.github.io/GeoAACGM.jl"><li>GeoAACGM.jl (ITM)</li></a>
-                    <a href="https://juliaspacephysics.github.io/IRBEM.jl"><li>IRBEM.jl (Magnetosphere)</li></a>
-                    <a href="https://juliaspacephysics.github.io/TsyganenkoModels.jl"><li>TsyganenkoModels.jl (Magnetosphere)</li></a>
-                </ul>
-                <!-- Enable when more mission-specific packages are available -->
-                <ul>
-                    <li class="ext-dropdown-item-heading">Mission-specific</li>
-                    <a href="https://juliaspacephysics.github.io/EISCATData.jl"><li>EISCATData.jl</li></a>
-                    <a href="https://juliaspacephysics.github.io/ELFINData.jl"><li>ELFINData.jl</li></a>
-                    <a href="https://juliaspacephysics.github.io/DMSPData.jl"><li>DMSPData.jl</li></a>
-                </ul>
-               
-                <ul>
-                    <li class="ext-dropdown-item-heading">General Analysis</li>
-                    <a href="https://juliaplasma.github.io/PlasmaFormulary.jl"><li>JuliaPlasma/PlasmaFormulary.jl</li></a>
-                    <a href="https://juliaplasma.github.io/ChargedParticles.jl"><li>JuliaPlasma/ChargedParticles.jl</li></a>
-                    <a href="https://juliaspacephysics.github.io/VelocityDistributionFunctions.jl"><li>VelocityDistributionFunctions.jl</li></a>
-                    <a href="https://juliaspacephysics.github.io/PlasmaWaves.jl"><li>PlasmaWaves.jl</li></a>
-                    <a href="https://juliaspacephysics.github.io/PlasmaBO.jl"><li>PlasmaBO.jl</li></a>
-                    <a href="https://github.com/JuliaSpacePhysics/SpacePhysicsMakie.jl"><li>SpacePhysicsMakie.jl</li></a>
-                </ul>
-            </div>
-        </li>
-        <li><a href="https://juliaspacephysics.github.io/tutorials/">Tutorials</a></li>
-    </ul>
-    <a href="https://github.com/JuliaSpacePhysics">
-        <svg width="32px" height="32px" viewBox="-8.2 -8.2 36.40 36.40" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" fill="#000000">
-            <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
-            <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
-            <g id="SVGRepo_iconCarrier">
-                <title>github [#142]</title>
-                <desc>JuliaSpacePhysics</desc>
-                <defs></defs>
-                <g id="Page-1" stroke-width="0.0002" fill="none" fill-rule="evenodd">
-                    <g id="Dribbble-Light-Preview" transform="translate(-140.000000, -7559.000000)" fill="#ffffff">
-                        <g id="icons" transform="translate(56.000000, 160.000000)">
-                            <path
-                                d="M94,7399 C99.523,7399 104,7403.59 104,7409.253 C104,7413.782 101.138,7417.624 97.167,7418.981 C96.66,7419.082 96.48,7418.762 96.48,7418.489 C96.48,7418.151 96.492,7417.047 96.492,7415.675 C96.492,7414.719 96.172,7414.095 95.813,7413.777 C98.04,7413.523 100.38,7412.656 100.38,7408.718 C100.38,7407.598 99.992,7406.684 99.35,7405.966 C99.454,7405.707 99.797,7404.664 99.252,7403.252 C99.252,7403.252 98.414,7402.977 96.505,7404.303 C95.706,7404.076 94.85,7403.962 94,7403.958 C93.15,7403.962 92.295,7404.076 91.497,7404.303 C89.586,7402.977 88.746,7403.252 88.746,7403.252 C88.203,7404.664 88.546,7405.707 88.649,7405.966 C88.01,7406.684 87.619,7407.598 87.619,7408.718 C87.619,7412.646 89.954,7413.526 92.175,7413.785 C91.889,7414.041 91.63,7414.493 91.54,7415.156 C90.97,7415.418 89.522,7415.871 88.63,7414.304 C88.63,7414.304 88.101,7413.319 87.097,7413.247 C87.097,7413.247 86.122,7413.234 87.029,7413.87 C87.029,7413.87 87.684,7414.185 88.139,7415.37 C88.139,7415.37 88.726,7417.2 91.508,7416.58 C91.513,7417.437 91.522,7418.245 91.522,7418.489 C91.522,7418.76 91.338,7419.077 90.839,7418.982 C86.865,7417.627 84,7413.783 84,7409.253 C84,7403.59 88.478,7399 94,7399"
-                                id="github-[#142]">
-                            </path>
-                        </g>
-                    </g>
-                </g>
-            </g>
-        </svg>
-    </a>
-    <span class="ext-menu-toggle">&#9776;</span>
-</nav>
-<script>
-    document.addEventListener("DOMContentLoaded", function () {
-        const menuToggle = document.querySelector(".ext-menu-toggle");
-        const navLinks = document.querySelector(".ext-nav-links");
-        const nav = document.querySelector(".ext-navigation");
-        const navigationHandler = document.getElementById("library-handler");
-        const navigationItemsContainer =
-            document.getElementById("ext-dropdown-items");
-        let lastScrollY = window.scrollY;
-
-        function setAppropriateHeight() {
-            if (window.innerWidth <= 768) {
-                const viewportHeight = window.innerHeight;
-                const navHeight = nav.offsetHeight;
-                navLinks.style.maxHeight = `${viewportHeight - navHeight}px`;
-                navLinks.style.overflowY = "auto";
-            } else {
-                navLinks.style.maxHeight = "";
-                navLinks.style.overflowY = "";
-            }
-        }
-
-        // Toggle main menu for mobile
-        menuToggle.addEventListener("click", () => {
-            navLinks.classList.toggle("show");
-            if (navLinks.classList.contains("show")) {
-                setAppropriateHeight();
-                // Ensure the dropdown is hidden when menu is first opened
-                navigationItemsContainer.style.display = "none";
-                navigationItemsContainer.classList.remove("show");
-            }
-        });
-
-        // Close menus if clicked outside
-        document.addEventListener("click", (event) => {
-            if (
-                !navLinks.contains(event.target) &&
-                !menuToggle.contains(event.target)
-            ) {
-                navLinks.classList.remove("show");
-                navigationItemsContainer.classList.remove("show");
-                navigationHandler.classList.remove("open");
-            }
-        });
-
-        // Hide navigation bar on scroll down in mobile view
-        window.addEventListener("scroll", () => {
-            if (window.innerWidth <= 768) {
-                nav.classList.toggle("hide", window.scrollY > lastScrollY);
-                lastScrollY = window.scrollY;
-            }
-        });
-
-        // Library API script
-        navigationHandler.addEventListener("click", (event) => {
-            event.preventDefault(); // Prevent default action of the link
-            if (navigationItemsContainer.classList.contains("show")) {
-                navigationItemsContainer.classList.remove("show");
-                navigationHandler.classList.remove("open");
-                setTimeout(() => {
-                    navigationItemsContainer.style.display = "none";
-                }, 500); // Match the timeout to the CSS transition duration
-            } else {
-                navigationItemsContainer.style.display = "grid";
-                navigationHandler.classList.add("open");
-                setTimeout(() => {
-                    navigationItemsContainer.classList.add("show");
-                }, 10); // Delay to ensure the display change takes effect before adding class
-            }
-            setAppropriateHeight(); // Recalculate height when dropdown changes
-        });
-
-        // Handle window resize
-        window.addEventListener("resize", setAppropriateHeight);
-
-        // Initial setup
-        setAppropriateHeight();
-    });
-</script>
-<!-- NAVBAR END -->
-<div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../">PlasmaBO.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../">Home</a></li><li><a class="tocitem" href="../ringbeam_Umeda12/">Ring beam instability</a></li><li><a class="tocitem" href="../ionbeam_gary84/">Ion beam instability</a></li><li><a class="tocitem" href="../firehose_Astfalk17/">Firehose instability</a></li><li><a class="tocitem" href="../mirror_mode/">Mirror mode</a></li><li><a class="tocitem" href="../ice_Irvine18/">Ion cyclotron emission</a></li><li><a class="tocitem" href="../rlp_Cattaert07/">R/L/P modes (PBK solver)</a></li><li><a class="tocitem" href="../cold_plasma/">Cold plasma (fluid vs kinetic solver)</a></li><li><a class="tocitem" href="../dispersion_surface/">Dispersion surface tracking</a></li><li class="is-active"><a class="tocitem" href>Wave polarization and handedness</a><ul class="internal"><li><a class="tocitem" href="#Physics-Setup-and-Equations"><span>Physics Setup and Equations</span></a></li><li><a class="tocitem" href="#Wave-Polarization-Analysis"><span>Wave Polarization Analysis</span></a></li></ul></li><li><a class="tocitem" href="../math_notes/">Math notes</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Wave polarization and handedness</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Wave polarization and handedness</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/JuliaSpacePhysics/PlasmaBO.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/JuliaSpacePhysics/PlasmaBO.jl/blob/main/docs/src/demo_polarization.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Case:-Wave-polarization-and-handedness"><a class="docs-heading-anchor" href="#Case:-Wave-polarization-and-handedness">Case: Wave polarization and handedness</a><a id="Case:-Wave-polarization-and-handedness-1"></a><a class="docs-heading-anchor-permalink" href="#Case:-Wave-polarization-and-handedness" title="Permalink"></a></h1><p>This page demonstrates how to analyze wave polarization, handedness, and the polarization ratio for various modes in a cold magnetized plasma. We solve the linear dispersion relation using the multi-fluid solver <code>BOFluid</code> and verify the calculated frequencies against the analytical cold-plasma dispersion relation.</p><h2 id="Physics-Setup-and-Equations"><a class="docs-heading-anchor" href="#Physics-Setup-and-Equations">Physics Setup and Equations</a><a id="Physics-Setup-and-Equations-1"></a><a class="docs-heading-anchor-permalink" href="#Physics-Setup-and-Equations" title="Permalink"></a></h2><p>We consider a cold, magnetized electron–proton plasma with the background magnetic field <span>$\mathbf{B}_0$</span> aligned along the <span>$+z$</span>-direction. The analytical cold-plasma dispersion relations for right-hand (<span>$R$</span>) and left-hand (<span>$L$</span>) circularly polarized waves propagating parallel to the magnetic field are:</p><p class="math-container">\[D_R(ω) = 1 - \frac{c^2 k^2}{ω^2} - \frac{ω_{pe}^2}{ω(ω - |ω_{ce}|)} - \frac{ω_{pi}^2}{ω(ω + ω_{ci})} = 0\]</p><p class="math-container">\[D_L(ω) = 1 - \frac{c^2 k^2}{ω^2} - \frac{ω_{pe}^2}{ω(ω + |ω_{ce}|)} - \frac{ω_{pi}^2}{ω(ω - ω_{ci})} = 0\]</p><p>where:</p><ul><li><p class="math-container">\[ω_{pe}, ω_{pi}\]</p>are the electron and ion plasma frequencies, respectively.</li><li><p class="math-container">\[ω_{ce}, ω_{ci}\]</p>are the signed electron and ion cyclotron frequencies.</li></ul><h2 id="Wave-Polarization-Analysis"><a class="docs-heading-anchor" href="#Wave-Polarization-Analysis">Wave Polarization Analysis</a><a id="Wave-Polarization-Analysis-1"></a><a class="docs-heading-anchor-permalink" href="#Wave-Polarization-Analysis" title="Permalink"></a></h2><p>In the code block below, we:</p><ol><li>Setup the physical parameters (<span>$B_0 = 10^{-4}$</span> T, <span>$n = 10^{11}$</span> m<span>$^{-3}$</span>, <span>$T = 0$</span> eV).</li><li>Construct the dispersion matrix using the fluid solver (<code>BOFluid</code>).</li><li>Compute the eigenvalues and eigenvectors using <code>eigen!</code>.</li><li>Identify and physically describe each of the 14 modes (e.g., Whistler waves, Ion Cyclotron waves, Langmuir waves, and uncoupled gyro-resonances).</li><li>Verify the numerical solutions against the analytical dispersion functions <span>$D_R(ω)$</span> and <span>$D_L(ω)$</span>.</li></ol><pre><code class="language-julia hljs">using PlasmaBO
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Wave polarization and handedness · PlasmaBO.jl</title><meta name="title" content="Wave polarization and handedness · PlasmaBO.jl"/><meta property="og:title" content="Wave polarization and handedness · PlasmaBO.jl"/><meta property="twitter:title" content="Wave polarization and handedness · PlasmaBO.jl"/><meta name="description" content="Documentation for PlasmaBO.jl."/><meta property="og:description" content="Documentation for PlasmaBO.jl."/><meta property="twitter:description" content="Documentation for PlasmaBO.jl."/><meta property="og:url" content="https://JuliaSpacePhysics.github.io/PlasmaBO.jl/demo_polarization/"/><meta property="twitter:url" content="https://JuliaSpacePhysics.github.io/PlasmaBO.jl/demo_polarization/"/><link rel="canonical" href="https://JuliaSpacePhysics.github.io/PlasmaBO.jl/demo_polarization/"/><script data-outdated-warner src="../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../search_index.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../">PlasmaBO.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../">Home</a></li><li><a class="tocitem" href="../ringbeam_Umeda12/">Ring beam instability</a></li><li><a class="tocitem" href="../ionbeam_gary84/">Ion beam instability</a></li><li><a class="tocitem" href="../firehose_Astfalk17/">Firehose instability</a></li><li><a class="tocitem" href="../mirror_mode/">Mirror mode</a></li><li><a class="tocitem" href="../ice_Irvine18/">Ion cyclotron emission</a></li><li><a class="tocitem" href="../rlp_Cattaert07/">R/L/P modes (PBK solver)</a></li><li><a class="tocitem" href="../cold_plasma/">Cold plasma (fluid vs kinetic solver)</a></li><li><a class="tocitem" href="../dispersion_surface/">Dispersion surface tracking</a></li><li class="is-active"><a class="tocitem" href>Wave polarization and handedness</a><ul class="internal"><li><a class="tocitem" href="#Physics-Setup-and-Equations"><span>Physics Setup and Equations</span></a></li><li><a class="tocitem" href="#Wave-Polarization-Analysis"><span>Wave Polarization Analysis</span></a></li></ul></li><li><a class="tocitem" href="../math_notes/">Math notes</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Wave polarization and handedness</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Wave polarization and handedness</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/JuliaSpacePhysics/PlasmaBO.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/JuliaSpacePhysics/PlasmaBO.jl/blob/main/docs/src/demo_polarization.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Case:-Wave-polarization-and-handedness"><a class="docs-heading-anchor" href="#Case:-Wave-polarization-and-handedness">Case: Wave polarization and handedness</a><a id="Case:-Wave-polarization-and-handedness-1"></a><a class="docs-heading-anchor-permalink" href="#Case:-Wave-polarization-and-handedness" title="Permalink"></a></h1><p>This page demonstrates how to analyze wave polarization, handedness, and the polarization ratio for various modes in a cold magnetized plasma. We solve the linear dispersion relation using the multi-fluid solver <code>BOFluid</code> and verify the calculated frequencies against the analytical cold-plasma dispersion relation.</p><h2 id="Physics-Setup-and-Equations"><a class="docs-heading-anchor" href="#Physics-Setup-and-Equations">Physics Setup and Equations</a><a id="Physics-Setup-and-Equations-1"></a><a class="docs-heading-anchor-permalink" href="#Physics-Setup-and-Equations" title="Permalink"></a></h2><p>We consider a cold, magnetized electron–proton plasma with the background magnetic field <span>$\mathbf{B}_0$</span> aligned along the <span>$+z$</span>-direction. The analytical cold-plasma dispersion relations for right-hand (<span>$R$</span>) and left-hand (<span>$L$</span>) circularly polarized waves propagating parallel to the magnetic field are:</p><p class="math-container">\[D_R(ω) = 1 - \frac{c^2 k^2}{ω^2} - \frac{ω_{pe}^2}{ω(ω - |ω_{ce}|)} - \frac{ω_{pi}^2}{ω(ω + ω_{ci})} = 0\]</p><p class="math-container">\[D_L(ω) = 1 - \frac{c^2 k^2}{ω^2} - \frac{ω_{pe}^2}{ω(ω + |ω_{ce}|)} - \frac{ω_{pi}^2}{ω(ω - ω_{ci})} = 0\]</p><p>where:</p><ul><li><p class="math-container">\[ω_{pe}, ω_{pi}\]</p>are the electron and ion plasma frequencies, respectively.</li><li><p class="math-container">\[ω_{ce}, ω_{ci}\]</p>are the signed electron and ion cyclotron frequencies.</li></ul><h2 id="Wave-Polarization-Analysis"><a class="docs-heading-anchor" href="#Wave-Polarization-Analysis">Wave Polarization Analysis</a><a id="Wave-Polarization-Analysis-1"></a><a class="docs-heading-anchor-permalink" href="#Wave-Polarization-Analysis" title="Permalink"></a></h2><p>In the code block below, we:</p><ol><li>Setup the physical parameters (<span>$B_0 = 10^{-4}$</span> T, <span>$n = 10^{11}$</span> m<span>$^{-3}$</span>, <span>$T = 0$</span> eV).</li><li>Construct the dispersion matrix using the fluid solver (<code>BOFluid</code>).</li><li>Compute the eigenvalues and eigenvectors using <code>eigen!</code>.</li><li>Identify and physically describe each of the 14 modes (e.g., Whistler waves, Ion Cyclotron waves, Langmuir waves, and uncoupled gyro-resonances).</li><li>Verify the numerical solutions against the analytical dispersion functions <span>$D_R(ω)$</span> and <span>$D_L(ω)$</span>.</li></ol><pre><code class="language-julia hljs">using PlasmaBO
 using PlasmaBO: c0, ε0, qe, me, mp
 using LinearAlgebra
 using Printf
+using Markdown
 
 # 1. Physics Setup
 B0 = 1.0e-4          # Background magnetic field along +z [Tesla]
@@ -437,25 +15,35 @@ k = 1.0
 kx = 0.0
 kz = k
 
-println(&quot;Parameters:&quot;)
-println(&quot;  - Background Magnetic Field (B0): &quot;, B0, &quot; T (along +z)&quot;)
-println(&quot;  - Plasma Density (n)            : &quot;, n, &quot; m^-3&quot;)
-println(&quot;  - Temperature (T)               : &quot;, T, &quot; eV&quot;)
-println(&quot;  - Wave Vector (kx, kz)          : (&quot;, kx, &quot;, &quot;, kz, &quot;) m^-1&quot;)
+# Local helper functions to extract fields from fluid eigenvectors
+electric_field(v) = (v[end-5], v[end-4], v[end-3])
+magnetic_field(v) = (v[end-2], v[end-1], v[end])
 
 # Define species
 e_vdf = Maxwellian(:e, n, T)
 species = [e_vdf, FluidSpecies(:p, n, T)]
 
-println(&quot;\n1. Constructing the dispersion matrix using BOFluid solver...&quot;)
+# Construct the dispersion matrix using BOFluid solver
 M = dispersion_matrix(species, B0, kx, kz, BOFluid)
 
-println(&quot;2. Solving the eigenvalue problem (eigen!)...&quot;)
+# Solve the eigenvalue problem (eigen!)
 decomp = eigen!(M)
 ωs = decomp.values
-V = decomp.vectors
-
-# Analytical Frequencies
+V = decomp.vectors</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">14×14 Matrix{ComplexF64}:
+   2.0909e-17-1.53301e-16im  …   2.08866e-17+1.53301e-16im
+     0.707106+0.0im                 0.707106+0.0im
+ -1.04851e-14-0.707106im         -9.2848e-15+0.707106im
+ -6.27931e-20+5.07122e-19im      6.27011e-20+5.07123e-19im
+ -4.01926e-23-6.80303e-19im     -4.01874e-23+6.80303e-19im
+  -0.00036254-1.03719e-17im  …   -0.00036254-8.83054e-18im
+  5.72305e-18+0.00036254im       5.07656e-18-0.00036254im
+  1.20642e-25+1.00186e-21im     -1.20627e-25+1.00186e-21im
+  2.46959e-18-0.00113682im        2.3471e-18+0.00113682im
+  -0.00113682+1.79125e-17im      -0.00113682-1.58642e-17im
+   3.0248e-24+3.78202e-25im  …  -3.02481e-24+3.78153e-25im
+ -3.78492e-12+5.98568e-26im      3.78492e-12+5.30365e-26im
+ -8.24331e-27+3.78492e-12im      7.83616e-27+3.78492e-12im
+         -0.0+0.0im                      0.0+0.0im</code></pre><p>We analyze each of the 14 modes by examining their frequency, electric field norm, polarization ratio, and handedness, comparing them against analytical cold-plasma theory:</p><pre><code class="language-julia hljs"># Analytical Frequencies and Dispersion relation functions
 wpe2 = n * qe^2 / (ε0 * me)
 wpi2 = n * qe^2 / (ε0 * mp)
 wce = qe * B0 / me     # Signed (negative for electrons)
@@ -463,14 +51,11 @@ wci = qe * B0 / mp     # Signed (positive for protons)
 wpe = sqrt(wpe2)
 wpi = sqrt(wpi2)
 
-# Dispersion function residuals
 D_R(ω) = 1.0 - (c0*k/ω)^2 - wpe2 / (ω * (ω - abs(wce))) - wpi2 / (ω * (ω + wci))
 D_L(ω) = 1.0 - (c0*k/ω)^2 - wpe2 / (ω * (ω + abs(wce))) - wpi2 / (ω * (ω - wci))
 
-println(&quot;\nIdentified Modes &amp; Physical Verification against Cold-Plasma Theory:&quot;)
-println(&quot;-------------------------------------------------------------------------------------------------------------------------------------------&quot;)
-@printf(&quot;%-5s | %-24s | %-12s | %-10s | %-12s | %-10s | %-10s | %-36s\n&quot;, &quot;Index&quot;, &quot;Frequency ω (rad/s)&quot;, &quot;E-field Norm&quot;, &quot;Handedness&quot;, &quot;Pol Ratio&quot;, &quot;Residual D&quot;, &quot;Status&quot;, &quot;Physical Description&quot;)
-println(&quot;-------------------------------------------------------------------------------------------------------------------------------------------&quot;)
+header = [&quot;Index&quot;, &quot;Frequency ω (rad/s)&quot;, &quot;E-field Norm&quot;, &quot;Handedness&quot;, &quot;Pol Ratio&quot;, &quot;Residual D&quot;, &quot;Status&quot;, &quot;Physical Description&quot;]
+rows = Any[]
 
 # Sort all 14 solutions by |real(ω)|
 sorted_indices = sort(1:length(ωs), by = i -&gt; abs(real(ωs[i])))
@@ -488,13 +73,17 @@ for i in sorted_indices
     # Residual and status defaults
     residual = NaN
     status = &quot;N/A&quot;
-    mode_type = &quot;EM Wave&quot;
     desc = &quot;&quot;
 
     if abs(ω) &lt; 1e1
-        mode_type = &quot;Static&quot;
         if abs(Bz) &gt; 0.9
-            desc = &quot;Static Longitudinal B-field (Bz)&quot;
+            desc = &quot;spurious ∇·B null mode (δBz)&quot;
+        elseif abs(v[1]) &gt; 0.9 &amp;&amp; abs(v[5]) &gt; 0.9
+            desc = &quot;Static Neutral Plasma Perturbation (physical)&quot;
+        elseif abs(v[1]) &gt; 0.9
+            desc = &quot;spurious Gauss&#39;s Law violation (static δne)&quot;
+        elseif abs(v[5]) &gt; 0.9
+            desc = &quot;spurious Gauss&#39;s Law violation (static δnp)&quot;
         else
             desc = &quot;Static Neutral Plasma Perturbation&quot;
         end
@@ -521,7 +110,6 @@ for i in sorted_indices
         end
 
         if E_norm &lt; 1e-16
-            mode_type = &quot;Uncoupled Gyro&quot;
             residual = NaN
             status = &quot;N/A&quot;
             if abs(abs(ω) - abs(wci)) &lt; 1e2
@@ -530,7 +118,6 @@ for i in sorted_indices
                 desc = &quot;Uncoupled Species Gyration&quot;
             end
         elseif hand == :linear
-            mode_type = &quot;Electrostatic&quot;
             desc = &quot;Langmuir Wave &quot; * (real(ω) &gt; 0 ? &quot;(+z)&quot; : &quot;(-z)&quot;)
         else
             # EM Waves
@@ -550,58 +137,32 @@ for i in sorted_indices
     res_str = isnan(residual) ? &quot;N/A&quot; : @sprintf(&quot;%.2e&quot;, residual)
     pol_ratio = polarization_ratio(v, kx, kz)
     # Use absolute value for display; handle non-finite values gracefully
-    display_ratio = (isfinite(pol_ratio) ? abs(pol_ratio) : NaN)
-    @printf(&quot;%-5d | %-24s | %-12.2e | %-10s | %-12.2e | %-10s | %-10s | %-36s\n&quot;,
-            i,
-            @sprintf(&quot;%.3e + %.3eim&quot;, real(ω), imag(ω)),
-            E_norm,
-            string(hand),
-            display_ratio,
-            res_str,
-            status,
-            desc)
+    display_ratio = isfinite(pol_ratio) ? @sprintf(&quot;%.2e&quot;, abs(pol_ratio)) : &quot;NaN&quot;
+
+    push!(rows, [
+        string(i),
+        &quot;`&quot; * @sprintf(&quot;%.3e + %.3eim&quot;, real(ω), imag(ω)) * &quot;`&quot;,
+        @sprintf(&quot;%.2e&quot;, E_norm),
+        string(hand),
+        display_ratio,
+        res_str,
+        status,
+        desc
+    ])
 end
-println(&quot;------------------------------------------------------------------------------------------------------------------&quot;)
-println(&quot;\nSummary of Physics Matching:&quot;)
-println(&quot;  - Electron plasma frequency (ωpe)  : &quot;, @sprintf(&quot;%.3e&quot;, wpe), &quot; rad/s&quot;)
-println(&quot;  - Ion cyclotron frequency (ωci)    : &quot;, @sprintf(&quot;%.3e&quot;, wci), &quot; rad/s&quot;)
-println(&quot;  - Electron cyclotron frequency(|ωce|): &quot;, @sprintf(&quot;%.3e&quot;, abs(wce)), &quot; rad/s&quot;)
-println(&quot;  - High-frequency EM wave speed (c*k) : &quot;, @sprintf(&quot;%.3e&quot;, c0 * k), &quot; rad/s&quot;)
-println(&quot;\nNote: Handedness is defined relative to the background magnetic field B0 (+z)&quot;)
-println(&quot;      assuming the wave convention e^(i*(k_z * z - ω * t)).&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Parameters:
-  - Background Magnetic Field (B0): 0.0001 T (along +z)
-  - Plasma Density (n)            : 1.0e11 m^-3
-  - Temperature (T)               : 0.0 eV
-  - Wave Vector (kx, kz)          : (0.0, 1.0) m^-1
 
-1. Constructing the dispersion matrix using BOFluid solver...
-2. Solving the eigenvalue problem (eigen!)...
-
-Identified Modes &amp; Physical Verification against Cold-Plasma Theory:
--------------------------------------------------------------------------------------------------------------------------------------------
-Index | Frequency ω (rad/s)      | E-field Norm | Handedness | Pol Ratio    | Residual D | Status     | Physical Description
--------------------------------------------------------------------------------------------------------------------------------------------
-7     | 0.000e+00 + 0.000e+00im  | 0.00e+00     | linear     | NaN          | N/A        | N/A        | Static Neutral Plasma Perturbation
-8     | 0.000e+00 + 0.000e+00im  | 0.00e+00     | linear     | NaN          | N/A        | N/A        | Static Neutral Plasma Perturbation
-9     | 0.000e+00 + 0.000e+00im  | 0.00e+00     | linear     | NaN          | N/A        | N/A        | Static Longitudinal B-field (Bz)
-6     | -1.509e-14 + 9.180e-13im | 3.62e-82     | linear     | 5.46e+00     | N/A        | N/A        | Static Neutral Plasma Perturbation
-10    | 9.579e+03 + 3.918e-10im  | 3.72e-20     | L          | 1.00e+00     | N/A        | N/A        | Proton Cyclotron Gyration (Resonance)
-5     | -9.579e+03 + -3.835e-10im | 3.72e-20     | L          | 1.00e+00     | N/A        | N/A        | Proton Cyclotron Gyration (Resonance)
-4     | -1.753e+07 + -1.189e-08im | 1.25e-13     | R          | 1.00e+00     | 2.12e-10   | VERIFIED   | Whistler Wave (R-mode, -z)
-11    | 1.753e+07 + -1.189e-08im | 1.25e-13     | R          | 1.00e+00     | 2.12e-10   | VERIFIED   | Whistler Wave (R-mode, +z)
-12    | 1.784e+07 + -1.530e-10im | 3.28e-16     | linear     | 3.41e+00     | N/A        | N/A        | Langmuir Wave (+z)
-3     | -1.784e+07 + -7.384e-11im | 3.28e-16     | linear     | 3.41e+00     | N/A        | N/A        | Langmuir Wave (-z)
-13    | 3.003e+08 + 9.709e-10im  | 3.27e-06     | L          | 1.00e+00     | 2.57e-14   | VERIFIED   | EM Light Wave (L-mode, +z)
-2     | -3.003e+08 + 1.050e-09im | 3.27e-06     | L          | 1.00e+00     | 2.59e-14   | VERIFIED   | EM Light Wave (L-mode, -z)
-14    | 3.004e+08 + 1.735e-09im  | 2.58e-06     | R          | 1.00e+00     | 2.61e-14   | VERIFIED   | EM Light Wave (R-mode, +z)
-1     | -3.004e+08 + 1.677e-09im | 2.58e-06     | R          | 1.00e+00     | 3.05e-14   | VERIFIED   | EM Light Wave (R-mode, -z)
-------------------------------------------------------------------------------------------------------------------
-
-Summary of Physics Matching:
-  - Electron plasma frequency (ωpe)  : 1.784e+07 rad/s
-  - Ion cyclotron frequency (ωci)    : 9.579e+03 rad/s
-  - Electron cyclotron frequency(|ωce|): 1.759e+07 rad/s
-  - High-frequency EM wave speed (c*k) : 2.998e+08 rad/s
-
-Note: Handedness is defined relative to the background magnetic field B0 (+z)
-      assuming the wave convention e^(i*(k_z * z - ω * t)).</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../dispersion_surface/">« Dispersion surface tracking</a><a class="docs-footer-nextpage" href="../math_notes/">Math notes »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Thursday 28 May 2026 04:53">Thursday 28 May 2026</span>. Using Julia version 1.12.6.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+Markdown.MD(Markdown.Table([header, rows...], [:r, :l, :r, :c, :r, :r, :c, :l]))</code></pre><div class="markdown"><table><tr><th align="right">Index</th><th align="left">Frequency ω &#40;rad/s&#41;</th><th align="right">E-field Norm</th><th align="center">Handedness</th><th align="right">Pol Ratio</th><th align="right">Residual D</th><th align="center">Status</th><th align="left">Physical Description</th></tr><tr><td align="right">6</td><td align="left">&#96;0.000e&#43;00 &#43; 0.000e&#43;00im&#96;</td><td align="right">0.00e&#43;00</td><td align="center">linear</td><td align="right">NaN</td><td align="right">N/A</td><td align="center">N/A</td><td align="left">spurious Gauss&#39;s Law violation &#40;static δne&#41;</td></tr><tr><td align="right">7</td><td align="left">&#96;0.000e&#43;00 &#43; 0.000e&#43;00im&#96;</td><td align="right">0.00e&#43;00</td><td align="center">linear</td><td align="right">NaN</td><td align="right">N/A</td><td align="center">N/A</td><td align="left">spurious Gauss&#39;s Law violation &#40;static δnp&#41;</td></tr><tr><td align="right">8</td><td align="left">&#96;0.000e&#43;00 &#43; 0.000e&#43;00im&#96;</td><td align="right">0.00e&#43;00</td><td align="center">linear</td><td align="right">NaN</td><td align="right">N/A</td><td align="center">N/A</td><td align="left">spurious ∇·B null mode &#40;δBz&#41;</td></tr><tr><td align="right">9</td><td align="left">&#96;8.638e-14 &#43; 1.127e-12im&#96;</td><td align="right">2.93e-82</td><td align="center">linear</td><td align="right">1.76e&#43;00</td><td align="right">N/A</td><td align="center">N/A</td><td align="left">Static Neutral Plasma Perturbation</td></tr><tr><td align="right">5</td><td align="left">&#96;-9.579e&#43;03 &#43; -1.186e-10im&#96;</td><td align="right">3.72e-20</td><td align="center">L</td><td align="right">1.00e&#43;00</td><td align="right">N/A</td><td align="center">N/A</td><td align="left">Proton Cyclotron Gyration &#40;Resonance&#41;</td></tr><tr><td align="right">10</td><td align="left">&#96;9.579e&#43;03 &#43; 1.279e-10im&#96;</td><td align="right">3.72e-20</td><td align="center">L</td><td align="right">1.00e&#43;00</td><td align="right">N/A</td><td align="center">N/A</td><td align="left">Proton Cyclotron Gyration &#40;Resonance&#41;</td></tr><tr><td align="right">11</td><td align="left">&#96;1.753e&#43;07 &#43; -1.189e-08im&#96;</td><td align="right">1.25e-13</td><td align="center">R</td><td align="right">1.00e&#43;00</td><td align="right">9.93e-11</td><td align="center">VERIFIED</td><td align="left">Whistler Wave &#40;R-mode, &#43;z&#41;</td></tr><tr><td align="right">4</td><td align="left">&#96;-1.753e&#43;07 &#43; -1.188e-08im&#96;</td><td align="right">1.25e-13</td><td align="center">R</td><td align="right">1.00e&#43;00</td><td align="right">4.53e-10</td><td align="center">VERIFIED</td><td align="left">Whistler Wave &#40;R-mode, -z&#41;</td></tr><tr><td align="right">3</td><td align="left">&#96;-1.784e&#43;07 &#43; -1.498e-09im&#96;</td><td align="right">3.28e-16</td><td align="center">linear</td><td align="right">2.39e&#43;00</td><td align="right">N/A</td><td align="center">N/A</td><td align="left">Langmuir Wave &#40;-z&#41;</td></tr><tr><td align="right">12</td><td align="left">&#96;1.784e&#43;07 &#43; -2.758e-09im&#96;</td><td align="right">3.28e-16</td><td align="center">linear</td><td align="right">2.39e&#43;00</td><td align="right">N/A</td><td align="center">N/A</td><td align="left">Langmuir Wave &#40;&#43;z&#41;</td></tr><tr><td align="right">13</td><td align="left">&#96;3.003e&#43;08 &#43; 9.833e-10im&#96;</td><td align="right">3.27e-06</td><td align="center">L</td><td align="right">1.00e&#43;00</td><td align="right">2.35e-14</td><td align="center">VERIFIED</td><td align="left">EM Light Wave &#40;L-mode, &#43;z&#41;</td></tr><tr><td align="right">2</td><td align="left">&#96;-3.003e&#43;08 &#43; 1.057e-09im&#96;</td><td align="right">3.27e-06</td><td align="center">L</td><td align="right">1.00e&#43;00</td><td align="right">2.66e-14</td><td align="center">VERIFIED</td><td align="left">EM Light Wave &#40;L-mode, -z&#41;</td></tr><tr><td align="right">14</td><td align="left">&#96;3.004e&#43;08 &#43; 1.739e-09im&#96;</td><td align="right">2.58e-06</td><td align="center">R</td><td align="right">1.00e&#43;00</td><td align="right">2.27e-14</td><td align="center">VERIFIED</td><td align="left">EM Light Wave &#40;R-mode, &#43;z&#41;</td></tr><tr><td align="right">1</td><td align="left">&#96;-3.004e&#43;08 &#43; 1.673e-09im&#96;</td><td align="right">2.58e-06</td><td align="center">R</td><td align="right">1.00e&#43;00</td><td align="right">2.92e-14</td><td align="center">VERIFIED</td><td align="left">EM Light Wave &#40;R-mode, -z&#41;</td></tr></table>
+</div><h3 id="Summary-of-Characteristic-Frequencies"><a class="docs-heading-anchor" href="#Summary-of-Characteristic-Frequencies">Summary of Characteristic Frequencies</a><a id="Summary-of-Characteristic-Frequencies-1"></a><a class="docs-heading-anchor-permalink" href="#Summary-of-Characteristic-Frequencies" title="Permalink"></a></h3><p>We can also inspect the physical characteristics and cyclotron/plasma frequencies of the system:</p><div class="markdown"><h1>hide</h1>
+<p><strong>Characteristic Frequencies:</strong> # hide</p>
+<ul>
+<li><p>Electron plasma frequency &#40;&#36;ω_&#123;pe&#125;&#36;&#41;: 1.784e&#43;07 rad/s # hide</p>
+</li>
+<li><p>Ion cyclotron frequency &#40;&#36;ω_&#123;ci&#125;&#36;&#41;: 9.579e&#43;03 rad/s # hide</p>
+</li>
+<li><p>Electron cyclotron frequency &#40;&#36;|ω_&#123;ce&#125;|&#36;&#41;: 1.759e&#43;07 rad/s # hide</p>
+</li>
+<li><p>High-frequency EM wave speed &#40;&#36;c k&#36;&#41;: 2.998e&#43;08 rad/s # hide</p>
+</li>
+</ul>
+<p><em>Note: Handedness is defined relative to the background magnetic field &#36;\mathbf&#123;B&#125;_0&#36; &#40;&#36;&#43;\mathrm&#123;z&#125;&#36;&#41; assuming the wave convention &#36;e^&#123;i&#40;k_z z - ω t&#41;&#125;&#36;.</em> # hide</p>
+</div></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../dispersion_surface/">« Dispersion surface tracking</a><a class="docs-footer-nextpage" href="../math_notes/">Math notes »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Thursday 28 May 2026 05:01">Thursday 28 May 2026</span>. Using Julia version 1.12.6.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
