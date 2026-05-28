@@ -81,7 +81,8 @@ function hermite_coefficients_matrix(nmax)
     cHn = zeros(Float64, nmax + 1, nmax + 1)
     for n in 0:nmax
         for k in 0:n
-            cHn[n + 1, k + 1] = cHn0[n + 1, k + 1] / sqrt(2.0^(n - k) * factorial(n) * sqrt(π))
+            lognrm = ((n - k) * log(2.0) + loggamma(Float64(n + 1)) + 0.5 * log(π)) / 2
+            cHn[n + 1, k + 1] = cHn0[n + 1, k + 1] / exp(lognrm)
         end
     end
 
@@ -194,27 +195,27 @@ function hermite_expansion(
     Lmax = max(Nz, Nx)
 
     return @no_escape begin
-        inv_nrm = @alloc(T, Lmax + 1)
+        inv_nrm = @temp_array(T, Lmax + 1)
+        ρmat = @temp_array(T, nz, Nz + 1)
+        Ueff = @temp_array(T, nx, Nx + 1)
+        tmp = @temp_array(T, Nz + 1, nx)
         _hermite_inv_norms!(inv_nrm, Lmax)
 
-        ρmat = @alloc(T, nz, Nz + 1)
         _fill_basis_mat!(ρmat, vz_vec, dz, vtz, Nz, inv_nrm)
 
-        Ueff = @alloc(T, nx, Nx + 1)
         if vx_is_half_space
             _fill_basis_mat_mirrored!(Ueff, vx_vec, dx, vtp, Nx, inv_nrm, vx0_is_first)
         else
             _fill_basis_mat!(Ueff, vx_vec, dx, vtp, Nx, inv_nrm)
         end
 
-        tmp = @alloc(T, Nz + 1, nx)
         mul!(tmp, ρmat', fv)
         a0lm = tmp * Ueff
         a0lm .*= (dvz * dvx * 2 / (vtz * vtp))
 
         bs = dx / vtp
-        As = exp(-bs^2) + sqrt(π) * bs * erfc(-bs)
-        cs0 = 1 / (sqrt(π^3) * vtz * vtp^2 * As)
+        As = exp(-bs^2) + sqrt(T(π)) * bs * erfc(-bs)
+        cs0 = 1 / (sqrt(T(π)^3) * vtz * vtp^2 * As)
 
         alm = hermite_a0_to_a(a0lm)
         alm ./= cs0
@@ -226,10 +227,11 @@ end
 # inv_nrm[l+1] = 1 / sqrt(2^l * l! * sqrt(π)); computed incrementally to avoid
 # factorial overflow and a repeated sqrt per level.
 function _hermite_inv_norms!(inv_nrm, lmax)
-    nrm = sqrt(sqrt(π))  # l = 0
+    T = eltype(inv_nrm)
+    nrm = sqrt(sqrt(T(π)))  # l = 0
     @inbounds inv_nrm[1] = inv(nrm)
     @inbounds for l in 1:lmax
-        nrm *= sqrt(2.0 * l)
+        nrm *= sqrt(T(2) * l)
         inv_nrm[l + 1] = inv(nrm)
     end
     return inv_nrm
@@ -264,7 +266,7 @@ end
 end
 
 function _fill_basis_mat!(M, vec, x0, μ, lmax, inv_nrm)
-    sq2 = sqrt(2.0)
+    sq2 = sqrt(eltype(M)(2))
     for i in eachindex(vec)
         ξ = sq2 * (vec[i] - x0) / μ
         _psi_row!(M, i, ξ, exp(-ξ^2 / 2), lmax, inv_nrm)
@@ -274,7 +276,7 @@ end
 
 # Mirror -vec[i] into the same row; if vx0_first, row 1 is taken as-is (vx=0).
 function _fill_basis_mat_mirrored!(M, vec, x0, μ, lmax, inv_nrm, vx0_first)
-    sq2 = sqrt(2.0)
+    sq2 = sqrt(eltype(M)(2))
     for i in eachindex(vec)
         ξp = sq2 * (vec[i] - x0) / μ
         eξp = exp(-ξp^2 / 2)

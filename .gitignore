@@ -1,9 +1,12 @@
 *.jl.*.cov
 *.jl.cov
 *.jl.mem
-/Manifest*.toml
-/docs/Manifest*.toml
+Manifest*.toml
 /docs/build/
+*.svg
+*.pdf
+experiments/*/results.toml
+experiments/*/sharp_edge.toml
 *.mat
 !.test/*fvceff1.mat
 lib/boarbitrary
@@ -12,3 +15,5 @@ lib/bo
 lib/pdrk
 lib/DEV.md
 docs/bonito
+scratch/
+*local*

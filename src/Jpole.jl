@@ -47,8 +47,8 @@ Get J-pole approximation coefficients for the plasma dispersion function.
 
 Supported values: J ∈ {4, 6, 8, 10, 12, 16, 20, 24, 28, 32}
 """
-function get_jpole_coefficients(J::Int = 8)
-    T = ComplexF64
+function get_jpole_coefficients(J::Int = 8, ::Type{R} = Float64) where {R <: Real}
+    T = Complex{R}
 
     if J == 8
         bzj = T[
@@ -162,8 +162,8 @@ function get_jpole_coefficients(J::Int = 8)
             -0.1767811345348292 - 2.683966971857356im,
         ]
     elseif J == 24
-        bzj = bzj24
-        czj = czj24
+        bzj = convert(Vector{T}, bzj24)
+        czj = convert(Vector{T}, czj24)
     elseif J == 28
         bzj = T[
             -6.990333597785891e-11 - 3.844801630174103e-11im,

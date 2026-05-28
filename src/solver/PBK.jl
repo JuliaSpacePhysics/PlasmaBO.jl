@@ -1,11 +1,10 @@
 module PBK
 using QuadGK: quadgk
-using Gamma: loggamma, gamma
-using Bessels: besselj
 using Bumper: @no_escape, @alloc
 using ..Constants
-using ..PlasmaBO: AbstractDispersionAlgorithm, DispersionProblem
-import ..PlasmaBO: dispersion_matrix, dispersion_matrix!, matrix_size
+using ..PlasmaBO: AbstractDispersionAlgorithm, DispersionProblem, _realtype
+using ..PlasmaBO: besselj, loggamma, gamma
+import ..PlasmaBO: dispersion_matrix, dispersion_matrix!, matrix_size, prepare
 
 """
     BOPBK(; N = 2)
@@ -21,22 +20,26 @@ end
 
 zero!(M) = fill!(M, zero(eltype(M)))
 
-function PBK_param(s, B0)
-    T = Float64
-    u0 = T(s.vdz) * c0
+function PBK_param(s, B0, ::Type{T} = Float64) where {T}
+    u0 = T(s.vdz) * T(c0)
     sigma = T(s.sigma)
     κz = Int(s.κz)
     κx = T(s.κx)
-    m = s.m
-    q = s.q
-    wp = abs(q) * sqrt(s.n / (m * ε0))
+    m = T(s.m)
+    q = T(s.q)
+    wp = abs(q) * sqrt(T(s.n) / (m * T(ε0)))
     wc = (T(B0) * q) / m
 
-    vtz = sqrt((2 - 1 / κz) * qe * s.Tz / m)
-    vtx = sqrt((2 - 2 / κx) * qe * s.Tp / m / (1 + sigma))
+    vtz = sqrt((2 - 1 / κz) * T(qe) * T(s.Tz) / m)
+    vtx = sqrt((2 - 2 / κx) * T(qe) * T(s.Tp) / m / (1 + sigma))
     rhoc = vtx / abs(wc)
 
     return (; u0, sigma, κz, κx, wp, wc, vtz, vtx, rhoc)
+end
+
+# Pre-promoted parameters pass through; raw species are converted to PBK_param at type T.
+prepare(::BOPBK, species, B0, ::Type{T}) where {T} = map(species) do sp
+    sp isa NamedTuple ? sp : PBK_param(sp, B0, T)
 end
 
 _pbk_per_n(κ) = (κ + 1) * (κ + 4) ÷ 2
@@ -98,37 +101,39 @@ end
 
 function bsl(p, l, kz)
     log_csl = _log_csl(p.κz, l, kz, p.vtz)
-    return -0.5 * l * kz^2 * p.vtx^2 * exp(log_csl)
+    return -l * kz^2 * p.vtx^2 * exp(log_csl) / 2
 end
 
-function funcS_pbk(p, n, λ, p1, p2, p3, p4; EPS0 = 1.0e-2)
+function funcS_pbk(p, n, λ::T, p1, p2, p3, p4; EPS0 = 1.0e-2) where {T}
     κx = p.κx
     sgm = p.sigma
-    eps0 = eps(Float64)
+    eps0 = eps(one(T))
 
+    # Denominator is computed via `log1p` to avoid exponent overflow in
+    # extended precision (Double64 maxes at ~1e308 like Float64).
     if λ > EPS0
-        S0 = 4.0 * (2 * λ)^(-sgm - 2) * κx^(-sgm - 1) * exp(loggamma(κx + sgm + 1) - loggamma(κx)) / gamma(sgm + 1)
+        S0 = 4 * (2 * λ)^(-sgm - 2) * κx^(-sgm - 1) * exp(loggamma(κx + sgm + 1) - loggamma(κx)) / gamma(sgm + 1)
         function integrand1(x)
             jn = besselj(n, x)
-            djn = 0.5 * (besselj(n - 1, x) - besselj(n + 1, x))
+            djn = (besselj(n - 1, x) - besselj(n + 1, x)) / 2
             num = (x + eps0)^(2 * sgm + p3) * jn^p1 * djn^p2
-            den = (1 + 0.5 * x^2 / λ / κx)^(κx + sgm + p4)
-            return num / den
+            log_den = (κx + sgm + p4) * log1p(x^2 / λ / κx / 2)
+            return num * exp(-log_den)
         end
 
-        tmp = quadgk(integrand1, 0.0, Inf)[1]
+        tmp = quadgk(integrand1, zero(T), T(Inf))[1]
         return S0 * tmp
     else
-        S0 = 4.0 * (2 * λ)^(p3 / 2 - 1.5) * κx^(-sgm - 1) * exp(loggamma(κx + sgm + 1) - loggamma(κx)) / gamma(sgm + 1)
+        S0 = 4 * (2 * λ)^(p3 / 2 - 3//2) * κx^(-sgm - 1) * exp(loggamma(κx + sgm + 1) - loggamma(κx)) / gamma(sgm + 1)
         a = sqrt(2 * λ)
         function integrand2(x)
             jn = besselj(n, x * a)
-            djn = 0.5 * (besselj(n - 1, x * a) - besselj(n + 1, x * a))
+            djn = (besselj(n - 1, x * a) - besselj(n + 1, x * a)) / 2
             num = (x + eps0)^(2 * sgm + p3) * jn^p1 * djn^p2
-            den = (1 + x^2 / κx)^(κx + sgm + p4)
-            return num / den
+            log_den = (κx + sgm + p4) * log1p(x^2 / κx)
+            return num * exp(-log_den)
         end
-        tmp = quadgk(integrand2, 0.0, Inf)[1]
+        tmp = quadgk(integrand2, zero(T), T(Inf))[1]
         return S0 * tmp
     end
 end
@@ -214,7 +219,7 @@ function _pbk_add_species_Mxy!(
     )
     p = params[s]
     firstIndex = _pbk_block_first_index(len_sub, MatrixNo)
-    λ = 0.5 * kx^2 * (p.rhoc^2)
+    λ = kx^2 * (p.rhoc^2) / 2
     κz = p.κz
 
     wp = p.wp
@@ -299,7 +304,7 @@ function _pbk_add_species_Mz!(
     )
     p = params[s]
     firstIndex = _pbk_block_first_index(len_sub, MatrixNo)
-    λ = 0.5 * kx^2 * (p.rhoc^2)
+    λ = kx^2 * (p.rhoc^2) / 2
     κz = p.κz
     wp = p.wp
     wc = p.wc
@@ -363,13 +368,14 @@ end
 
 matrix_size(alg::BOPBK, species) = 3 * _pbk_len_sub(species, alg.N) + 6
 
-function dispersion_matrix!(M, pb::DispersionProblem, alg::BOPBK; EPS0 = 1.0e-2, c2 = c0^2)
+function dispersion_matrix!(M, pb::DispersionProblem, alg::BOPBK; EPS0 = 1.0e-2, c2 = real(zero(eltype(M)) + c0)^2)
+    T = _realtype(eltype(M))
     species = pb.species
-    kx, kz = pb.kx, pb.kz
+    kx, kz = T(pb.kx), T(pb.kz)
     N = alg.N
     len_sub = _pbk_len_sub(species, N)
-    params = PBK_param.(species, pb.B0)
-    bx10_by20 = 1im * ε0 * sum(sp.wp^2 for sp in params)
+    params = prepare(alg, species, pb.B0, T)
+    bx10_by20 = 1im * T(ε0) * sum(sp.wp^2 for sp in params)
 
     Mx = @view M[1:len_sub, :]
     My = @view M[(len_sub + 1):(2 * len_sub), :]
@@ -385,15 +391,16 @@ function dispersion_matrix!(M, pb::DispersionProblem, alg::BOPBK; EPS0 = 1.0e-2,
     idx_Jy = 2 * len_sub
     idx_Jz = 3 * len_sub
 
+    inv_ε0 = 1im / T(ε0)
     M[end - 5, end - 1] += c2 * kz
-    M[end - 5, idx_Jx] -= 1im / ε0
+    M[end - 5, idx_Jx] -= inv_ε0
 
     M[end - 4, end - 2] -= c2 * kz
     M[end - 4, end] += c2 * kx
-    M[end - 4, idx_Jy] -= 1im / ε0
+    M[end - 4, idx_Jy] -= inv_ε0
 
     M[end - 3, end - 1] -= c2 * kx
-    M[end - 3, idx_Jz] -= 1im / ε0
+    M[end - 3, idx_Jz] -= inv_ε0
 
     M[end - 2, end - 4] -= kz
     M[end - 1, end - 5] += kz
