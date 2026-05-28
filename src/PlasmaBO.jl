@@ -17,7 +17,7 @@ export FluidSpecies
 export BranchPoint, SurfaceBranchPoint, track
 export hermite_expansion
 export BOPBK, BOHH, BOFluid
-export electric_field, magnetic_field, polarization_ratio, handedness, dispersion_matrix
+export polarization_ratio, handedness, dispersion_matrix
 
 function dispersion_matrix end
 function dispersion_matrix! end
