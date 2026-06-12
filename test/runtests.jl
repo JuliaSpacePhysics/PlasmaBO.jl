@@ -97,20 +97,23 @@ end
     κx = 5.5
     proton = BiKappa2(5.0e19, κz, κx, 1986.734, 993.367)
     data = gen_fv2d(proton)
-    alm = hermite_expansion(data.fv, data.vz, data.vx, data.vtz, data.vtx).alm
+    a0lm = hermite_expansion(data.fv, data.vz, data.vx, data.vtz, data.vtx)
+    alm = test_hermite_a0_to_a(a0lm)
 
     me_mp = 1 / 1836 # [proton mass]
     electron = Maxwellian(:e, n, 496.683)
     fpath = pkgdir(PlasmaBO, "test/firehose_Astfalk17_fvceff1.mat")
-    proton_param = matopen(fpath) do file
+    wci_ref, alm_ref = matopen(fpath) do file
         fvc = read(file, "fvc")
-        HHSolverParam(q, mp, n, B0, fvc["vtz"], fvc["vtp"], 0.0, 0.0, fvc["alm"])
+        p = HHSolverParam(q, mp, n, B0, fvc["vtz"], fvc["vtp"], 0.0, 0.0, sqrt(π) * ones(1, 1))
+        (p.wc, fvc["alm"])
     end
-    @test alm ≈ proton_param.aslm rtol = 1.0e-4
+    @test alm ≈ alm_ref rtol = 1.0e-4
 
     kn = 31.0613
     k = kn / 4
-    wci = proton_param.wc
+    wci = wci_ref
+    proton_param = HHSolverParam(proton, B0; a0lm)
     species = (proton_param, electron)
     ωs = solve(species, B0, k .* sincos(θ)...; N = 2, J = 24)
     ω_unstable = filter(ω -> isfinite(ω) && imag(ω) > 0.001 * wci, ωs)
@@ -147,8 +150,8 @@ end
     ωbo = ωs[argmin(abs.(ωs .- ωref))]
     @test ωbo ≈ ωref rtol = 1.0e-5
     # equivalent via the direct constructor (SI velocities, negative n)
-    hole_p = HHSolverParam(-q, me, -n_h, B0, 0.5α, 0.5α, -vcut, 0.0, ones(1, 1))
-    core_p = HHSolverParam(-q, me, n_c, B0, α, α, uc, 0.0, ones(1, 1))
+    hole_p = HHSolverParam(-q, me, -n_h, B0, 0.5α, 0.5α, -vcut, 0.0, sqrt(π) * ones(1, 1))
+    core_p = HHSolverParam(-q, me, n_c, B0, α, α, uc, 0.0, sqrt(π) * ones(1, 1))
     ωs2 = solve((core_p, hole_p, prot), B0, 0.0, kz; N = 2, J = 24)
     @test ωs2[argmin(abs.(ωs2 .- ωref))] ≈ ωbo rtol = 1.0e-10
 end
@@ -161,7 +164,7 @@ end
 
     N, J = 1, 4
     sp(::Type{T}) where {T} = (HHSolverParam{T}(
-        one(T), one(T), one(T), one(T), one(T), zero(T), zero(T), ones(T, 1, 1),
+        one(T), one(T), one(T), one(T), one(T), zero(T), zero(T), sqrt(T(π)) * ones(T, 1, 1),
     ),)
 
     # BOHH: assembly eltype follows promoted (B0, kx, kz)
