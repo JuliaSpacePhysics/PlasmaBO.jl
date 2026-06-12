@@ -134,7 +134,8 @@ end
         fv::AbstractMatrix{T},
         vz, vx, vtz, vtp;
         Nz = 16, Nx = 16,
-        dz = zero(T), dx = zero(T)
+        dz = zero(T), dx = zero(T),
+        atol = zero(T)
     ) where {T}
 
 Compute Hermite expansion coefficients from gridded distribution function.
@@ -154,11 +155,19 @@ where ρ_l and u_m are normalized Hermite basis functions. `Nz`, `Nx` are the ma
 - `vtp`: Perpendicular thermal velocity (default: 1.0)
 - `dz`: Parallel drift velocity (default: 0.0)
 - `dx`: Perpendicular drift velocity (default: 0.0)
+- `atol`: Absolute tolerance for zeroing small coefficients
 
 # Returns
 Named tuple with:
 - `alm`: (Nz+1) × (Nx+1) coefficient matrix in power-law basis
 - `a0lm`: (Nz+1) × (Nx+1) coefficient matrix in Hermite basis
+
+# Notes
+
+Grid-quadrature noise in high-order coefficients is amplified enormously by the power-basis moment weights (absolute noise as small as 1e-21 at l ≈ 40 produces
+1e-3 relative eigenvalue errors). Therefore, `atol = 1e-10` is recommended whenever
+`Nz` or `Nx` exceeds ~16; genuine coefficients of smooth VDFs are far above
+this level.
 
 # Algorithm
 1. Compute a0_{l,m} via numerical integration:
@@ -173,7 +182,7 @@ Named tuple with:
 function hermite_expansion(
         fv::AbstractArray{T},
         vz, vx, vtz, vtp; Nz = 16, Nx = 16,
-        dz = zero(T), dx = zero(T)
+        dz = zero(T), dx = zero(T), atol = zero(T)
     ) where {T}
 
     # Accept either 1D vectors (preferred) or prebuilt 2D grids.
@@ -219,6 +228,9 @@ function hermite_expansion(
 
         alm = hermite_a0_to_a(a0lm)
         alm ./= cs0
+        if atol > 0
+            @. alm = ifelse(abs(alm) < atol, zero(T), alm)
+        end
 
         (; alm, a0lm)
     end

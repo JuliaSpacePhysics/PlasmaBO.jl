@@ -34,8 +34,9 @@ function _convert_hh_param(param::HHSolverParam, ::Type{T}) where {T}
     )
 end
 
-# The coefficients a_{s,lm}
-_alm(s::Maxwellian) = ones(eltype(s), 1, 1)
+# Susceptibility is linear in alm
+# Negative density is realized as |n| with negated coefficients.
+_alm(s::Maxwellian) = sign(s.n) * ones(eltype(s), 1, 1)
 function _alm(vdf::BiKappa2)
     data = gen_fv2d(vdf)
     return hermite_expansion(data.fv, data.vz, data.vx, data.vtz, data.vtx).alm
@@ -51,7 +52,7 @@ function HHSolverParam(species, B0; alm = _alm(species))
     m = T(species.m)
     vtzs = T(_vtz(species))
     vtp = T(_vtp(species))
-    wp = plasma_frequency(q, T(species.n), m)
+    wp = plasma_frequency(q, T(abs(species.n)), m)
     wc = T(B0) * q / m
     ρc = vtp / sqrt(T(2)) / wc
     vdz = T(species.vdz) * T(c0)
@@ -59,13 +60,16 @@ function HHSolverParam(species, B0; alm = _alm(species))
     return HHSolverParam{T}(wc, wp, ρc, vtzs, vtp, vdz, vdr, Matrix{T}(alm))
 end
 
+# Direct constructor from SI quantities.
+# NB: `vtz`, `vtp`, `vdz`, `vdr` are in m/s here
+# unlike distribution structs (`Maxwellian`, `BiKappa`) which use units of c.
 function HHSolverParam(q, m, n, B0, vtz, vtp, vdz, vdr, alm)
     T = float(promote_type(map(typeof, (q, m, n, B0, vtz, vtp, vdz, vdr))..., eltype(alm)))
     wc = T(B0) * T(q) / T(m)
-    wp = plasma_frequency(T(q), T(n), T(m))
+    wp = plasma_frequency(T(q), T(abs(n)), T(m))
     ρc = T(vtp) / sqrt(T(2)) / wc
     return HHSolverParam{T}(
-        wc, wp, ρc, T(vtz), T(vtp), T(vdz), T(vdr), Matrix{T}(alm),
+        wc, wp, ρc, T(vtz), T(vtp), T(vdz), T(vdr), sign(n) * Matrix{T}(alm),
     )
 end
 
@@ -235,7 +239,6 @@ function _assemble_species!(M, param::HHSolverParam{T}, snj, kx, kz, SNJ1, SNJ3,
 end
 
 # State Vector Organization
-# The state vector has this structure:
 # Indices 1 to SNJ1:           v_snj_x components + species j_x
 # Indices SNJ1+1 to 2*SNJ1:    v_snj_y components + species j_y
 # Indices 2*SNJ1+1 to 3*SNJ1:  v_snj_z components + species j_z
