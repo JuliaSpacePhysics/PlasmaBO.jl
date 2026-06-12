@@ -1,3 +1,6 @@
+[![Build Status](https://github.com/JuliaSpacePhysics/PlasmaBO.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/JuliaSpacePhysics/PlasmaBO.jl/actions/workflows/CI.yml?query=branch%3Amain)
+[![Coverage](https://codecov.io/gh/JuliaSpacePhysics/PlasmaBO.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/JuliaSpacePhysics/PlasmaBO.jl)
+
 ## Roadmap
 
 - [ ] Extend BO-Product-Bi-Kappa (PBK) solver to non-integer κ (For integer κ, $Z_κ(ξ)$ has an exact finite closed-form expansion).

@@ -7,6 +7,7 @@ using Test
 end
 
 include("test_track.jl")
+include("test_hermite.jl")
 
 @testset "Umeda 2012 ring beam configuration" begin
     using PlasmaBO: q, me
@@ -116,34 +117,40 @@ end
     @test imag.(ω_unstable ./ wci) ≈ [0.062373877285804444] rtol = 1.0e-3
 end
 
-@testset "Hermite expansion" begin
-    using PlasmaBO: hermite_H, hermite_basis
-    using QuadGK: quadgk
-
-    # H_n(x) via three-term recurrence
-    @test hermite_H(0, 1.5) == 1.0
-    @test hermite_H(1, 1.5) ≈ 3.0
-    @test hermite_H(2, 1.5) ≈ 7.0
-    @test hermite_H(3, 1.5) ≈ 9.0     # 2·1.5·7 − 2·2·3
-    @test hermite_H(5, 0.7) ≈ 34.49824   # 2x·H4 − 8·H3 with x=0.7
-
-    # ψ_l(ξ) = H_l(ξ) e^{-ξ²/2} / sqrt(2^l l! √π) is orthonormal on ℝ
-    for l in 0:4, m in 0:4
-        I, _ = quadgk(ξ -> hermite_basis(ξ, l) * hermite_basis(ξ, m), -12.0, 12.0; rtol = 1.0e-12)
-        @test I ≈ (l == m ? 1.0 : 0.0) atol = 1.0e-10
-    end
-
-    # End-to-end: BiKappa2 — pin a handful of alm entries.
-    bk = BiKappa2(:e, 1.0e6, 1.0, 200.0, 2555.0; sigma = 0.0)
-    g = gen_fv2d(bk)
-    r = hermite_expansion(g.fv, g.vz[:, 1], g.vx[1, :], g.vtz, g.vtx; Nz = 8, Nx = 8)
-    @test size(r.alm) == (9, 9)
-    @test all(isfinite, r.alm)
-    @test r.alm[1, 1] ≈ 1.1212568413581592 rtol = 1.0e-12
-    @test r.alm[3, 1] ≈ -0.9261761839734545 rtol = 1.0e-12
-    @test r.alm[1, 3] ≈ -0.005606240127199738 rtol = 1.0e-10
-    @test r.alm[3, 3] ≈ 0.004630844509415841 rtol = 1.0e-10
-    @test r.alm[5, 5] ≈ 0.001927003106303287 rtol = 1.0e-10
+@testset "Signed-density mixture (electron-deficit hole)" begin
+    using PlasmaBO: q, me
+    # Core Maxwellian minus a drifting-Maxwellian hole at v∥ = −v_cut: the
+    # sunward-deficit whistler instability.
+    # Reference values from an exact plasma-dispersion-function (Z) solver
+    # for the same signed components.
+    # Setup: ω_pe/|Ω_e| = 100, β_c = 1.5, κ = v_cut/α_c = 2, hole width 0.5α_c,
+    # full depth.
+    B0 = 45.0e-9
+    wce = q * B0 / me
+    wpe = 100 * wce
+    n_e = wpe^2 * me * 8.8541878128e-12 / q^2
+    c0_ = 2.99792458e8
+    η = 0.5^3 * exp(-4.0)
+    n_c = n_e / (1 - η)
+    n_h = η * n_c
+    α = sqrt(1.5 * n_e / n_c) / 100 * c0_
+    vcut = 2.0 * α
+    uc = -η * vcut
+    Tc_eV = α^2 * me / (2 * q)
+    Th_eV = (0.5 * α)^2 * me / (2 * q)
+    core = Maxwellian(:e, n_c, Tc_eV; vdz = uc / c0_)
+    hole = Maxwellian(:e, -n_h, Th_eV; vdz = -vcut / c0_)   # negative density
+    prot = Maxwellian(:p, n_e, Tc_eV)
+    kz = 0.34 * wpe / c0_
+    ωs = solve((core, hole, prot), B0, 0.0, kz; N = 2, J = 24)
+    ωref = (0.0931854 + 0.00799049im) * wce
+    ωbo = ωs[argmin(abs.(ωs .- ωref))]
+    @test ωbo ≈ ωref rtol = 1.0e-5
+    # equivalent via the direct constructor (SI velocities, negative n)
+    hole_p = HHSolverParam(-q, me, -n_h, B0, 0.5α, 0.5α, -vcut, 0.0, ones(1, 1))
+    core_p = HHSolverParam(-q, me, n_c, B0, α, α, uc, 0.0, ones(1, 1))
+    ωs2 = solve((core_p, hole_p, prot), B0, 0.0, kz; N = 2, J = 24)
+    @test ωs2[argmin(abs.(ωs2 .- ωref))] ≈ ωbo rtol = 1.0e-10
 end
 
 @testset "Arbitrary-precision solve" begin
@@ -219,110 +226,4 @@ end
     @test maximum(real.(sol_pbk.ωs[end])) / wce ≈ 3.0667420557507734
 end
 
-@testset "Polarization and Handedness Utilities" begin
-    using LinearAlgebra
-    electric_field(v) = (v[end-5], v[end-4], v[end-3])
-    magnetic_field(v) = (v[end-2], v[end-1], v[end])
-    # 1. Test utilities with synthetic vectors
-    # A vector where the last elements represent [Ex, Ey, Ez, Bx, By, Bz]
-    # For RCP/R-wave: Ey = i*Ex => P = i (imag(P) > 0)
-    v_rcp = [zeros(10)..., 1.0, 1.0im, 0.0, 0.0, 0.0, 0.0]
-    @test electric_field(v_rcp) == (1.0, 1.0im, 0.0)
-    @test magnetic_field(v_rcp) == (0.0, 0.0, 0.0)
-    @test polarization_ratio(v_rcp) == 1.0im
-    @test handedness(v_rcp) == :R
-
-    # For LCP/L-wave: Ey = -i*Ex => P = -i (imag(P) < 0)
-    v_lcp = [zeros(10)..., 1.0, -1.0im, 0.0, 0.0, 0.0, 0.0]
-    @test handedness(v_lcp) == :L
-
-    # For linear polarization: Ey = 0 => P = 0
-    v_lin = [zeros(10)..., 1.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-    @test handedness(v_lin) == :linear
-
-    # 1b. Test oblique propagation (e.g. θ = 45° => kx = 1.0, kz = 1.0)
-    # E_perp = Ex * cos(θ) - Ez * sin(θ) = (Ex - Ez)/√2
-    # If we choose Ez = 0.0 and Ex = √2, then E_perp = 1.0.
-    # If we set Ey = 1.0im, then P_transverse = Ey / E_perp = 1.0im (RCP wave).
-    v_oblique = [zeros(10)..., sqrt(2), 1.0im, 0.0, 0.0, 0.0, 0.0]
-    @test polarization_ratio(v_oblique, 1.0, 1.0) ≈ 1.0im
-    @test polarization_ratio(v_oblique; kx = 1.0, kz = 1.0) ≈ 1.0im
-    @test handedness(v_oblique, 1.0, 1.0, 1.0) == :R
-    @test handedness(v_oblique, 1.0; kx = 1.0, kz = 1.0) == :R
-    @test handedness(v_oblique, -1.0, 1.0, 1.0) == :L  # negative frequency reverses handedness representation
-    @test handedness(v_oblique, -1.0; kx = 1.0, kz = 1.0) == :L
-
-    # 2. Test solver with dispersion_matrix and eigen!
-    using PlasmaBO: qe, me, mp
-    B0 = 1.0e-4
-    n = 1.0e11
-    T = 1.0
-    
-    # Parallel propagation (along +z)
-    k = 1.0
-    kx, kz = 0.0, k
-
-    e_vdf = Maxwellian(:e, n, T)
-    fluid_species = [e_vdf, FluidSpecies(:p, n, T)]
-    
-    # Fluid solver test
-    M_fluid = dispersion_matrix(fluid_species, B0, kx, kz, BOFluid)
-    decomp_fluid = eigen!(M_fluid)
-    @test decomp_fluid isa Eigen
-    
-    # Kinetic solver test
-    kinetic_species = [e_vdf, Maxwellian(:p, n, T)]
-    M_kinetic = dispersion_matrix(kinetic_species, B0, kx, kz, BOHH; N = 2, J = 8)
-    decomp_kinetic = eigen!(M_kinetic)
-    @test decomp_kinetic isa Eigen
-    
-    # Check that we can extract polarization from the actual solved modes
-    ωs = decomp_fluid.values
-    V = decomp_fluid.vectors
-    
-    # Let's find any mode with a non-zero real frequency
-    idx = findfirst(ω -> isfinite(ω) && abs(real(ω)) > 1.0e3, ωs)
-    if idx !== nothing
-        v = V[:, idx]
-        Ex, Ey, Ez = electric_field(v)
-        @test isfinite(polarization_ratio(v))
-        @test handedness(v) in (:R, :L, :linear)
-    end
-
-    # Helper to construct a minimal eigenvector with specified E and B field components
-    function make_vector(Ex, Ey, Ez; Bx=0.0, By=0.0, Bz=0.0)
-        v = zeros(ComplexF64, 9)
-        v[4] = Ex; v[5] = Ey; v[6] = Ez
-        v[7] = Bx; v[8] = By; v[9] = Bz
-        return v
-    end
-
-    v_rcp = make_vector(1.0 + 0im, 0.5im, 0.0)
-    v_lcp = make_vector(1.0 + 0im, -0.5im, 0.0)
-
-    # polarization_ratio: k==0 fallback returns Ey/Ex
-    @test polarization_ratio(make_vector(2.0 + 0im, 6.0 + 0im, 0.0), 0.0, 0.0) ≈ 3.0
-
-    # handedness with k==0: E_perp = Ex branch (covers L102)
-    @test handedness(v_rcp, 1.0, 0.0, 0.0) == :R
-
-    # handedness: negligible E fields → :linear (covers L112)
-    @test handedness(make_vector(0.0 + 0im, 0.0 + 0im, 0.0), 1.0, 0.0, 1.0) == :linear
-
-    # handedness: R and L polarizations
-    @test handedness(v_rcp, 1.0, 0.0, 1.0) == :R
-    @test handedness(v_lcp, 1.0, 0.0, 1.0) == :L
-
-    # handedness: significant real-valued P (|P| above threshold) with zero ellipticity → :linear (covers L129)
-    @test handedness(make_vector(1.0 + 0im, 1.0 + 0im, 0.0), 1.0, 0.0, 1.0) == :linear
-
-    # Dispatch: handedness(v; kx, kz) forwards correctly (covers L135/L137)
-    @test handedness(v_rcp) == handedness(v_rcp, 1.0, 0.0, 1.0)
-    @test handedness(v_rcp; kx=0.0, kz=1.0) == handedness(v_rcp, 1.0, 0.0, 1.0)
-
-    # Dispatch: handedness(v, ω) defaults to parallel propagation (covers L143)
-    ω = 2.0 + 0im
-    @test handedness(v_rcp, ω) == handedness(v_rcp, ω, 0.0, 1.0)
-    # Dispatch: handedness(v, ω; kx, kz) with explicit kwargs (covers L145)
-    @test handedness(v_rcp, ω; kx=0.0, kz=1.0) == handedness(v_rcp, ω, 0.0, 1.0)
-end
+include("test_polarization.jl")
