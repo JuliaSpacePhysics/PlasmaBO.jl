@@ -1,3 +1,23 @@
+function test_hermite_coefficients_matrix(nmax)
+    cHn = zeros(Float64, nmax + 1, nmax + 1)
+    cHn[1, 1] = inv(sqrt(sqrt(π)))
+    nmax == 0 && return cHn
+    cHn[2, 2] = 2 * cHn[1, 1]
+    for n in 1:(nmax - 1), k in 0:(n + 1)
+        a = 2 / sqrt(n + 1)
+        b = sqrt(n / (n + 1))
+        cHn[n + 2, k + 1] = (k >= 1 ? a * cHn[n + 1, k] : 0.0) -
+                            (k <= n - 1 ? b * cHn[n, k + 1] : 0.0)
+    end
+    return cHn
+end
+
+function test_hermite_a0_to_a(a0lm)
+    lmax, mmax = size(a0lm)
+    cHn = test_hermite_coefficients_matrix(max(lmax, mmax) - 1)
+    return cHn[1:lmax, 1:lmax]' * a0lm * cHn[1:mmax, 1:mmax]
+end
+
 @testset "Hermite expansion" begin
     using PlasmaBO: hermite_H, hermite_basis
     using QuadGK: quadgk
@@ -15,25 +35,25 @@
         @test I ≈ (l == m ? 1.0 : 0.0) atol = 1.0e-10
     end
 
-    # End-to-end: BiKappa2 — pin a handful of alm entries.
+    # End-to-end: BiKappa2 — pin MATLAB power-basis values without using them in core.
     bk = BiKappa2(:e, 1.0e6, 1.0, 200.0, 2555.0; sigma = 0.0)
     g = gen_fv2d(bk)
-    r = hermite_expansion(g.fv, g.vz[:, 1], g.vx[1, :], g.vtz, g.vtx; Nz = 8, Nx = 8)
-    @test size(r.alm) == (9, 9)
-    @test all(isfinite, r.alm)
-    @test r.alm[1, 1] ≈ 1.1212568413581592 rtol = 1.0e-12
-    @test r.alm[3, 1] ≈ -0.9261761839734545 rtol = 1.0e-12
-    @test r.alm[1, 3] ≈ -0.005606240127199738 rtol = 1.0e-10
-    @test r.alm[3, 3] ≈ 0.004630844509415841 rtol = 1.0e-10
-    @test r.alm[5, 5] ≈ 0.001927003106303287 rtol = 1.0e-10
+    a0lm = hermite_expansion(g.fv, g.vz[:, 1], g.vx[1, :], g.vtz, g.vtx; Nz = 8, Nx = 8)
+    alm = test_hermite_a0_to_a(a0lm)
+    @test size(a0lm) == (9, 9)
+    @test all(isfinite, a0lm)
+    @test alm[1, 1] ≈ 1.1212568413581592 rtol = 1.0e-12
+    @test alm[3, 1] ≈ -0.9261761839734545 rtol = 1.0e-12
+    @test alm[1, 3] ≈ -0.005606240127199738 rtol = 1.0e-10
+    @test alm[3, 3] ≈ 0.004630844509415841 rtol = 1.0e-10
+    @test alm[5, 5] ≈ 0.001927003106303287 rtol = 1.0e-10
 end
 
 
 @testset "Hermite coefficient thresholding (atol)" begin
     using PlasmaBO: q, me
     # High-order expansion of a gridded Maxwellian: raw grid-quadrature noise
-    # (|alm| ~ 1e-21 at l > 30) is amplified to ~1e-3 eigenvalue error;
-    # atol thresholding restores the J-pole accuracy floor.
+    # remains visible, but BOHH now consumes Hermite coefficients directly.
     B0 = 45.0e-9
     wce = q * B0 / me
     wpe = 100 * wce
@@ -44,9 +64,9 @@ end
     vz = collect(range(-8α, 8α, 481))
     vx = collect(range(0.0, 8α, 241))
     fv = [exp(-(z^2 + x^2) / α^2) / (π^1.5 * α^3) for z in vz, x in vx]
-    e_th = hermite_expansion(fv, vz, vx, α, α; Nz = 40, Nx = 0, atol = 1.0e-10).alm
+    e_th = hermite_expansion(fv, vz, vx, α, α; Nz = 40, Nx = 0, atol = 1.0e-10)
     @test count(!iszero, e_th) == 1   # pure Maxwellian → only a₀₀ survives
-    raw = hermite_expansion(fv, vz, vx, α, α; Nz = 40, Nx = 0).alm
+    raw = hermite_expansion(fv, vz, vx, α, α; Nz = 40, Nx = 0)
     @test count(!iszero, raw) > 1     # raw carries quadrature noise
     eM = HHSolverParam(-q, me, n_e, B0, α, α, 0.0, 0.0, e_th)
     prot = Maxwellian(:p, n_e, T_eV)

@@ -32,8 +32,8 @@ data = gen_fv2d(proton)
 ```
 
 ```@example firehose
-alm = hermite_expansion(data.fv, data.vz, data.vx, data.vtz, data.vtx).alm
-proton_param = HHSolverParam(proton, B0; alm = alm)
+a0lm = hermite_expansion(data.fv, data.vz, data.vx, data.vtz, data.vtx)
+proton_param = HHSolverParam(proton, B0; a0lm)
 
 kn = 31.0613
 k = kn / 4
