@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Wave polarization and handedness · PlasmaBO.jl</title><meta name="title" content="Wave polarization and handedness · PlasmaBO.jl"/><meta property="og:title" content="Wave polarization and handedness · PlasmaBO.jl"/><meta property="twitter:title" content="Wave polarization and handedness · PlasmaBO.jl"/><meta name="description" content="Documentation for PlasmaBO.jl."/><meta property="og:description" content="Documentation for PlasmaBO.jl."/><meta property="twitter:description" content="Documentation for PlasmaBO.jl."/><meta property="og:url" content="https://JuliaSpacePhysics.github.io/PlasmaBO.jl/demo_polarization/"/><meta property="twitter:url" content="https://JuliaSpacePhysics.github.io/PlasmaBO.jl/demo_polarization/"/><link rel="canonical" href="https://JuliaSpacePhysics.github.io/PlasmaBO.jl/demo_polarization/"/><script data-outdated-warner src="../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../search_index.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../">PlasmaBO.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../">Home</a></li><li><a class="tocitem" href="../ringbeam_Umeda12/">Ring beam instability</a></li><li><a class="tocitem" href="../ionbeam_gary84/">Ion beam instability</a></li><li><a class="tocitem" href="../firehose_Astfalk17/">Firehose instability</a></li><li><a class="tocitem" href="../mirror_mode/">Mirror mode</a></li><li><a class="tocitem" href="../ice_Irvine18/">Ion cyclotron emission</a></li><li><a class="tocitem" href="../rlp_Cattaert07/">R/L/P modes (PBK solver)</a></li><li><a class="tocitem" href="../cold_plasma/">Cold plasma (fluid vs kinetic solver)</a></li><li><a class="tocitem" href="../dispersion_surface/">Dispersion surface tracking</a></li><li class="is-active"><a class="tocitem" href>Wave polarization and handedness</a><ul class="internal"><li><a class="tocitem" href="#Physics-Setup-and-Equations"><span>Physics Setup and Equations</span></a></li><li><a class="tocitem" href="#Wave-Polarization-Analysis"><span>Wave Polarization Analysis</span></a></li></ul></li><li><a class="tocitem" href="../math_notes/">Math notes</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Wave polarization and handedness</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Wave polarization and handedness</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/JuliaSpacePhysics/PlasmaBO.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/JuliaSpacePhysics/PlasmaBO.jl/blob/main/docs/src/demo_polarization.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Case:-Wave-polarization-and-handedness"><a class="docs-heading-anchor" href="#Case:-Wave-polarization-and-handedness">Case: Wave polarization and handedness</a><a id="Case:-Wave-polarization-and-handedness-1"></a><a class="docs-heading-anchor-permalink" href="#Case:-Wave-polarization-and-handedness" title="Permalink"></a></h1><p>This page demonstrates how to analyze wave polarization, handedness, and the polarization ratio for various modes in a cold magnetized plasma. We solve the linear dispersion relation using the multi-fluid solver <code>BOFluid</code> and verify the calculated frequencies against the analytical cold-plasma dispersion relation.</p><h2 id="Physics-Setup-and-Equations"><a class="docs-heading-anchor" href="#Physics-Setup-and-Equations">Physics Setup and Equations</a><a id="Physics-Setup-and-Equations-1"></a><a class="docs-heading-anchor-permalink" href="#Physics-Setup-and-Equations" title="Permalink"></a></h2><p>We consider a cold, magnetized electron–proton plasma with the background magnetic field <span>$\mathbf{B}_0$</span> aligned along the <span>$+z$</span>-direction. The analytical cold-plasma dispersion relations for right-hand (<span>$R$</span>) and left-hand (<span>$L$</span>) circularly polarized waves propagating parallel to the magnetic field are:</p><p class="math-container">\[D_R(ω) = 1 - \frac{c^2 k^2}{ω^2} - \frac{ω_{pe}^2}{ω(ω - |ω_{ce}|)} - \frac{ω_{pi}^2}{ω(ω + ω_{ci})} = 0\]</p><p class="math-container">\[D_L(ω) = 1 - \frac{c^2 k^2}{ω^2} - \frac{ω_{pe}^2}{ω(ω + |ω_{ce}|)} - \frac{ω_{pi}^2}{ω(ω - ω_{ci})} = 0\]</p><p>where:</p><ul><li><p class="math-container">\[ω_{pe}, ω_{pi}\]</p>are the electron and ion plasma frequencies, respectively.</li><li><p class="math-container">\[ω_{ce}, ω_{ci}\]</p>are the signed electron and ion cyclotron frequencies.</li></ul><h2 id="Wave-Polarization-Analysis"><a class="docs-heading-anchor" href="#Wave-Polarization-Analysis">Wave Polarization Analysis</a><a id="Wave-Polarization-Analysis-1"></a><a class="docs-heading-anchor-permalink" href="#Wave-Polarization-Analysis" title="Permalink"></a></h2><p>In the code block below, we:</p><ol><li>Setup the physical parameters (<span>$B_0 = 10^{-4}$</span> T, <span>$n = 10^{11}$</span> m<span>$^{-3}$</span>, <span>$T = 0$</span> eV).</li><li>Construct the dispersion matrix using the fluid solver (<code>BOFluid</code>).</li><li>Compute the eigenvalues and eigenvectors using <code>eigen!</code>.</li><li>Identify and physically describe each of the 14 modes (e.g., Whistler waves, Ion Cyclotron waves, Langmuir waves, and uncoupled gyro-resonances).</li><li>Verify the numerical solutions against the analytical dispersion functions <span>$D_R(ω)$</span> and <span>$D_L(ω)$</span>.</li></ol><pre><code class="language-julia hljs">using PlasmaBO
+using PlasmaBO: c0, ε0, qe, me, mp
+using LinearAlgebra
+using Printf
+using Markdown
+
+# 1. Physics Setup
+B0 = 1.0e-4          # Background magnetic field along +z [Tesla]
+n = 1.0e11           # Plasma density [m^-3]
+T = 0.0              # Temperature [eV] - cold limit for fluid
+
+# Parallel propagation (along +z direction)
+k = 1.0
+kx = 0.0
+kz = k
+
+# Local helper functions to extract fields from fluid eigenvectors
+electric_field(v) = (v[end-5], v[end-4], v[end-3])
+magnetic_field(v) = (v[end-2], v[end-1], v[end])
+
+# Define species
+e_vdf = Maxwellian(:e, n, T)
+species = [e_vdf, FluidSpecies(:p, n, T)]
+
+# Construct the dispersion matrix using BOFluid solver
+M = dispersion_matrix(species, B0, kx, kz, BOFluid)
+
+# Solve the eigenvalue problem (eigen!)
+decomp = eigen!(M)
+ωs = decomp.values
+V = decomp.vectors</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">14×14 Matrix{ComplexF64}:
+  2.08852e-17-1.5311e-16im   …   2.09105e-17+1.53111e-16im
+     0.707106+0.0im                 0.707106+0.0im
+ -1.05968e-14-0.707106im        -9.50738e-15+0.707106im
+ -6.27431e-20+5.06706e-19im      6.27512e-20+5.06707e-19im
+  -4.0099e-23-6.80303e-19im     -4.01694e-23+6.80303e-19im
+  -0.00036254-1.03768e-17im  …   -0.00036254-8.82363e-18im
+  5.78475e-18+0.00036254im       5.19856e-18-0.00036254im
+  1.20488e-25+1.00186e-21im       -1.207e-25+1.00186e-21im
+  2.48486e-18-0.00113682im       2.36869e-18+0.00113682im
+  -0.00113682+1.81029e-17im      -0.00113682-1.62444e-17im
+   3.0248e-24+3.77847e-25im  …  -3.02481e-24+3.7851e-25im
+ -3.78492e-12+6.04909e-26im      3.78492e-12+5.43027e-26im
+ -8.29424e-27+3.78492e-12im       7.9082e-27+3.78492e-12im
+         -0.0+0.0im                      0.0-0.0im</code></pre><p>We analyze each of the 14 modes by examining their frequency, electric field norm, polarization ratio, and handedness, comparing them against analytical cold-plasma theory:</p><pre><code class="language-julia hljs"># Analytical Frequencies and Dispersion relation functions
+wpe2 = n * qe^2 / (ε0 * me)
+wpi2 = n * qe^2 / (ε0 * mp)
+wce = qe * B0 / me     # Signed (negative for electrons)
+wci = qe * B0 / mp     # Signed (positive for protons)
+wpe = sqrt(wpe2)
+wpi = sqrt(wpi2)
+
+D_R(ω) = 1.0 - (c0*k/ω)^2 - wpe2 / (ω * (ω - abs(wce))) - wpi2 / (ω * (ω + wci))
+D_L(ω) = 1.0 - (c0*k/ω)^2 - wpe2 / (ω * (ω + abs(wce))) - wpi2 / (ω * (ω - wci))
+
+header = [&quot;Index&quot;, &quot;Frequency ω (rad/s)&quot;, &quot;E-field Norm&quot;, &quot;Handedness&quot;, &quot;Pol Ratio&quot;, &quot;Residual D&quot;, &quot;Status&quot;, &quot;Physical Description&quot;]
+rows = Any[]
+
+# Sort all 14 solutions by |real(ω)|
+sorted_indices = sort(1:length(ωs), by = i -&gt; abs(real(ωs[i])))
+
+for i in sorted_indices
+    ω = ωs[i]
+    v = V[:, i]
+
+    # Extract components and analyze polarization
+    Ex, Ey, Ez = electric_field(v)
+    Bx, By, Bz = magnetic_field(v)
+    E_norm = abs(Ex)^2 + abs(Ey)^2 + abs(Ez)^2
+    hand = handedness(v, ω, kx, kz; threshold = 1e-4)
+
+    # Residual and status defaults
+    residual = NaN
+    status = &quot;N/A&quot;
+    desc = &quot;&quot;
+
+    if abs(ω) &lt; 1e1
+        if abs(Bz) &gt; 0.9
+            desc = &quot;spurious ∇·B null mode (δBz)&quot;
+        elseif abs(v[1]) &gt; 0.9 &amp;&amp; abs(v[5]) &gt; 0.9
+            desc = &quot;Static Neutral Plasma Perturbation (physical)&quot;
+        elseif abs(v[1]) &gt; 0.9
+            desc = &quot;spurious Gauss&#39;s Law violation (static δne)&quot;
+        elseif abs(v[5]) &gt; 0.9
+            desc = &quot;spurious Gauss&#39;s Law violation (static δnp)&quot;
+        else
+            desc = &quot;Static Neutral Plasma Perturbation&quot;
+        end
+    else
+        # Calculate residual to verify if the computed eigenvalue satisfies
+        # the cold-plasma dispersion relation for its physical polarization handedness
+        if real(ω) &gt;= 0
+            if hand == :R
+                residual = abs(D_R(ω))
+            elseif hand == :L
+                residual = abs(D_L(ω))
+            end
+        else
+            # For negative frequencies, R-mode satisfies D_L(ω) = 0 and L-mode satisfies D_R(ω) = 0
+            if hand == :R
+                residual = abs(D_L(ω))
+            elseif hand == :L
+                residual = abs(D_R(ω))
+            end
+        end
+
+        if !isnan(residual)
+            status = residual &lt; 1e-4 ? &quot;VERIFIED&quot; : &quot;DISCREPANT&quot;
+        end
+
+        if E_norm &lt; 1e-16
+            residual = NaN
+            status = &quot;N/A&quot;
+            if abs(abs(ω) - abs(wci)) &lt; 1e2
+                desc = &quot;Proton Cyclotron Gyration (Resonance)&quot;
+            else
+                desc = &quot;Uncoupled Species Gyration&quot;
+            end
+        elseif hand == :linear
+            desc = &quot;Langmuir Wave &quot; * (real(ω) &gt; 0 ? &quot;(+z)&quot; : &quot;(-z)&quot;)
+        else
+            # EM Waves
+            pol = hand == :R ? &quot;R-mode&quot; : &quot;L-mode&quot;
+            dir = real(ω) &gt; 0 ? &quot;+z&quot; : &quot;-z&quot;
+            if abs(real(ω)) &gt; 2e8
+                desc = &quot;EM Light Wave ($(pol), $(dir))&quot;
+            elseif abs(real(ω)) &gt; 1e6
+                desc = &quot;Whistler Wave ($(pol), $(dir))&quot;
+            else
+                desc = &quot;Ion Cyclotron Wave ($(pol), $(dir))&quot;
+            end
+        end
+    end
+
+    # Format residual string
+    res_str = isnan(residual) ? &quot;N/A&quot; : @sprintf(&quot;%.2e&quot;, residual)
+    pol_ratio = polarization_ratio(v, kx, kz)
+    # Use absolute value for display; handle non-finite values gracefully
+    display_ratio = isfinite(pol_ratio) ? @sprintf(&quot;%.2e&quot;, abs(pol_ratio)) : &quot;NaN&quot;
+
+    push!(rows, [
+        string(i),
+        &quot;`&quot; * @sprintf(&quot;%.3e + %.3eim&quot;, real(ω), imag(ω)) * &quot;`&quot;,
+        @sprintf(&quot;%.2e&quot;, E_norm),
+        string(hand),
+        display_ratio,
+        res_str,
+        status,
+        desc
+    ])
+end
+
+Markdown.MD(Markdown.Table([header, rows...], [:r, :l, :r, :c, :r, :r, :c, :l]))</code></pre><div class="markdown"><table><tr><th align="right">Index</th><th align="left">Frequency ω &#40;rad/s&#41;</th><th align="right">E-field Norm</th><th align="center">Handedness</th><th align="right">Pol Ratio</th><th align="right">Residual D</th><th align="center">Status</th><th align="left">Physical Description</th></tr><tr><td align="right">7</td><td align="left">&#96;0.000e&#43;00 &#43; 0.000e&#43;00im&#96;</td><td align="right">0.00e&#43;00</td><td align="center">linear</td><td align="right">NaN</td><td align="right">N/A</td><td align="center">N/A</td><td align="left">spurious Gauss&#39;s Law violation &#40;static δne&#41;</td></tr><tr><td align="right">8</td><td align="left">&#96;0.000e&#43;00 &#43; 0.000e&#43;00im&#96;</td><td align="right">0.00e&#43;00</td><td align="center">linear</td><td align="right">NaN</td><td align="right">N/A</td><td align="center">N/A</td><td align="left">spurious Gauss&#39;s Law violation &#40;static δnp&#41;</td></tr><tr><td align="right">9</td><td align="left">&#96;0.000e&#43;00 &#43; 0.000e&#43;00im&#96;</td><td align="right">0.00e&#43;00</td><td align="center">linear</td><td align="right">NaN</td><td align="right">N/A</td><td align="center">N/A</td><td align="left">spurious ∇·B null mode &#40;δBz&#41;</td></tr><tr><td align="right">6</td><td align="left">&#96;-1.509e-14 &#43; 9.180e-13im&#96;</td><td align="right">3.62e-82</td><td align="center">linear</td><td align="right">5.46e&#43;00</td><td align="right">N/A</td><td align="center">N/A</td><td align="left">Static Neutral Plasma Perturbation</td></tr><tr><td align="right">10</td><td align="left">&#96;9.579e&#43;03 &#43; 3.918e-10im&#96;</td><td align="right">3.72e-20</td><td align="center">L</td><td align="right">1.00e&#43;00</td><td align="right">N/A</td><td align="center">N/A</td><td align="left">Proton Cyclotron Gyration &#40;Resonance&#41;</td></tr><tr><td align="right">5</td><td align="left">&#96;-9.579e&#43;03 &#43; -3.835e-10im&#96;</td><td align="right">3.72e-20</td><td align="center">L</td><td align="right">1.00e&#43;00</td><td align="right">N/A</td><td align="center">N/A</td><td align="left">Proton Cyclotron Gyration &#40;Resonance&#41;</td></tr><tr><td align="right">4</td><td align="left">&#96;-1.753e&#43;07 &#43; -1.189e-08im&#96;</td><td align="right">1.25e-13</td><td align="center">R</td><td align="right">1.00e&#43;00</td><td align="right">2.12e-10</td><td align="center">VERIFIED</td><td align="left">Whistler Wave &#40;R-mode, -z&#41;</td></tr><tr><td align="right">11</td><td align="left">&#96;1.753e&#43;07 &#43; -1.189e-08im&#96;</td><td align="right">1.25e-13</td><td align="center">R</td><td align="right">1.00e&#43;00</td><td align="right">2.12e-10</td><td align="center">VERIFIED</td><td align="left">Whistler Wave &#40;R-mode, &#43;z&#41;</td></tr><tr><td align="right">12</td><td align="left">&#96;1.784e&#43;07 &#43; -1.530e-10im&#96;</td><td align="right">3.28e-16</td><td align="center">linear</td><td align="right">3.41e&#43;00</td><td align="right">N/A</td><td align="center">N/A</td><td align="left">Langmuir Wave &#40;&#43;z&#41;</td></tr><tr><td align="right">3</td><td align="left">&#96;-1.784e&#43;07 &#43; -7.384e-11im&#96;</td><td align="right">3.28e-16</td><td align="center">linear</td><td align="right">3.41e&#43;00</td><td align="right">N/A</td><td align="center">N/A</td><td align="left">Langmuir Wave &#40;-z&#41;</td></tr><tr><td align="right">13</td><td align="left">&#96;3.003e&#43;08 &#43; 9.709e-10im&#96;</td><td align="right">3.27e-06</td><td align="center">L</td><td align="right">1.00e&#43;00</td><td align="right">2.57e-14</td><td align="center">VERIFIED</td><td align="left">EM Light Wave &#40;L-mode, &#43;z&#41;</td></tr><tr><td align="right">2</td><td align="left">&#96;-3.003e&#43;08 &#43; 1.050e-09im&#96;</td><td align="right">3.27e-06</td><td align="center">L</td><td align="right">1.00e&#43;00</td><td align="right">2.59e-14</td><td align="center">VERIFIED</td><td align="left">EM Light Wave &#40;L-mode, -z&#41;</td></tr><tr><td align="right">14</td><td align="left">&#96;3.004e&#43;08 &#43; 1.735e-09im&#96;</td><td align="right">2.58e-06</td><td align="center">R</td><td align="right">1.00e&#43;00</td><td align="right">2.61e-14</td><td align="center">VERIFIED</td><td align="left">EM Light Wave &#40;R-mode, &#43;z&#41;</td></tr><tr><td align="right">1</td><td align="left">&#96;-3.004e&#43;08 &#43; 1.677e-09im&#96;</td><td align="right">2.58e-06</td><td align="center">R</td><td align="right">1.00e&#43;00</td><td align="right">3.05e-14</td><td align="center">VERIFIED</td><td align="left">EM Light Wave &#40;R-mode, -z&#41;</td></tr></table>
+</div><h3 id="Summary-of-Characteristic-Frequencies"><a class="docs-heading-anchor" href="#Summary-of-Characteristic-Frequencies">Summary of Characteristic Frequencies</a><a id="Summary-of-Characteristic-Frequencies-1"></a><a class="docs-heading-anchor-permalink" href="#Summary-of-Characteristic-Frequencies" title="Permalink"></a></h3><p>We can also inspect the physical characteristics and cyclotron/plasma frequencies of the system:</p><div class="markdown"><h1>hide</h1>
+<p><strong>Characteristic Frequencies:</strong> # hide</p>
+<ul>
+<li><p>Electron plasma frequency &#40;&#36;ω_&#123;pe&#125;&#36;&#41;: 1.784e&#43;07 rad/s # hide</p>
+</li>
+<li><p>Ion cyclotron frequency &#40;&#36;ω_&#123;ci&#125;&#36;&#41;: 9.579e&#43;03 rad/s # hide</p>
+</li>
+<li><p>Electron cyclotron frequency &#40;&#36;|ω_&#123;ce&#125;|&#36;&#41;: 1.759e&#43;07 rad/s # hide</p>
+</li>
+<li><p>High-frequency EM wave speed &#40;&#36;c k&#36;&#41;: 2.998e&#43;08 rad/s # hide</p>
+</li>
+</ul>
+<p><em>Note: Handedness is defined relative to the background magnetic field &#36;\mathbf&#123;B&#125;_0&#36; &#40;&#36;&#43;\mathrm&#123;z&#125;&#36;&#41; assuming the wave convention &#36;e^&#123;i&#40;k_z z - ω t&#41;&#125;&#36;.</em> # hide</p>
+</div></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../dispersion_surface/">« Dispersion surface tracking</a><a class="docs-footer-nextpage" href="../math_notes/">Math notes »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Monday 20 July 2026 21:42">Monday 20 July 2026</span>. Using Julia version 1.12.6.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
