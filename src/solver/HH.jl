@@ -23,30 +23,30 @@ struct HHSolverParam{T}
     vtp::T                      # Perpendicular thermal velocity
     vdz::T                     # Parallel drift velocity
     vdr::T
-    aslm::Matrix{T}             # Hermite expansion coefficients
+    a0lm::Matrix{T}             # Normalized Hermite-Hermite coefficients
 end
 
 _convert_hh_param(param::HHSolverParam{T}, ::Type{T}) where {T} = param
 function _convert_hh_param(param::HHSolverParam, ::Type{T}) where {T}
     return HHSolverParam{T}(
         T(param.wc), T(param.wp), T(param.ρc), T(param.vtz), T(param.vtp),
-        T(param.vdz), T(param.vdr), Matrix{T}(param.aslm),
+        T(param.vdz), T(param.vdr), Matrix{T}(param.a0lm),
     )
 end
 
-# Susceptibility is linear in alm
+# Susceptibility is linear in a0lm.
 # Negative density is realized as |n| with negated coefficients.
-_alm(s::Maxwellian) = sign(s.n) * ones(eltype(s), 1, 1)
-function _alm(vdf::BiKappa2)
+_a0lm(s::Maxwellian) = sign(s.n) * sqrt(eltype(s)(π)) * ones(eltype(s), 1, 1)
+function _a0lm(vdf::BiKappa2)
     data = gen_fv2d(vdf)
-    return hermite_expansion(data.fv, data.vz, data.vx, data.vtz, data.vtx).alm
+    return hermite_expansion(data.fv, data.vz, data.vx, data.vtz, data.vtx)
 end
 
 _vtz(s) = sqrt(2 * kb * temperature(s.Tz) / s.m)
 _vtp(s) = sqrt(2 * kb * temperature(s.Tp) / s.m)
 
-function HHSolverParam(species, B0; alm = _alm(species))
-    T = float(promote_type(typeof(B0), eltype(alm)))
+function HHSolverParam(species, B0; a0lm = _a0lm(species))
+    T = float(promote_type(typeof(B0), eltype(a0lm)))
     # Compute derived quantities for each species
     q = T(species.q)
     m = T(species.m)
@@ -57,46 +57,47 @@ function HHSolverParam(species, B0; alm = _alm(species))
     ρc = vtp / sqrt(T(2)) / wc
     vdz = T(species.vdz) * T(c0)
     vdr = T(species.vdr) * T(c0)
-    return HHSolverParam{T}(wc, wp, ρc, vtzs, vtp, vdz, vdr, Matrix{T}(alm))
+    return HHSolverParam{T}(wc, wp, ρc, vtzs, vtp, vdz, vdr, Matrix{T}(a0lm))
 end
 
 # Direct constructor from SI quantities.
 # NB: `vtz`, `vtp`, `vdz`, `vdr` are in m/s here
 # unlike distribution structs (`Maxwellian`, `BiKappa`) which use units of c.
-function HHSolverParam(q, m, n, B0, vtz, vtp, vdz, vdr, alm)
-    T = float(promote_type(map(typeof, (q, m, n, B0, vtz, vtp, vdz, vdr))..., eltype(alm)))
+function HHSolverParam(q, m, n, B0, vtz, vtp, vdz, vdr, a0lm)
+    T = float(promote_type(map(typeof, (q, m, n, B0, vtz, vtp, vdz, vdr))..., eltype(a0lm)))
     wc = T(B0) * T(q) / T(m)
     wp = plasma_frequency(T(q), T(abs(n)), T(m))
     ρc = T(vtp) / sqrt(T(2)) / wc
     return HHSolverParam{T}(
-        wc, wp, ρc, T(vtz), T(vtp), T(vdz), T(vdr), sign(n) * Matrix{T}(alm),
+        wc, wp, ρc, T(vtz), T(vtp), T(vdz), T(vdr), sign(n) * Matrix{T}(a0lm),
     )
 end
 
-# Precompute alm-weighted m-sums (independent of j) used inside the (n, j)-loop.
+# Precompute a0lm-weighted m-sums (independent of j) used inside the (n, j)-loop.
 # Γₙ is the combined integral buffer from `_compute_integral_matrices!` with the
 # component layout (A,p=1; A,p=2; B,p=1; B,p=2; C,p=1; C,p=2) along rows. For each
-# l ∈ 0:l_max and component k ∈ {A=1, B=2, C=3}:
-#   Tₗ[k, l+1] = Σₘ alm[l+1,m+1] · (2·Γₙ[2k-1,m+2] - m·Γₙ[2k-1,m])   (derivative form)
-#   Uₗ[k, l+1] = Σₘ alm[l+1,m+1] · Γₙ[2k,   m+1]                     (p=2 form)
-function _precompute_lm_sums!(Tₗ, Uₗ, alm, Γₙ)
-    l_max, m_max = size(alm) .- 1
+# z-Hermite order l and component k ∈ {A=1, B=2, C=3}:
+#   Tₗ[k,l+1] = Σᵣ a0lm[l+1,r+1] Σₘ C[r+1,m+1] · (2Γₙ[2k-1,m+2] - mΓₙ[2k-1,m])
+#   Uₗ[k,l+1] = Σᵣ a0lm[l+1,r+1] Σₘ C[r+1,m+1] · Γₙ[2k,m+1]
+function _precompute_lm_sums!(Tₗ, Uₗ, a0lm, Cx, Γₙ)
+    l_max, r_max = size(a0lm) .- 1
     @inbounds for l in 0:l_max
-        a = alm[l + 1, 1]
-        ta = a * 2 * Γₙ[1, 2]
-        ua = a * Γₙ[2, 1]
-        tb = a * 2 * Γₙ[3, 2]
-        ub = a * Γₙ[4, 1]
-        tc = a * 2 * Γₙ[5, 2]
-        uc = a * Γₙ[6, 1]
-        for m in 1:m_max
-            a = alm[l + 1, m + 1]
-            ta += a * (2 * Γₙ[1, m + 2] - m * Γₙ[1, m])
-            ua += a * Γₙ[2, m + 1]
-            tb += a * (2 * Γₙ[3, m + 2] - m * Γₙ[3, m])
-            ub += a * Γₙ[4, m + 1]
-            tc += a * (2 * Γₙ[5, m + 2] - m * Γₙ[5, m])
-            uc += a * Γₙ[6, m + 1]
+        ta = ua = tb = ub = tc = uc = zero(eltype(Tₗ))
+        for r in 0:r_max
+            a = a0lm[l + 1, r + 1]
+            for m in 0:r
+                c = Cx[r + 1, m + 1]
+                dA = 2 * Γₙ[1, m + 2] - (m == 0 ? zero(eltype(Γₙ)) : m * Γₙ[1, m])
+                dB = 2 * Γₙ[3, m + 2] - (m == 0 ? zero(eltype(Γₙ)) : m * Γₙ[3, m])
+                dC = 2 * Γₙ[5, m + 2] - (m == 0 ? zero(eltype(Γₙ)) : m * Γₙ[5, m])
+                ac = a * c
+                ta += ac * dA
+                ua += ac * Γₙ[2, m + 1]
+                tb += ac * dB
+                ub += ac * Γₙ[4, m + 1]
+                tc += ac * dC
+                uc += ac * Γₙ[6, m + 1]
+            end
         end
         Tₗ[1, l + 1] = ta; Tₗ[2, l + 1] = tb; Tₗ[3, l + 1] = tc
         Uₗ[1, l + 1] = ua; Uₗ[2, l + 1] = ub; Uₗ[3, l + 1] = uc
@@ -104,14 +105,54 @@ function _precompute_lm_sums!(Tₗ, Uₗ, alm, Γₙ)
     return nothing
 end
 
+function _precompute_z_integrals!(Iₗ, DIₗ, EIₗ, Cz, Ils)
+    l_max = length(Iₗ) - 1
+    @inbounds for l in 0:l_max
+        i = di = ei = zero(eltype(Iₗ))
+        for k in 0:l
+            c = Cz[l + 1, k + 1]
+            i += c * Ils[k + 1]
+            di += c * (2 * Ils[k + 2] - (k == 0 ? zero(eltype(Ils)) : k * Ils[k]))
+            ei += c * (2 * Ils[k + 3] - k * Ils[k + 1])
+        end
+        Iₗ[l + 1] = i
+        DIₗ[l + 1] = di
+        EIₗ[l + 1] = ei
+    end
+    return nothing
+end
+
+function _precompute_z_poles!(Zₗ, DZₗ, czj)
+    CT = eltype(Zₗ)
+    T = _realtype(CT)
+    l_max = size(Zₗ, 2) - 1
+    p0 = inv(sqrt(sqrt(T(π))))
+    @inbounds for j in axes(Zₗ, 1)
+        c = czj[j]
+        Zₗ[j, 1] = p0
+        if l_max >= 1
+            Zₗ[j, 2] = 2 * c * p0
+            for l in 1:(l_max - 1)
+                Zₗ[j, l + 2] = (2 * c / sqrt(T(l + 1))) * Zₗ[j, l + 1] -
+                               sqrt(T(l) / T(l + 1)) * Zₗ[j, l]
+            end
+        end
+        DZₗ[j, 1] = 2 * c * Zₗ[j, 1]
+        for l in 1:l_max
+            DZₗ[j, l + 1] = 2 * c * Zₗ[j, l + 1] - 2 * sqrt(T(l)) * Zₗ[j, l]
+        end
+    end
+    return nothing
+end
+
 function _assemble_species_core!(
-        M, Γₙ, Ils, Tₗ, Uₗ,
+        M, Γₙ, Ils, Iₗ, DIₗ, EIₗ, Tₗ, Uₗ, Cz, Cx,
         snj, kx, kz, SNJ1, SNJ3,
-        as, cj, bzj, cj_l,
-        wc, wp2, vtz, vtp, vdz, d, R, alm,
+        as, cj, bzj, Zₗ, DZₗ,
+        wc, wp2, vtz, vtp, vdz, d, R, a0lm,
         N, J,
     )
-    l_max, m_max = size(alm) .- 1
+    l_max, m_max = size(a0lm) .- 1
     z = zero(eltype(M))
     b11 = b12 = b13 = b22 = b23 = b33 = z
 
@@ -123,6 +164,7 @@ function _assemble_species_core!(
     vtzp = vtz / vtp
 
     Ils .= funIn.(Ref(eltype(Ils)), 0:(l_max + 2))
+    _precompute_z_integrals!(Iₗ, DIₗ, EIₗ, Cz, Ils)
 
     for n in -N:N
         Γₙ .= 0
@@ -131,19 +173,15 @@ function _assemble_species_core!(
         _compute_integral_matrices!(Γₙ, n, as, d, m_max)
         Γₙ .*= 2 / R
 
-        _precompute_lm_sums!(Tₗ, Uₗ, alm, Γₙ)
+        _precompute_lm_sums!(Tₗ, Uₗ, a0lm, Cx, Γₙ)
 
         # j == 1 contributes per-n terms to species coefficients b11, b22, b33.
         # Lifted out of the j-loop since none of its factors depend on j.
         s11_3 = s22_3 = s33_3 = zero(eltype(Tₗ))
         @inbounds for l in 0:l_max
-            Iₗ = Ils[l + 1]
-            Iₗ₊₁ = Ils[l + 2]
-            Iₗ₊₂ = Ils[l + 3]
-            Iₗ₋₁ = l >= 1 ? Ils[l] : zero(eltype(Ils))
-            s11_3 += Iₗ * Tₗ[1, l + 1]
-            s22_3 += Iₗ * Tₗ[3, l + 1]
-            s33_3 += (dr * (2 * Iₗ₊₁ - l * Iₗ₋₁) + (2 * Iₗ₊₂ - l * Iₗ)) * Uₗ[1, l + 1]
+            s11_3 += Iₗ[l + 1] * Tₗ[1, l + 1]
+            s22_3 += Iₗ[l + 1] * Tₗ[3, l + 1]
+            s33_3 += (dr * DIₗ[l + 1] + EIₗ[l + 1]) * Uₗ[1, l + 1]
         end
         b11 -= wp2 * nwkp^2 * s11_3
         b22 -= wp2 * s22_3
@@ -161,28 +199,21 @@ function _assemble_species_core!(
             s23_1 = s23_2 = z
             s33_1 = s33_2 = z
             @inbounds for l in 0:l_max
-                cˡ = cj_l[j, l + 1]
-                cˡ⁺¹ = cⱼ * cˡ
-                cˡ⁺² = cⱼ * cˡ⁺¹
-                cˡ⁺³ = cⱼ * cˡ⁺²
-                cˡ⁻¹ = l >= 1 ? cj_l[j, l] : z
-                dZl = 2 * cˡ⁺¹ - l * cˡ⁻¹
-                dZlc = dZl * cⱼ
-                f13a = dr * cˡ + cˡ⁺¹
-                f13b = dZlc + dr * dZl
-                f33a = dr * dr * cˡ + 2 * dr * cˡ⁺¹ + cˡ⁺²
-                f33b = dr * dr * dZl + 2 * dr * dZlc + (2 * cˡ⁺³ - l * cˡ⁺¹)
+                zₗ = Zₗ[j, l + 1]
+                dzₗ = DZₗ[j, l + 1]
+                cd = cⱼ + dr
+                cd2 = cd * cd
 
                 tA = Tₗ[1, l + 1]; uA = Uₗ[1, l + 1]
                 tB = Tₗ[2, l + 1]; uB = Uₗ[2, l + 1]
                 tC = Tₗ[3, l + 1]; uC = Uₗ[3, l + 1]
 
-                s11_1 += cˡ * tA;   s11_2 += dZl * uA
-                s12_1 += cˡ * tB;   s12_2 += dZl * uB
-                s22_1 += cˡ * tC;   s22_2 += dZl * uC
-                s13_1 += f13a * tA; s13_2 += f13b * uA
-                s23_1 += f13a * tB; s23_2 += f13b * uB
-                s33_1 += f33a * tA; s33_2 += f33b * uA
+                s11_1 += zₗ * tA;      s11_2 += dzₗ * uA
+                s12_1 += zₗ * tB;      s12_2 += dzₗ * uB
+                s22_1 += zₗ * tC;      s22_2 += dzₗ * uC
+                s13_1 += cd * zₗ * tA; s13_2 += cd * dzₗ * uA
+                s23_1 += cd * zₗ * tB; s23_2 += cd * dzₗ * uB
+                s33_1 += cd2 * zₗ * tA; s33_2 += cd2 * dzₗ * uA
             end
 
             tmp = wp2 * bzj[j] / cnj
@@ -215,24 +246,32 @@ function _assemble_species_core!(
     return snj, (b11, b12, b13, b22, b23, b33)
 end
 
-function _assemble_species!(M, param::HHSolverParam{T}, snj, kx, kz, SNJ1, SNJ3, czj, bzj, czj_l, N, J) where {T}
+function _assemble_species!(M, param::HHSolverParam{T}, snj, kx, kz, SNJ1, SNJ3, czj, bzj, Zₗ, DZₗ, N, J) where {T}
     as = kx * param.ρc * sqrt(T(2)) # Perpendicular wavenumber parameter
     vtp = param.vtp
     d = param.vdr / vtp
     R = exp(-d^2) + sqrt(T(π)) * d * erfc(-d) # Normalization parameters
     wp2 = param.wp^2
-    alm = param.aslm
-    l_max, m_max = size(alm) .- 1
+    a0lm = param.a0lm
+    l_max, m_max = size(a0lm) .- 1
+    n_max = max(l_max, m_max)
 
     return @no_escape begin
         Γₙ = @temp_array(T, 6, m_max + 3)
         Ils = @temp_array(T, l_max + 3)
+        Iₗ = @temp_array(T, l_max + 1)
+        DIₗ = @temp_array(T, l_max + 1)
+        EIₗ = @temp_array(T, l_max + 1)
         Tₗ = @temp_array(T, 3, l_max + 1)
         Uₗ = @temp_array(T, 3, l_max + 1)
+        C = @temp_array(T, n_max + 1, n_max + 1)
+        _fill_hermite_coefficients!(C)
+        Cz = @view C[1:(l_max + 1), 1:(l_max + 1)]
+        Cx = @view C[1:(m_max + 1), 1:(m_max + 1)]
         _assemble_species_core!(
-            M, Γₙ, Ils, Tₗ, Uₗ,
-            snj, kx, kz, SNJ1, SNJ3, as, czj, bzj, czj_l,
-            param.wc, wp2, param.vtz, vtp, param.vdz, d, R, alm,
+            M, Γₙ, Ils, Iₗ, DIₗ, EIₗ, Tₗ, Uₗ, Cz, Cx,
+            snj, kx, kz, SNJ1, SNJ3, as, czj, bzj, Zₗ, DZₗ,
+            param.wc, wp2, param.vtz, vtp, param.vdz, d, R, a0lm,
             N, J
         )
     end
@@ -272,17 +311,12 @@ function dispersion_matrix!(M, pb::DispersionProblem, alg::BOHH; c2 = c0^2)
     # Adjust czj for kz sign
     kz < 0 && (czj = -czj)
 
-    max_lsmax = maximum(p -> size(p.aslm, 1) - 1, params)
+    max_lmax = maximum(p -> size(p.a0lm, 1) - 1, params)
 
-    # czj_l[j, l + 1] holds czj[j]^l for l in 0:(max_lsmax + 3).
     @no_escape begin
-        czj_l = @temp_array(Complex{T}, alg.J, max_lsmax + 4)
-        @inbounds for j in 1:J
-            czj_l[j, 1] = one(Complex{T})
-            for l in 1:(max_lsmax + 3)
-                czj_l[j, l + 1] = czj_l[j, l] * czj[j]
-            end
-        end
+        Zₗ = @temp_array(Complex{T}, alg.J, max_lmax + 1)
+        DZₗ = @temp_array(Complex{T}, alg.J, max_lmax + 1)
+        _precompute_z_poles!(Zₗ, DZₗ, czj)
 
         snj = 0
         for s in 1:S
@@ -291,7 +325,7 @@ function dispersion_matrix!(M, pb::DispersionProblem, alg::BOHH; c2 = c0^2)
                 M, param,
                 snj, kx, kz,
                 SNJ1, SNJ3,
-                czj, bzj, czj_l,
+                czj, bzj, Zₗ, DZₗ,
                 N, J,
             )
 

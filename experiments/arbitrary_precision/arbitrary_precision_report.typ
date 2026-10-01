@@ -142,13 +142,13 @@ distribution is a parallel top-hat plateau with smooth perpendicular profile:
 vz = collect(range(-6, 6; length = 1201))
 vx = collect(range(0, 6; length = 201))
 fv = [abs(z) <= 1 ? exp(-x^2) : 0.0 for z in vz, x in vx]
-alm = hermite_expansion(fv, vz, vx, 1.0, 1.0; Nz = 32, Nx = 0).alm
+a0lm = hermite_expansion(fv, vz, vx, 1.0, 1.0; Nz = 32, Nx = 0)
 
 # Assemble BOHH with N = 1, J = 4 and compare its 3 x 3
 # accumulated susceptibility block against BigFloat(256).
 ```
 
-The Hermite projection `alm` is kept identical across types; comparison
+The Hermite projection `a0lm` is kept identical across types; comparison
 therefore isolates loss during eigenproblem assembly, not projection changes.
 
 == Accuracy result

@@ -15,7 +15,7 @@ setprecision(BigFloat, 256)
 vz = collect(range(-6, 6; length = 1201))
 vx = collect(range(0, 6; length = 201))
 fv = [abs(z) <= 1 ? exp(-x^2) : 0.0 for z in vz, x in vx]
-alm = hermite_expansion(fv, vz, vx, 1.0, 1.0; Nz = 32, Nx = 0).alm
+a0lm = hermite_expansion(fv, vz, vx, 1.0, 1.0; Nz = 32, Nx = 0)
 
 const N = 1
 const J = 4
@@ -32,7 +32,7 @@ const TYPES = [
 
 function report_matrix(::Type{T}) where {T}
     p = HHSolverParam{T}(
-        one(T), one(T), one(T), one(T), one(T), zero(T), zero(T), T.(alm),
+        one(T), one(T), one(T), one(T), one(T), zero(T), zero(T), T.(a0lm),
     )
     return dispersion_matrix((p,), one(T), T(0.2), T(0.1), BOHH; N, J)
 end

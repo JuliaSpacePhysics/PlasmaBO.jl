@@ -22,10 +22,10 @@ electron = Maxwellian(:e, DENSITY, 496.683)
 data = gen_fv2d(proton)
 in_plateau = abs.(sqrt(2) .* data.vz ./ data.vtz) .<= CUTOFF
 fv = ifelse.(in_plateau, data.fv, zero(eltype(data.fv)))
-alm = hermite_expansion(
+a0lm = hermite_expansion(
     fv, data.vz, data.vx, data.vtz, data.vtx; Nz = NZ, Nx = 0,
-).alm
-proton_param = HHSolverParam(proton, B0; alm)
+)
+proton_param = HHSolverParam(proton, B0; a0lm)
 species = (proton_param, electron)
 kx, kz = K .* sincos(THETA)
 wci = abs(proton_param.wc)
