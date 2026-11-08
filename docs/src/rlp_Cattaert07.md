@@ -8,7 +8,7 @@ The configuration is a single electron population with a strongly non-Maxwellian
 
 ```@example rlp
 using PlasmaBO
-using PlasmaBO: q, me
+using PlasmaPopulations: gyrofrequency, thermal_speed
 
 B0 = 1.0e-6          # [Tesla]
 θ = deg2rad(30)
@@ -18,9 +18,11 @@ T = 2555.0           # [eV]
 κz = 1.0
 κx = 200.0
 
-electron = BiKappa2(:e, n, κz, κx, T; sigma = 0.0)
-wce = abs(B0 * q / me)
-ρce = electron.vtp / wce
+e = Electron()
+vth = thermal_speed(e, T)
+electron = Plasma(Population(e, ProductBiKappa(; vth, kappa_perp = κx, kappa_para = κz); n); B0)
+wce = abs(gyrofrequency(e, B0))
+ρce = sqrt(1 - 1 / κx) * vth / wce   # perpendicular kappa width θ⊥
 kn = 1 / ρce  # so that k/kn = kρce
 
 kρ_scan = range(1.0e-4, 0.3; length = 80)
@@ -32,7 +34,7 @@ ks = kρ_scan .* kn
 Solve the same case with the analytic PBK (BO-PBK) solver:
 
 ```@repl rlp
-sol_pbk = solve(electron, B0, ks, θ, BOPBK);
+sol_pbk = solve(electron, AngleSweep(; k = ks, theta = θ), BOPBK());
 ```
 
 ```@example rlp
@@ -67,7 +69,7 @@ Solve the same case with the general Hermite-Hermite (HH) basis solver:
 ```@example rlp
 using CairoMakie
 
-sol_HH = solve(electron, B0, ks, θ; N = 4, J = 16)
+sol_HH = solve(electron, AngleSweep(; k = ks, theta = θ), BOHH(; N = 4, J = 16))
 branches_HH = track.(sol_HH, initial_points)
 
 f, axs = plot(sol_HH, kn, wce)
@@ -86,8 +88,8 @@ We can see that the results from the HH solver is very different from the PBK so
 As a comparison, we solve it for a Maxwellian electron population:
 
 ```@example rlp
-electron = Maxwellian(:e, n, T)
-sol_M = solve([electron], B0, ks, θ; N = 3)
+maxwellian = Plasma(Population(e, BiMaxwellian(; vth); n); B0)
+sol_M = solve(maxwellian, AngleSweep(; k = ks, theta = θ), BOHH(; N = 3))
 
 f, axs = plot(sol_M, kn, wce)
 ylims!(axs[1], 0, 3)

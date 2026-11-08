@@ -18,24 +18,26 @@ This page demonstrates how to use the package to solve kinetic dispersion relati
 
 ```@example matrix
 using PlasmaBO
-using PlasmaBO: q, me
+using PlasmaPopulations: gyrofrequency, thermal_speed, debye_length
 using Unitful
 
 # Umeda 2012 ring beam configuration
 B0 = 96.24e-9  # [Tesla]
 
+e = Electron()
 T = 51u"eV"
-# Ring beam electrons (10% density)
-# The first argument (optional) indicates particle type of the distribution (by default we use `proton`)
-ring_beam = Maxwellian(:e, 1e5, T; vdz=0.1, vdr=0.05)
-# Background electrons (90% density)
-background = Maxwellian(:e, 9e5, T)
-
-species = [ring_beam, background]
+vth = thermal_speed(e, T)
+plasma = Plasma(
+    # Ring beam electrons (10% density): parallel drift `vd`, ring speed `vr`
+    Population(e, GaussianRing(; vr_perp = 0.05u"c", w_perp = vth, vth_para = vth, vd_para = 0.1u"c"); n = 1e5),
+    # Background electrons (90% density)
+    Population(e, BiMaxwellian(; vth); n = 9e5);
+    B0,
+)
 
 # Compute normalization
-wce = abs(B0 * q / me)
-lambdaD = Debye_length(species)
+wce = abs(gyrofrequency(e, B0))
+lambdaD = debye_length(e, 1e6, T)   # of the total electron density
 kn = 1 / lambdaD
 
 # Wave vector: k*λD = 0.03, θ = 40°
@@ -45,7 +47,7 @@ kx = k * sin(θ)
 kz = k * cos(θ)
 
 # J=12 provides good accuracy (J-pole approximation order)
-ωs = solve(species, B0, kx, kz; N=6, J=12)
+ωs = solve(plasma, Wavevector(kx, kz), BOHH(; N=6, J=12))
 
 # Filter for unstable modes (ω/ωce) with positive growth rate
 ω_unstable = filter(ω -> isfinite(ω) && imag(ω) > 0.001*wce, ωs)[1] ./wce
@@ -57,7 +59,7 @@ Scan k*λD from 0.01 to 0.3
 
 ```@repl matrix
 k_ranges = (0.01:0.005:0.3) .* kn;
-sol = solve(species, B0, k_ranges, θ; N=6)
+sol = solve(plasma, AngleSweep(; k = k_ranges, theta = θ), BOHH(; N=6))
 ```
 
 ```@example matrix

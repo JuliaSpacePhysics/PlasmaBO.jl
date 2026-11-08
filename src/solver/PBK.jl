@@ -1,10 +1,9 @@
 module PBK
 using QuadGK: quadgk
-using Bumper: @no_escape, @alloc
-using ..Constants
-using ..PlasmaBO: AbstractDispersionAlgorithm, DispersionProblem, _realtype
+using ..PlasmaBO: AbstractDispersionAlgorithm, DispersionProblem, _realtype, c0, ε0
 using ..PlasmaBO: besselj, loggamma, gamma
-import ..PlasmaBO: dispersion_matrix, dispersion_matrix!, matrix_size, prepare
+using PlasmaPopulations: Population, ProductBiKappa, kappa_widths
+import ..PlasmaBO: dispersion_matrix!, matrix_size, prepare
 
 """
     BOPBK(; N = 2)
@@ -18,29 +17,21 @@ the dispersion matrix.
     N::Int = 2
 end
 
-zero!(M) = fill!(M, zero(eltype(M)))
-
-function PBK_param(s, B0, ::Type{T} = Float64) where {T}
-    u0 = T(s.vdz) * T(c0)
-    sigma = T(s.sigma)
-    κz = Int(s.κz)
-    κx = T(s.κx)
-    m = T(s.m)
-    q = T(s.q)
-    wp = abs(q) * sqrt(T(s.n) / (m * T(ε0)))
+function PBK_param(s::Population, B0, ::Type{T}) where {T}
+    d = s.vdf
+    d isa ProductBiKappa || throw(ArgumentError("BOPBK solves ProductBiKappa species, got $(nameof(typeof(d)))"))
+    isinteger(d.kappa_para) || throw(ArgumentError("BOPBK needs an integer κ∥, got $(d.kappa_para)"))
+    m, q = T(s.particle.m), T(s.particle.q)
+    wp2 = T(s.n) * q^2 / (m * T(ε0))   # signed: the response is linear in n
     wc = (T(B0) * q) / m
-
-    vtz = sqrt((2 - 1 / κz) * T(qe) * T(s.Tz) / m)
-    vtx = sqrt((2 - 2 / κx) * T(qe) * T(s.Tp) / m / (1 + sigma))
-    rhoc = vtx / abs(wc)
-
-    return (; u0, sigma, κz, κx, wp, wc, vtz, vtx, rhoc)
+    vtx, vtz = T.(kappa_widths(d))
+    return (;
+        u0 = T(d.vd_para), sigma = T(d.loss_cone), κz = Int(d.kappa_para), κx = T(d.kappa_perp),
+        wp2, wc, vtz, vtx, rhoc = vtx / abs(wc),
+    )
 end
 
-# Pre-promoted parameters pass through; raw species are converted to PBK_param at type T.
-prepare(::BOPBK, species, B0, ::Type{T}) where {T} = map(species) do sp
-    sp isa NamedTuple ? sp : PBK_param(sp, B0, T)
-end
+prepare(::BOPBK, species, B0, ::Type{T}) where {T} = map(sp -> PBK_param(sp, B0, T), species)
 
 _pbk_per_n(κ) = (κ + 1) * (κ + 4) ÷ 2
 
@@ -83,26 +74,20 @@ function _pbk_block_first_index(len_sub, MatrixNo)
     error("MatrixNo must be 1, 2, or 3")
 end
 
-function _csn(p, n, kz)
+# Pole csn = n ωc + k∥ ξ
+_ξ(p) = p.u0 - 1im * sqrt(p.κz) * p.vtz
+
+# Ez couples through tanθ = k⊥/k∥. Every such term carries enough powers of k∥ to cancel it, so
+# the coefficients below take `r` factors of k∥ already divided out, which keeps k∥ = 0 regular.
+function _csl(p, l, kz, r = 0)
     κz = p.κz
-    return n * p.wc + kz * p.u0 - 1im * sqrt(κz) * kz * p.vtz
+    z = 2im * sqrt(κz) * p.vtz
+    return exp(loggamma(κz + 1) + loggamma(2 * κz - l + 2) - loggamma(κz - l + 2) - loggamma(2 * κz + 1)) *
+        z^r * (z * kz)^(l - 1 - r)
 end
 
-function _log_csl(κz, l, kz, vtz)
-    return loggamma(κz + 1) + loggamma(2 * κz - l + 2) -
-        loggamma(κz - l + 2) - loggamma(2 * κz + 1) +
-        (l - 1) * log(2im * sqrt(κz) * kz * vtz)
-end
-
-function bsnl(p, n, l, kz)
-    log_csl = _log_csl(p.κz, l, kz, p.vtz)
-    return -n * p.wc * exp(log_csl)
-end
-
-function bsl(p, l, kz)
-    log_csl = _log_csl(p.κz, l, kz, p.vtz)
-    return -l * kz^2 * p.vtx^2 * exp(log_csl) / 2
-end
+bsnl(p, n, l, kz, r) = -n * p.wc * _csl(p, l, kz, r)
+bsl(p, l, kz, r) = -l * kz^(2 - r) * p.vtx^2 * _csl(p, l, kz) / 2
 
 function funcS_pbk(p, n, λ::T, p1, p2, p3, p4; EPS0 = 1.0e-2) where {T}
     κx = p.κx
@@ -138,32 +123,32 @@ function funcS_pbk(p, n, λ::T, p1, p2, p3, p4; EPS0 = 1.0e-2) where {T}
     end
 end
 
-function b1snl(p, n, l, kz, λ; EPS0 = 1.0e-2)
+function b1snl(p, n, l, kz, λ; r = 0, EPS0 = 1.0e-2)
     S1 = funcS_pbk(p, n, λ, 2, 0, 1, 2; EPS0)
     S7 = funcS_pbk(p, n, λ, 2, 0, -1, 1; EPS0)
     κx = p.κx
     sgm = p.sigma
     S17 = (κx + sgm + 1) / κx * S1 - 2 * sgm * λ * S7
-    return S17 * bsnl(p, n, l, kz)
+    return S17 * bsnl(p, n, l, kz, r)
 end
 
-function b2snl(p, n, l, kz, λ; EPS0 = 1.0e-2)
+function b2snl(p, n, l, kz, λ; r = 0, EPS0 = 1.0e-2)
     S2 = funcS_pbk(p, n, λ, 2, 0, 1, 1; EPS0)
-    return S2 * bsl(p, l, kz)
+    return S2 * bsl(p, l, kz, r)
 end
 
-function b3snl(p, n, l, kz, λ; EPS0 = 1.0e-2)
+function b3snl(p, n, l, kz, λ; r = 0, EPS0 = 1.0e-2)
     S3 = funcS_pbk(p, n, λ, 1, 1, 2, 2; EPS0)
     S8 = funcS_pbk(p, n, λ, 1, 1, 0, 1; EPS0)
     κx = p.κx
     sgm = p.sigma
     S38 = (κx + sgm + 1) / κx * S3 - 2 * sgm * λ * S8
-    return S38 * bsnl(p, n, l, kz)
+    return S38 * bsnl(p, n, l, kz, r)
 end
 
-function b4snl(p, n, l, kz, λ; EPS0 = 1.0e-2)
+function b4snl(p, n, l, kz, λ; r = 0, EPS0 = 1.0e-2)
     S4 = funcS_pbk(p, n, λ, 1, 1, 2, 1; EPS0)
-    return S4 * bsl(p, l, kz)
+    return S4 * bsl(p, l, kz, r)
 end
 
 function b5snl(p, n, l, kz, λ; EPS0 = 1.0e-2)
@@ -172,42 +157,32 @@ function b5snl(p, n, l, kz, λ; EPS0 = 1.0e-2)
     κx = p.κx
     sgm = p.sigma
     S59 = (κx + sgm + 1) / κx * S5 - 2 * sgm * λ * S9
-    return S59 * bsnl(p, n, l, kz)
+    return S59 * bsnl(p, n, l, kz, 0)
 end
 
 function b6snl(p, n, l, kz, λ; EPS0 = 1.0e-2)
     S6 = funcS_pbk(p, n, λ, 0, 2, 3, 1; EPS0)
-    return S6 * bsl(p, l, kz)
+    return S6 * bsl(p, l, kz, 0)
 end
 
-bx11snl(wp, n, b1) = -1im * ε0 * wp^2 * n^2 * b1
-bx12snl(wp, n, b2) = -1im * ε0 * wp^2 * n^2 * b2
-bx21snl(wp, n, b3) = ε0 * wp^2 * n * b3
-bx22snl(wp, n, b4) = ε0 * wp^2 * n * b4
-bx31snl(wp, wc, n, tanθ, csn, b1, b2) =
-    -1im * ε0 * tanθ * wp^2 * n * (b1 * (csn - n * wc) + b2) / wc
-bx32snl(wp, wc, n, tanθ, csn, b2) =
-    -1im * ε0 * tanθ * wp^2 * n * b2 * (csn - n * wc) / wc
-bx33snl(wp, wc, n, tanθ, b1) =
-    -1im * ε0 * tanθ * wp^2 * n * b1 / wc
+bx11snl(wp2, n, b1) = -1im * ε0 * wp2 * n^2 * b1
+bx12snl(wp2, n, b2) = -1im * ε0 * wp2 * n^2 * b2
+bx21snl(wp2, n, b3) = ε0 * wp2 * n * b3
+bx22snl(wp2, n, b4) = ε0 * wp2 * n * b4
+bx31snl(wp2, wc, n, kx, ξ, b1, b2_kz) = -1im * ε0 * kx * wp2 * n * (b1 * ξ + b2_kz) / wc
+bx32snl(wp2, wc, n, kx, ξ, b2) = -1im * ε0 * kx * wp2 * n * b2 * ξ / wc
+bx33snl(wp2, wc, n, kx, b1_kz) = -1im * ε0 * kx * wp2 * n * b1_kz / wc
 
-by21snl(wp, b5) = -1im * ε0 * wp^2 * b5
-by22snl(wp, b6) = -1im * ε0 * wp^2 * b6
-by31snl(wp, wc, n, tanθ, csn, b3, b4) =
-    -ε0 * tanθ * wp^2 * (b3 * (csn - n * wc) + b4) / wc
-by32snl(wp, wc, n, tanθ, csn, b4) =
-    -ε0 * tanθ * wp^2 * b4 * (csn - n * wc) / wc
-by33snl(wp, wc, n, tanθ, b3) =
-    -ε0 * tanθ * wp^2 * b3 / wc
+by21snl(wp2, b5) = -1im * ε0 * wp2 * b5
+by22snl(wp2, b6) = -1im * ε0 * wp2 * b6
+by31snl(wp2, wc, kx, ξ, b3, b4_kz) = -ε0 * kx * wp2 * (b3 * ξ + b4_kz) / wc
+by32snl(wp2, wc, kx, ξ, b4) = -ε0 * kx * wp2 * b4 * ξ / wc
+by33snl(wp2, wc, kx, b3_kz) = -ε0 * kx * wp2 * b3_kz / wc
 
-bz31snl(wp, wc, n, tanθ, csn, b1, b2) =
-    -1im * ε0 * tanθ^2 * wp^2 * (b1 * (csn - n * wc)^2 + 2 * b2 * (csn - n * wc)) / wc^2
-bz32snl(wp, wc, n, tanθ, csn, b2) =
-    -1im * ε0 * tanθ^2 * wp^2 * b2 * (csn - n * wc)^2 / wc^2
-bz33snl(wp, wc, n, tanθ, csn, b1, b2) =
-    -1im * ε0 * tanθ^2 * wp^2 * (2 * b1 * (csn - n * wc) + b2) / wc^2
-bz34snl(wp, wc, tanθ, b1) =
-    -1im * ε0 * tanθ^2 * wp^2 * b1 / wc^2
+bz31snl(wp2, wc, kx, ξ, b1, b2_kz) = -1im * ε0 * kx^2 * wp2 * (b1 * ξ^2 + 2 * b2_kz * ξ) / wc^2
+bz32snl(wp2, wc, kx, ξ, b2) = -1im * ε0 * kx^2 * wp2 * b2 * ξ^2 / wc^2
+bz33snl(wp2, wc, kx, ξ, b1_kz, b2_kz2) = -1im * ε0 * kx^2 * wp2 * (2 * b1_kz * ξ + b2_kz2) / wc^2
+bz34snl(wp2, wc, kx, b1_kz2) = -1im * ε0 * kx^2 * wp2 * b1_kz2 / wc^2
 
 lmax(κz; threshold = 10) = min(κz + 1, threshold)
 
@@ -222,12 +197,12 @@ function _pbk_add_species_Mxy!(
     λ = kx^2 * (p.rhoc^2) / 2
     κz = p.κz
 
-    wp = p.wp
+    wp2 = p.wp2
     wc = p.wc
-    tanθ = kx / kz
+    ξ = _ξ(p)
 
     for (idx_n, n) in enumerate(-N:N)
-        csn = _csn(p, n, kz)
+        csn = n * wc + kz * ξ
         for l in 1:lmax(κz), jj in 1:(l + 1)
             snlj = _pbk_snl_index(params, s, idx_n, l, jj, N)
 
@@ -239,29 +214,29 @@ function _pbk_add_species_Mxy!(
             if jj == l
                 if MatrixNo == 1
                     b1 = b1snl(p, n, l, kz, λ; EPS0)
-                    b2 = b2snl(p, n, l, kz, λ; EPS0)
+                    b2_kz = b2snl(p, n, l, kz, λ; r = 1, EPS0)
                     b3 = b3snl(p, n, l, kz, λ; EPS0)
 
-                    M[snlj, end - ExNo] += bx11snl(wp, n, b1)
-                    M[snlj, end - EyNo] += bx21snl(wp, n, b3)
-                    M[snlj, end - EzNo] += bx31snl(wp, wc, n, tanθ, csn, b1, b2)
+                    M[snlj, end - ExNo] += bx11snl(wp2, n, b1)
+                    M[snlj, end - EyNo] += bx21snl(wp2, n, b3)
+                    M[snlj, end - EzNo] += bx31snl(wp2, wc, n, kx, ξ, b1, b2_kz)
 
                     if l <= κz
-                        b1_lp1 = b1snl(p, n, l + 1, kz, λ; EPS0)
-                        M[snlj, end - EzNo] += bx33snl(wp, wc, n, tanθ, b1_lp1)
+                        b1_kz = b1snl(p, n, l + 1, kz, λ; r = 1, EPS0)
+                        M[snlj, end - EzNo] += bx33snl(wp2, wc, n, kx, b1_kz)
                     end
                 else
                     b3 = b3snl(p, n, l, kz, λ; EPS0)
-                    b4 = b4snl(p, n, l, kz, λ; EPS0)
+                    b4_kz = b4snl(p, n, l, kz, λ; r = 1, EPS0)
                     b5 = b5snl(p, n, l, kz, λ; EPS0)
 
-                    M[snlj, end - ExNo] += -bx21snl(wp, n, b3)
-                    M[snlj, end - EyNo] += by21snl(wp, b5)
-                    M[snlj, end - EzNo] += by31snl(wp, wc, n, tanθ, csn, b3, b4)
+                    M[snlj, end - ExNo] += -bx21snl(wp2, n, b3)
+                    M[snlj, end - EyNo] += by21snl(wp2, b5)
+                    M[snlj, end - EzNo] += by31snl(wp2, wc, kx, ξ, b3, b4_kz)
 
                     if l <= κz
-                        b3_lp1 = b3snl(p, n, l + 1, kz, λ; EPS0)
-                        M[snlj, end - EzNo] += by33snl(wp, wc, n, tanθ, b3_lp1)
+                        b3_kz = b3snl(p, n, l + 1, kz, λ; r = 1, EPS0)
+                        M[snlj, end - EzNo] += by33snl(wp2, wc, kx, b3_kz)
                     end
                 end
             elseif jj == l + 1
@@ -269,16 +244,16 @@ function _pbk_add_species_Mxy!(
                     b2 = b2snl(p, n, l, kz, λ; EPS0)
                     b4 = b4snl(p, n, l, kz, λ; EPS0)
 
-                    M[snlj, end - ExNo] += bx12snl(wp, n, b2)
-                    M[snlj, end - EyNo] += bx22snl(wp, n, b4)
-                    M[snlj, end - EzNo] += bx32snl(wp, wc, n, tanθ, csn, b2)
+                    M[snlj, end - ExNo] += bx12snl(wp2, n, b2)
+                    M[snlj, end - EyNo] += bx22snl(wp2, n, b4)
+                    M[snlj, end - EzNo] += bx32snl(wp2, wc, n, kx, ξ, b2)
                 else
                     b4 = b4snl(p, n, l, kz, λ; EPS0)
                     b6 = b6snl(p, n, l, kz, λ; EPS0)
 
-                    M[snlj, end - ExNo] += -bx22snl(wp, n, b4)
-                    M[snlj, end - EyNo] += by22snl(wp, b6)
-                    M[snlj, end - EzNo] += by32snl(wp, wc, n, tanθ, csn, b4)
+                    M[snlj, end - ExNo] += -bx22snl(wp2, n, b4)
+                    M[snlj, end - EyNo] += by22snl(wp2, b6)
+                    M[snlj, end - EzNo] += by32snl(wp2, wc, kx, ξ, b4)
                 end
             end
 
@@ -306,11 +281,11 @@ function _pbk_add_species_Mz!(
     firstIndex = _pbk_block_first_index(len_sub, MatrixNo)
     λ = kx^2 * (p.rhoc^2) / 2
     κz = p.κz
-    wp = p.wp
+    wp2 = p.wp2
     wc = p.wc
-    tanθ = kx / kz
+    ξ = _ξ(p)
     for (idx_n, n) in enumerate(-N:N)
-        csn = _csn(p, n, kz)
+        csn = n * wc + kz * ξ
         for l in 1:lmax(κz), jj in 1:(l + 1)
             snlj = _pbk_snl_index(params, s, idx_n, l, jj, N)
 
@@ -321,35 +296,35 @@ function _pbk_add_species_Mz!(
 
             if jj == l
                 b1 = b1snl(p, n, l, kz, λ; EPS0)
-                b2 = b2snl(p, n, l, kz, λ; EPS0)
+                b2_kz = b2snl(p, n, l, kz, λ; r = 1, EPS0)
                 b3 = b3snl(p, n, l, kz, λ; EPS0)
-                b4 = b4snl(p, n, l, kz, λ; EPS0)
+                b4_kz = b4snl(p, n, l, kz, λ; r = 1, EPS0)
 
-                M[snlj, end - ExNo] += bx31snl(wp, wc, n, tanθ, csn, b1, b2)
-                M[snlj, end - EyNo] += -by31snl(wp, wc, n, tanθ, csn, b3, b4)
-                M[snlj, end - EzNo] += bz31snl(wp, wc, n, tanθ, csn, b1, b2)
+                M[snlj, end - ExNo] += bx31snl(wp2, wc, n, kx, ξ, b1, b2_kz)
+                M[snlj, end - EyNo] += -by31snl(wp2, wc, kx, ξ, b3, b4_kz)
+                M[snlj, end - EzNo] += bz31snl(wp2, wc, kx, ξ, b1, b2_kz)
 
                 if l <= κz
-                    b1_lp1 = b1snl(p, n, l + 1, kz, λ; EPS0)
-                    b2_lp1 = b2snl(p, n, l + 1, kz, λ; EPS0)
-                    b3_lp1 = b3snl(p, n, l + 1, kz, λ; EPS0)
+                    b1_kz = b1snl(p, n, l + 1, kz, λ; r = 1, EPS0)
+                    b2_kz2 = b2snl(p, n, l + 1, kz, λ; r = 2, EPS0)
+                    b3_kz = b3snl(p, n, l + 1, kz, λ; r = 1, EPS0)
 
-                    M[snlj, end - ExNo] += bx33snl(wp, wc, n, tanθ, b1_lp1)
-                    M[snlj, end - EyNo] += -by33snl(wp, wc, n, tanθ, b3_lp1)
-                    M[snlj, end - EzNo] += bz33snl(wp, wc, n, tanθ, csn, b1_lp1, b2_lp1)
+                    M[snlj, end - ExNo] += bx33snl(wp2, wc, n, kx, b1_kz)
+                    M[snlj, end - EyNo] += -by33snl(wp2, wc, kx, b3_kz)
+                    M[snlj, end - EzNo] += bz33snl(wp2, wc, kx, ξ, b1_kz, b2_kz2)
                 end
 
                 if l <= κz - 1
-                    b1_lp2 = b1snl(p, n, l + 2, kz, λ; EPS0)
-                    M[snlj, end - EzNo] += bz34snl(wp, wc, tanθ, b1_lp2)
+                    b1_kz2 = b1snl(p, n, l + 2, kz, λ; r = 2, EPS0)
+                    M[snlj, end - EzNo] += bz34snl(wp2, wc, kx, b1_kz2)
                 end
             elseif jj == l + 1
                 b2 = b2snl(p, n, l, kz, λ; EPS0)
                 b4 = b4snl(p, n, l, kz, λ; EPS0)
 
-                M[snlj, end - ExNo] += bx32snl(wp, wc, n, tanθ, csn, b2)
-                M[snlj, end - EyNo] += -by32snl(wp, wc, n, tanθ, csn, b4)
-                M[snlj, end - EzNo] += bz32snl(wp, wc, n, tanθ, csn, b2)
+                M[snlj, end - ExNo] += bx32snl(wp2, wc, n, kx, ξ, b2)
+                M[snlj, end - EyNo] += -by32snl(wp2, wc, kx, ξ, b4)
+                M[snlj, end - EzNo] += bz32snl(wp2, wc, kx, ξ, b2)
             end
         end
     end
@@ -370,12 +345,11 @@ matrix_size(alg::BOPBK, species) = 3 * _pbk_len_sub(species, alg.N) + 6
 
 function dispersion_matrix!(M, pb::DispersionProblem, alg::BOPBK; EPS0 = 1.0e-2, c2 = real(zero(eltype(M)) + c0)^2)
     T = _realtype(eltype(M))
-    species = pb.species
+    params = pb.species
     kx, kz = T(pb.kx), T(pb.kz)
     N = alg.N
-    len_sub = _pbk_len_sub(species, N)
-    params = prepare(alg, species, pb.B0, T)
-    bx10_by20 = 1im * T(ε0) * sum(sp.wp^2 for sp in params)
+    len_sub = _pbk_len_sub(params, N)
+    bx10_by20 = 1im * T(ε0) * sum(sp.wp2 for sp in params)
 
     Mx = @view M[1:len_sub, :]
     My = @view M[(len_sub + 1):(2 * len_sub), :]
@@ -409,6 +383,5 @@ function dispersion_matrix!(M, pb::DispersionProblem, alg::BOPBK; EPS0 = 1.0e-2,
 
     return M
 end
-
 
 end

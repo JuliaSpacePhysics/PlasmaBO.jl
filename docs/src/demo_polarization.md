@@ -22,7 +22,7 @@ where:
 ## Wave Polarization Analysis
 
 In the code block below, we:
-1. Setup the physical parameters ($B_0 = 10^{-4}$ T, $n = 10^{11}$ m$^{-3}$, $T = 0$ eV).
+1. Setup the physical parameters ($B_0 = 10^{-4}$ T, $n = 10^{11}$ m$^{-3}$).
 2. Construct the dispersion matrix using the fluid solver (`BOFluid`).
 3. Compute the eigenvalues and eigenvectors using `eigen!`.
 4. Identify and physically describe each of the 14 modes (e.g., Whistler waves, Ion Cyclotron waves, Langmuir waves, and uncoupled gyro-resonances).
@@ -30,7 +30,7 @@ In the code block below, we:
 
 ```@example polarization
 using PlasmaBO
-using PlasmaBO: c0, ε0, qe, me, mp
+using PlasmaPopulations: C_SI as c0, EPS0_SI as ε0, E_SI as qe, ME_SI as me, MP_SI as mp
 using LinearAlgebra
 using Printf
 using Markdown
@@ -38,7 +38,6 @@ using Markdown
 # 1. Physics Setup
 B0 = 1.0e-4          # Background magnetic field along +z [Tesla]
 n = 1.0e11           # Plasma density [m^-3]
-T = 0.0              # Temperature [eV] - cold limit for fluid
 
 # Parallel propagation (along +z direction)
 k = 1.0
@@ -50,11 +49,10 @@ electric_field(v) = (v[end-5], v[end-4], v[end-3])
 magnetic_field(v) = (v[end-2], v[end-1], v[end])
 
 # Define species
-e_vdf = Maxwellian(:e, n, T)
-species = [e_vdf, FluidSpecies(:p, n, T)]
+plasma = Plasma(Population(Electron(), Cold(); n), Population(Proton(), Cold(); n); B0)
 
 # Construct the dispersion matrix using BOFluid solver
-M = dispersion_matrix(species, B0, kx, kz, BOFluid)
+M = dispersion_matrix(plasma, Wavevector(kx, kz), BOFluid())
 
 # Solve the eigenvalue problem (eigen!)
 decomp = eigen!(M)
@@ -90,7 +88,7 @@ for i in sorted_indices
     Ex, Ey, Ez = electric_field(v)
     Bx, By, Bz = magnetic_field(v)
     E_norm = abs(Ex)^2 + abs(Ey)^2 + abs(Ez)^2
-    hand = handedness(v, ω, kx, kz; threshold = 1e-4)
+    hand = handedness(v, ω, Wavevector(kx, kz); threshold = 1e-4)
     
     # Residual and status defaults
     residual = NaN
@@ -157,7 +155,7 @@ for i in sorted_indices
     
     # Format residual string
     res_str = isnan(residual) ? "N/A" : @sprintf("%.2e", residual)
-    pol_ratio = polarization_ratio(v, kx, kz)
+    pol_ratio = polarization_ratio(v, Wavevector(kx, kz))
     # Use absolute value for display; handle non-finite values gracefully
     display_ratio = isfinite(pol_ratio) ? @sprintf("%.2e", abs(pol_ratio)) : "NaN"
     

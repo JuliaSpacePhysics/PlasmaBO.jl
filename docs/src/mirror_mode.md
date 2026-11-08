@@ -16,27 +16,29 @@ The benchmark is based on Gary (1993), p131, Fig.7.4, with
 
 ```@example mirror
 using PlasmaBO
+using PlasmaPopulations: gyrofrequency, thermal_speed
 
 B0 = 100e-9
-θ = deg2rad(71)
+theta = deg2rad(71)
 
 n = 1e6
 Tpara = 24840.0
 Tperp = 49680.0
 
-electron = Maxwellian(:e, n, Tpara)
-proton   = Maxwellian(n, Tpara, Tperp)
+p, e = Proton(), Electron()
+plasma = Plasma(
+    Population(p, BiMaxwellian; T_perp = Tperp, T_para = Tpara, n),
+    Population(e, BiMaxwellian; T = Tpara, n);
+    B0,
+)
+ωₙ = gyrofrequency(p, B0)
+ρᵢ = thermal_speed(p, Tperp) / sqrt(2) / ωₙ
+k = (0.005:0.04:0.7) ./ ρᵢ
 
-species = (proton, electron)
-params = HHSolverParam.(species, B0)
-ρᵢ = params[1].ρc
-ωₙ = params[1].wc
-ks = (0.005:0.04:0.7) ./ ρᵢ
-
-sol = solve(species, B0, ks, θ)
+sol = solve(plasma, AngleSweep(; k, theta), BOHH())
 
 # Extract the most unstable mode at each k (by growth rate)
-ωmax = vec(argmax.(imag, sol.ωs))
+ωmax = vec(argmax.(imag, sol.omega))
 ```
 
 ```@example mirror
@@ -45,8 +47,8 @@ using CairoMakie
 let fig = Figure()
     ax1 = Axis(fig[1,1]; xlabel = "k*λD", ylabel = "ωᵣ / ωₙ")
     ax2 = Axis(fig[1,2]; xlabel = "k*λD", ylabel = "γ / ωₙ")
-    scatterlines!(ax1, sol.ks .* ρᵢ, real.(ωmax)./ ωₙ)
-    scatterlines!(ax2, sol.ks .* ρᵢ, imag.(ωmax)./ ωₙ)
+    scatterlines!(ax1, sol.k .* ρᵢ, real.(ωmax)./ ωₙ)
+    scatterlines!(ax2, sol.k .* ρᵢ, imag.(ωmax)./ ωₙ)
     fig
 end
 ```

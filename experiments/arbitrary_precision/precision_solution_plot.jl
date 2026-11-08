@@ -5,6 +5,7 @@ using DoubleFloats
 using GenericLinearAlgebra
 using LinearAlgebra
 using PlasmaBO
+using PlasmaPopulations: gyrofrequency, kappa_widths
 using Printf
 using SpecialFunctions
 
@@ -17,23 +18,23 @@ const NZ = 128
 const N = 2
 const J = 4
 
-proton = BiKappa2(DENSITY, 5.5, 5.5, 1986.734, 993.367)
-electron = Maxwellian(:e, DENSITY, 496.683)
-data = gen_fv2d(proton)
-in_plateau = abs.(sqrt(2) .* data.vz ./ data.vtz) .<= CUTOFF
+p, e = Proton(), Electron()
+proton = ProductBiKappa(p; T_perp = 993.367, T_para = 1986.734, kappa_perp = 5.5, kappa_para = 5.5)
+electron = BiMaxwellian(e; T = 496.683)
+w_perp, w_para = kappa_widths(proton)
+data = PlasmaBO.gen_fv2d(proton, (; w_perp, w_para, vd_para = 0.0, vr_perp = 0.0))
+in_plateau = abs.(sqrt(2) .* data.v_para ./ data.w_para) .<= CUTOFF
 fv = ifelse.(in_plateau, data.fv, zero(eltype(data.fv)))
-alm = hermite_expansion(
-    fv, data.vz, data.vx, data.vtz, data.vtx; Nz = NZ, Nx = 0,
+alm = PlasmaBO.hermite_expansion(
+    fv, data.v_para, data.v_perp, data.w_para, data.w_perp; N_para = NZ, N_perp = 0,
 ).alm
-proton_param = HHSolverParam(proton, B0; alm)
-species = (proton_param, electron)
+plateau = HermiteVDF(; w_perp = data.w_perp, w_para = data.w_para, alm)
 kx, kz = K .* sincos(THETA)
-wci = abs(proton_param.wc)
+wci = abs(gyrofrequency(p, B0))
 
 function report_matrix(::Type{T}) where {T}
-    return dispersion_matrix(
-        species, T(B0), T(kx), T(kz), BOHH; N, J,
-    )
+    plasma = Plasma(Population(p, plateau; n = DENSITY), Population(e, electron; n = DENSITY); B0 = T(B0))
+    return dispersion_matrix(plasma, Wavevector(T(kx), T(kz)), BOHH(; N, J))
 end
 
 values64 = eigvals(report_matrix(Float64))
@@ -129,7 +130,7 @@ axislegend(ax_errors; position = :rb, labelsize = 12)
 
 Label(
     figure[0, 1:3],
-    "Sharp-edge firehose-like distribution: solution comparison (Nz = $NZ, N = $N, J = $J)",
+    "Sharp-edge firehose-like distribution: solution comparison (N_para = $NZ, N = $N, J = $J)",
     fontsize = 20,
     font = :bold,
 )
@@ -137,8 +138,8 @@ Label(
 output = pkgdir(PlasmaBO, "experiments", "arbitrary_precision", "arbitrary_precision_solution_comparison.svg")
 save(output, figure)
 
-vz = vec(data.vz[:, 1] ./ data.vtz)
-vx = vec(data.vx[1, :] ./ data.vtx)
+vz = vec(data.v_para[:, 1] ./ data.w_para)
+vx = vec(data.v_perp[1, :] ./ data.w_perp)
 normalized_fv = fv ./ maximum(fv)
 profile = vec(sum(fv; dims = 2))
 profile ./= maximum(profile)

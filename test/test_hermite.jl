@@ -15,10 +15,10 @@
         @test I ≈ (l == m ? 1.0 : 0.0) atol = 1.0e-10
     end
 
-    # End-to-end: BiKappa2 — pin a handful of alm entries.
-    bk = BiKappa2(:e, 1.0e6, 1.0, 200.0, 2555.0; sigma = 0.0)
-    g = gen_fv2d(bk)
-    r = hermite_expansion(g.fv, g.vz[:, 1], g.vx[1, :], g.vtz, g.vtx; Nz = 8, Nx = 8)
+    # End-to-end: product bi-kappa — pin a handful of alm entries.
+    bk = ProductBiKappa(Electron(); T = 2555.0, kappa_perp = 200.0, kappa_para = 1.0)
+    w_perp, w_para = kappa_widths(bk)
+    r = HermiteVDF(bk; w_perp, w_para, N_para = 8, N_perp = 8)
     @test size(r.alm) == (9, 9)
     @test all(isfinite, r.alm)
     @test r.alm[1, 1] ≈ 1.1212568413581592 rtol = 1.0e-12
@@ -30,7 +30,6 @@ end
 
 
 @testset "Hermite coefficient thresholding (atol)" begin
-    using PlasmaBO: q, me
     # High-order expansion of a gridded Maxwellian: raw grid-quadrature noise
     # (|alm| ~ 1e-21 at l > 30) is amplified to ~1e-3 eigenvalue error;
     # atol thresholding restores the J-pole accuracy floor.
@@ -44,14 +43,17 @@ end
     vz = collect(range(-8α, 8α, 481))
     vx = collect(range(0.0, 8α, 241))
     fv = [exp(-(z^2 + x^2) / α^2) / (π^1.5 * α^3) for z in vz, x in vx]
-    e_th = hermite_expansion(fv, vz, vx, α, α; Nz = 40, Nx = 0, atol = 1.0e-10).alm
+    e_th = hermite_expansion(fv, vz, vx, α, α; N_para = 40, N_perp = 0, atol = 1.0e-10).alm
     @test count(!iszero, e_th) == 1   # pure Maxwellian → only a₀₀ survives
-    raw = hermite_expansion(fv, vz, vx, α, α; Nz = 40, Nx = 0).alm
+    raw = hermite_expansion(fv, vz, vx, α, α; N_para = 40, N_perp = 0).alm
     @test count(!iszero, raw) > 1     # raw carries quadrature noise
-    eM = HHSolverParam(-q, me, n_e, B0, α, α, 0.0, 0.0, e_th)
-    prot = Maxwellian(:p, n_e, T_eV)
+    plasma = Plasma(
+        Population(Electron(), HermiteVDF(; w_perp = α, w_para = α, alm = e_th); n = n_e),
+        Population(Proton(), BiMaxwellian; T = T_eV, n = n_e);
+        B0,
+    )
     kz = 0.34 * wpe / c0_
-    ωs = solve((eM, prot), B0, 0.0, kz; N = 2, J = 24)
+    ωs = solve(plasma, Wavevector(0.0, kz), BOHH(; N = 2, J = 24))
     ωref = (0.09041982747948 - 0.00223551957235im) * wce   # exact Z-solver Maxwellian whistler
     @test ωs[argmin(abs.(ωs .- ωref))] ≈ ωref rtol = 1.0e-5
 end

@@ -9,19 +9,19 @@ We consider a typical electron–proton plasma and scan:
 
 ```@example surface
 using PlasmaBO
-using PlasmaBO: c0
+using PlasmaPopulations: gyrofrequency, plasma_frequency
+using PlasmaPopulations: C_SI as c0
 
 B0 = 5e-9 # [Tesla]
 
 n = 5.0e6
 T = 12.94
 
-ion = Maxwellian(:p, n, T)
-electron = Maxwellian(:e, n, T)
-species = (ion, electron)
+p, e = Proton(), Electron()
+plasma = Plasma(Population(p, BiMaxwellian; T, n), Population(e, BiMaxwellian; T, n); B0)
 
-wn = abs(B0 * ion.q / ion.m)
-wpi = plasma_frequency(ion.q, n, ion.m)
+wn = abs(gyrofrequency(p, B0))
+wpi = plasma_frequency(p, n)
 kn = wpi / c0
 wci = wn
 
@@ -37,7 +37,7 @@ using CairoMakie
 
 θ = deg2rad(45);
 k_ranges = (0.01:1:100) .* kn;
-results = solve(species, B0, k_ranges, θ; N)
+results = solve(plasma, AngleSweep(; k = k_ranges, theta = θ), BOHH(; N))
 ```
 
 ```@example surface
@@ -45,7 +45,6 @@ plot(results, kn, wn)
 ```
 
 ```@example surface
-using PlasmaBO: plot_branches
 
 # k, ω pairs for initial branch points (see `BranchPoint` for more control over tracking)
 initial_point = (50 * kn, -600 * wn *im)
@@ -60,7 +59,7 @@ f
 ```@repl surface
 ks = (0.1:10:100.0) .* kn;
 θs = deg2rad.(10.0:10.0:90.0);
-res2d = solve(species, B0, ks, θs; N)
+res2d = solve(plasma, AngleSweep(; k = ks, theta = θs), BOHH(; N))
 ```
 
 ```@example surface

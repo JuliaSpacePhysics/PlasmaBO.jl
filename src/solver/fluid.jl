@@ -1,71 +1,51 @@
 """
-    BOFluid()
+    BOFluid(; gamma_perp = 1.0, gamma_para = 1.0)
 
-Dispersion solver using the multi-fluid electromagnetic matrix formulation.
+Multi-fluid electromagnetic solver.
+
+One polytropic index for every population, or a collection with one entry per population.
 """
-@kwdef struct BOFluid <: AbstractDispersionAlgorithm end
-
-"""
-    FluidSpecies{T}
-
-Fluid species parameters for the multi-fluid dispersion relation solver.
-
-# Fields
-- `q`: Charge
-- `m`: Mass
-- `n`: Number density (m⁻³)
-- `Tz`: Parallel temperature (eV)
-- `Tp`: Perpendicular temperature (eV)
-- `vdz`: Parallel drift velocity (in units of c)
-- `gamma_z`: Parallel polytrope exponent (default: 1.0 for isothermal)
-- `gamma_p`: Perpendicular polytrope exponent (default: 1.0 for isothermal)
-"""
-struct FluidSpecies{T <: Number}
-    n::T           # Number density (m^-3)
-    Tz::T          # Parallel temperature (eV)
-    Tp::T          # Perpendicular temperature (eV)
-    vdz::T         # Parallel drift velocity (c)
-    gamma_z::T     # Parallel polytrope exponent
-    gamma_p::T     # Perpendicular polytrope exponent
-    q::T           # Charge
-    m::T           # Mass
+@kwdef struct BOFluid{P, Z} <: AbstractDispersionAlgorithm
+    gamma_perp::P = 1.0
+    gamma_para::Z = 1.0
 end
 
-"""
-    FluidSpecies(n, Tz, Tp = Tz; vdz=0.0, gamma_z=1.0, gamma_p=1.0, particle=:p, ...)
-"""
-function FluidSpecies(n, Tz = 0.0, Tp = Tz; vdz = 0.0, gamma_z = 1.0, gamma_p = 1.0, Z = nothing, A = nothing, q = nothing, m = nothing, particle = :p)
-    q, m = _charge_mass(particle, Z, A, q, m)
-    return FluidSpecies(promote(n, Tz, Tp, vdz, gamma_z, gamma_p, q, m)...)
+_per_species(x::Number, i) = x
+_per_species(x, i) = x[i]
+
+function _fluid_param(s::Population, gamma_p, gamma_z, ::Type{T}) where {T}
+    vth_perp, vth_para = T.(vth_perp_para(s.vdf))
+    q, m, n = T(s.particle.q), T(s.particle.m), T(s.n)
+    return (;
+        q, m, n, vdz = T(mean(s.vdf)[3]), Pz = n * m * vth_para^2 / 2, Pp = n * m * vth_perp^2 / 2,
+        gamma_z = T(gamma_z), gamma_p = T(gamma_p),
+    )
 end
 
-FluidSpecies(p::ParticleLike, args...; kw...) = FluidSpecies(args...; kw...)
-
-plasma_frequency(s::FluidSpecies) = plasma_frequency(s.q, s.n, s.m)
+function prepare(alg::BOFluid, species, B0, ::Type{T}) where {T}
+    S = length(species)
+    for γ in (alg.gamma_perp, alg.gamma_para)
+        γ isa Number || length(γ) == S ||
+            throw(ArgumentError("BOFluid polytropic index $γ: need a scalar or one entry per population ($S)"))
+    end
+    return ntuple(i -> _fluid_param(species[i], _per_species(alg.gamma_perp, i), _per_species(alg.gamma_para, i), T), S)
+end
 
 # Matrix dimensions: 4 variables per species (n, vx, vy, vz) + 6 fields (Ex, Ey, Ez, Bx, By, Bz)
 matrix_size(::BOFluid, species) = 4 * length(species) + 6
-
-_gamma_z(s::FluidSpecies) = s.gamma_z
-_gamma_p(s::FluidSpecies) = s.gamma_p
-_gamma_z(s) = 1.0
-_gamma_p(s) = 1.0
-# Pressures: P = n * k_B * T, with T in Kelvin (Tz in eV → T = Tz * q / k_B)
-_Pz(s) = s.n * s.Tz * qe
-_Pp(s) = s.n * s.Tp * qe
 
 function _assemble_fluid_species!(M, s, ind, SJ, kx, kz, B0)
     q = s.q
     m = s.m
     n = s.n
-    vdz = s.vdz * c0
-    Pz = _Pz(s)
-    Pp = _Pp(s)
+    vdz = s.vdz
+    Pz = s.Pz
+    Pp = s.Pp
 
     ρ = m * n # Mass density (kg/m³)
     wc = q * B0 / m # Cyclotron frequency
-    csz = sqrt(_gamma_z(s) * Pz / ρ)
-    csp = sqrt(_gamma_p(s) * Pp / ρ)
+    csz = sqrt(s.gamma_z * Pz / ρ)
+    csp = sqrt(s.gamma_p * Pp / ρ)
 
     # k dot v_drift
     kvd = kz * vdz
@@ -107,8 +87,9 @@ function _assemble_fluid_species!(M, s, ind, SJ, kx, kz, B0)
     return nothing
 end
 
-function dispersion_matrix!(M, pb::DispersionProblem, ::BOFluid; c2 = c0^2)
-    species, B0, kx, kz = pb.species, pb.B0, pb.kx, pb.kz
+function dispersion_matrix!(M, pb::DispersionProblem, alg::BOFluid; c2 = c0^2)
+    B0, kx, kz = pb.B0, pb.kx, pb.kz
+    species = pb.species
     S = length(species)
     SJ = 4 * S
     for i in 1:S

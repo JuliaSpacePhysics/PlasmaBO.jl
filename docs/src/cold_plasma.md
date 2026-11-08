@@ -1,6 +1,6 @@
 # Case: Cold plasma (kinetic vs fluid)
 
-This page demonstrates a typical cold plasma configuration (electron–proton plasma) and compares the eigenmodes computed by the kinetic solver (`solve`) and the multi-fluid solver (`solve` with `BOFluid`).
+This page compares the eigenmodes computed by the kinetic solver (`solve`) and the multi-fluid solver (`solve` with `BOFluid`) for an electron–proton plasma.
 
 The input parameters correspond to the following species table:
 
@@ -9,36 +9,35 @@ The input parameters correspond to the following species table:
 | ions (p) | 8.7e6 | 2.857e-3 |
 | electrons (e) | 8.7e6 | 2.857e-3 |
 
-We scan `k` at fixed propagation angle `θ = 60°`.
-
 ```@example coldplasma
 using PlasmaBO
-using PlasmaBO: q, me, mp, c0
+using PlasmaPopulations: gyrofrequency, plasma_frequency
+using PlasmaPopulations: C_SI as c0
 
 B0 = 100e-9 # [Tesla]
-θ = deg2rad(60)
 
 n = 8.7e6
 T = 2.857e-3
 
-ion = Maxwellian(:p, n, T)
-electron = Maxwellian(:e, n, T)
-species = (ion, electron)
-# For more control over the fluid model, we can use `FluidSpecies`
-# electron_f = FluidSpecies(:e, n, T; gamma_z = 1.0, gamma_p = 1.0)
+p, e = Proton(), Electron()
+plasma = Plasma(Population(p, BiMaxwellian; T, n), Population(e, BiMaxwellian; T, n); B0)
 
-wci = abs(B0 * q / mp)
-wpi = plasma_frequency(q, n, mp)
+wci = gyrofrequency(p, B0)
+wpi = plasma_frequency(p, n)
 kn = wpi / c0
 ```
 
 ## Dispersion Curve Scan
 
+We scan `k` at fixed propagation angle `theta = 60°`.
+
 ```@repl coldplasma
+theta = deg2rad(60)
 kn_scan = 0.01:2.0:100.0;
-ks = kn_scan .* kn;
-kinetic = solve(species, B0, ks, θ);
-fluid_ωs = solve(species, B0, ks, θ, BOFluid);
+k = kn_scan .* kn;
+kinetic = solve(plasma, AngleSweep(; k, theta), BOHH());
+fluid_ωs = solve(plasma, AngleSweep(; k, theta), BOFluid());
+# The fluid closure is set on the solver, e.g. `BOFluid(; gamma_perp = 2.0, gamma_para = 3.0)`
 ```
 
 ```@example coldplasma
@@ -49,7 +48,7 @@ let
     ax1 = Axis(fig[1, 1], xlabel = "k [k_n]", ylabel = "Re(ω)/ω_ci")
     ax2 = Axis(fig[1, 2], xlabel = "k [k_n]", ylabel = "Im(ω)/ω_ci")
 
-    for (k_norm, ωs_k, ωs_f) in zip(kn_scan, kinetic.ωs, fluid_ωs.ωs)
+    for (k_norm, ωs_k, ωs_f) in zip(kn_scan, kinetic.omega, fluid_ωs.omega)
         xk = fill(k_norm, length(ωs_k))
         xf = fill(k_norm, length(ωs_f))
 

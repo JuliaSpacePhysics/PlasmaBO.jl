@@ -96,7 +96,7 @@ k_branch, ω_branch = track(solution, initial)
 
 See also: [`BranchPoint`](@ref)
 """
-track(sol, point::BranchPoint) = _track(sol.ks, sol, point)
+track(sol, point::BranchPoint) = _track(sol.k, sol, point)
 
 
 function _track(ks, result, k, ω_seed)
@@ -143,16 +143,16 @@ function track_from_index!(ω_branch, ks, results, start_idx, indices)
 end
 
 function track(sol, point::SurfaceBranchPoint)
-    ks, θs = sol.ks, sol.θs
+    ks, θs = sol.k, sol.theta
     nk, nθ = length(ks), length(θs)
 
     # Find starting indices
     idx_k0 = argmin(abs.(ks .- point.k))
     idx_θ0 = argmin(abs.(θs .- point.θ))
 
-    ω_surface = Matrix{ComplexF64}(undef, nk, nθ)
+    ω_surface = Matrix{eltype(eltype(sol.omega))}(undef, nk, nθ)
 
-    ω_seed = point.locator(sol.ωs[idx_k0, idx_θ0], point.ω)
+    ω_seed = point.locator(sol.omega[idx_k0, idx_θ0], point.ω)
     # Fill initial θ slice
     fill_θ_slice!(ω_surface, sol, ks, idx_θ0, point.k, ω_seed)
 
@@ -164,7 +164,7 @@ function track(sol, point::SurfaceBranchPoint)
 end
 
 function fill_θ_slice!(ω_surface, result, ks, iθ, k, ω_seed)
-    ωsθ = result.ωs[:, iθ]
+    ωsθ = result.omega[:, iθ]
     _, ωb = _track(ks, ωsθ, k, ω_seed)
     return ω_surface[:, iθ] .= ωb
 end
@@ -184,7 +184,7 @@ function track_θ_direction!(ω_surface, result, ks, θs, idx_k0, idx_θ0, indic
         sort!(prev)
         ω_at_k0 = view(ω_surface, idx_k0, :)
         ω_pred = interpolate_complex(ω_at_k0[prev], θs[prev], θs[iθ])
-        ω_seed = argmin(x -> abs(x - ω_pred), result.ωs[idx_k0, iθ])
+        ω_seed = argmin(x -> abs(x - ω_pred), result.omega[idx_k0, iθ])
         fill_θ_slice!(ω_surface, result, ks, iθ, point.k, ω_seed)
         push!(tracked, iθ)
     end

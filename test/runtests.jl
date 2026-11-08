@@ -1,4 +1,7 @@
 using PlasmaBO
+using PlasmaBO: hermite_expansion
+using PlasmaPopulations: gyrofrequency, thermal_speed, debye_length, vth_perp_para, kappa_widths, pdf
+using PlasmaPopulations: E_SI as q, ME_SI as me, MP_SI as mp, C_SI as c0, EPS0_SI as ε0
 using Test
 
 @testset "Code quality (Aqua.jl)" begin
@@ -10,18 +13,20 @@ include("test_track.jl")
 include("test_hermite.jl")
 
 @testset "Umeda 2012 ring beam configuration" begin
-    using PlasmaBO: q, me
 
     B0 = 96.24e-9  # [Tesla]
     T = 51 # [eV]
-    ring_beam = Maxwellian(:e, 1.0e5, T; vdz = 0.1, vdr = 0.05)
-    background = Maxwellian(:e, 9.0e5, T)
-
-    species = [ring_beam, background]
+    e = Electron()
+    vth = thermal_speed(e, T)
+    plasma = Plasma(
+        Population(e, GaussianRing(; vr_perp = 0.05 * c0, w_perp = vth, vth_para = vth, vd_para = 0.1 * c0); n = 1.0e5),
+        Population(e, BiMaxwellian(; vth); n = 9.0e5);
+        B0,
+    )
 
     # Compute normalization
     wce = abs(B0 * q / me)
-    lambdaD = Debye_length(species)
+    lambdaD = debye_length(e, 1.0e6, T)
     kn = 1 / lambdaD
 
     # Wave vector: k*λD = 0.03, θ = 40°
@@ -30,12 +35,12 @@ include("test_hermite.jl")
     kx = k * sin(θ)
     kz = k * cos(θ)
 
-    ωs = solve(species, B0, kx, kz; N = 6, J = 12)
+    ωs = solve(plasma, Wavevector(kx, kz), BOHH(; N = 6, J = 12))
     @test filter(ω -> isfinite(ω) && imag(ω) > 0.001 * wce, ωs) ./ wce ≈ [0.6229290799953453 + 0.15687749193741884im]
 
     @testset "Dispersion Curve Scan" begin
         k_ranges = (0.01:0.05:0.3) .* kn
-        sol = solve(species, B0, k_ranges, θ; N = 6)
+        sol = solve(plasma, AngleSweep(; k = k_ranges, theta = θ), BOHH(; N = 6))
 
         initial_points = [
             (0.1 * kn, 0.3im * wce),
@@ -50,7 +55,6 @@ include("test_hermite.jl")
 end
 
 @testset "Fluid vs Kinetic: cold plasma limit" begin
-    using PlasmaBO: qe, me, mp
 
     # Cold plasma parameters
     B0 = 1.0e-8  # [Tesla]
@@ -62,14 +66,9 @@ end
     θ = deg2rad(45)
     kx, kz = k .* sincos(θ)
 
-    # Kinetic solver with cold Maxwellian
-    e_vdf = Maxwellian(:e, n, T)
-    kinetic_species = [e_vdf, Maxwellian(:p, n, T)]
-    ωs_kinetic = solve(kinetic_species, B0, kx, kz; N = 2, J = 8)
-
-    # Fluid solver
-    fluid_species = [e_vdf, FluidSpecies(:p, n, T)]
-    ωs_fluid = solve(fluid_species, B0, kx, kz, BOFluid)
+    plasma = Plasma(Population(Electron(), BiMaxwellian; T, n), Population(Proton(), BiMaxwellian; T, n); B0)
+    ωs_kinetic = solve(plasma, Wavevector(kx, kz), BOHH(; N = 2, J = 8))
+    ωs_fluid = solve(plasma, Wavevector(kx, kz), BOFluid())
 
     # Compare electromagnetic wave modes (highest frequency modes, near ±c*k)
     # These should agree well in cold plasma limit
@@ -84,41 +83,55 @@ end
     @test fluid_em[1:2] ≈ kinetic_em[1:2] rtol = 1.0e-6
 end
 
+@testset "BOFluid: warm drifting species, parallel longitudinal modes" begin
+    B0, n, k = 1.0e-6, 1.0e12, 1.0e-1
+    e, p = Electron(), Proton()
+    plasma = Plasma(
+        Population(e, BiMaxwellian(e; T = 100.0, vd_para = 1.0e6); n),
+        Population(p, BiMaxwellian(p; T = 10.0, vd_para = -1.0e5); n); B0
+    )
+    γ = (3.0, 1.0)
+    ωs = solve(plasma, Wavevector(0.0, k), BOFluid(; gamma_para = γ))
+    # 1 = Σ ωp² / ((ω - k vd)² - γ k² T/m), T = m vth²/2
+    terms(ω) = map(plasma.populations, γ) do s, γs
+        (; q, m) = s.particle
+        s.n * q^2 / (ε0 * m) / ((ω - k * s.vdf.vd_para)^2 - γs * k^2 * vth_perp_para(s.vdf)[2]^2 / 2)
+    end
+    residual(ω) = abs(1 - sum(terms(ω))) / (1 + sum(abs, terms(ω)))
+    @test count(ω -> residual(ω) < 1.0e-8, ωs) == 4
+    @test_throws ArgumentError solve(plasma, Wavevector(0.0, k), BOFluid(; gamma_para = [3.0]))
+end
+
 @testset "Astfalk 2017 firehose instability" begin
     using PlasmaBO
-    using PlasmaBO: q, me, mp
     using MAT: matopen
 
     B0 = 0.1
     θ = deg2rad(45)
     n = 5.0e19
 
-    κz = 5.5
-    κx = 5.5
-    proton = BiKappa2(5.0e19, κz, κx, 1986.734, 993.367)
-    data = gen_fv2d(proton)
-    alm = hermite_expansion(data.fv, data.vz, data.vx, data.vtz, data.vtx).alm
+    p = Proton()
+    proton = ProductBiKappa(p; T_perp = 993.367, T_para = 1986.734, kappa_perp = 5.5, kappa_para = 5.5)
+    w_perp, w_para = kappa_widths(proton)
+    hermite = HermiteVDF(proton; w_perp, w_para)
 
-    me_mp = 1 / 1836 # [proton mass]
-    electron = Maxwellian(:e, n, 496.683)
     fpath = pkgdir(PlasmaBO, "test/firehose_Astfalk17_fvceff1.mat")
-    proton_param = matopen(fpath) do file
+    ref = matopen(fpath) do file
         fvc = read(file, "fvc")
-        HHSolverParam(q, mp, n, B0, fvc["vtz"], fvc["vtp"], 0.0, 0.0, fvc["alm"])
+        HermiteVDF(; w_perp = fvc["vtp"], w_para = fvc["vtz"], alm = fvc["alm"])
     end
-    @test alm ≈ proton_param.aslm rtol = 1.0e-4
+    @test hermite.alm ≈ ref.alm rtol = 1.0e-4
 
     kn = 31.0613
     k = kn / 4
-    wci = proton_param.wc
-    species = (proton_param, electron)
-    ωs = solve(species, B0, k .* sincos(θ)...; N = 2, J = 24)
+    wci = gyrofrequency(p, B0)
+    plasma = Plasma(Population(p, ref; n), Population(Electron(), BiMaxwellian; T = 496.683, n); B0)
+    ωs = solve(plasma, Wavevector(k .* sincos(θ)...), BOHH(; N = 2, J = 24))
     ω_unstable = filter(ω -> isfinite(ω) && imag(ω) > 0.001 * wci, ωs)
     @test imag.(ω_unstable ./ wci) ≈ [0.062373877285804444] rtol = 1.0e-3
 end
 
 @testset "Signed-density mixture (electron-deficit hole)" begin
-    using PlasmaBO: q, me
     # Core Maxwellian minus a drifting-Maxwellian hole at v∥ = −v_cut: the
     # sunward-deficit whistler instability.
     # Reference values from an exact plasma-dispersion-function (Z) solver
@@ -138,19 +151,23 @@ end
     uc = -η * vcut
     Tc_eV = α^2 * me / (2 * q)
     Th_eV = (0.5 * α)^2 * me / (2 * q)
-    core = Maxwellian(:e, n_c, Tc_eV; vdz = uc / c0_)
-    hole = Maxwellian(:e, -n_h, Th_eV; vdz = -vcut / c0_)   # negative density
-    prot = Maxwellian(:p, n_e, Tc_eV)
+    e, p = Electron(), Proton()
+    plasma = Plasma(
+        Population(e, BiMaxwellian; T = Tc_eV, vd_para = uc, n = n_c),
+        Population(e, BiMaxwellian; T = Th_eV, vd_para = -vcut, n = -n_h),   # negative density
+        Population(p, BiMaxwellian; T = Tc_eV, n = n_e);
+        B0,
+    )
     kz = 0.34 * wpe / c0_
-    ωs = solve((core, hole, prot), B0, 0.0, kz; N = 2, J = 24)
+    ωs = solve(plasma, Wavevector(0.0, kz), BOHH(; N = 2, J = 24))
     ωref = (0.0931854 + 0.00799049im) * wce
-    ωbo = ωs[argmin(abs.(ωs .- ωref))]
-    @test ωbo ≈ ωref rtol = 1.0e-5
-    # equivalent via the direct constructor (SI velocities, negative n)
-    hole_p = HHSolverParam(-q, me, -n_h, B0, 0.5α, 0.5α, -vcut, 0.0, ones(1, 1))
-    core_p = HHSolverParam(-q, me, n_c, B0, α, α, uc, 0.0, ones(1, 1))
-    ωs2 = solve((core_p, hole_p, prot), B0, 0.0, kz; N = 2, J = 24)
-    @test ωs2[argmin(abs.(ωs2 .- ωref))] ≈ ωbo rtol = 1.0e-10
+    @test ωs[argmin(abs.(ωs .- ωref))] ≈ ωref rtol = 1.0e-5
+end
+
+@testset "B0 given as a vector" begin
+    sp = (Population(Proton(), BiMaxwellian(; vth = 1.0e5); n = 5.0e6), Population(Electron(), BiMaxwellian(; vth = 4.0e6); n = 5.0e6))
+    M(B0) = dispersion_matrix(Plasma(sp...; B0), Wavevector(1.0e-6, 2.0e-6), BOHH())
+    @test M([3.0e-9, 0.0, 4.0e-9]) ≈ M(5.0e-9)
 end
 
 @testset "Arbitrary-precision solve" begin
@@ -160,12 +177,14 @@ end
     using SpecialFunctions
 
     N, J = 1, 4
-    sp(::Type{T}) where {T} = (HHSolverParam{T}(
-        one(T), one(T), one(T), one(T), one(T), zero(T), zero(T), ones(T, 1, 1),
-    ),)
+    # unit gyro- and plasma frequency, unit thermal speeds
+    unit(::Type{T}) where {T} = Plasma(
+        Population(Particle(one(T), one(T)), HermiteVDF(; w_perp = one(T), w_para = one(T), alm = ones(T, 1, 1)); n = T(ε0));
+        B0 = one(T),
+    )
 
     # BOHH: assembly eltype follows promoted (B0, kx, kz)
-    asm(::Type{T}) where {T} = dispersion_matrix(sp(T), one(T), T(0.2), T(0.1), BOHH; N, J)
+    asm(::Type{T}) where {T} = dispersion_matrix(unit(T), Wavevector(T(0.2), T(0.1)), BOHH(; N, J))
     M64 = asm(Float64)
     Md = asm(Double64)
     Mbig = setprecision(128) do; asm(BigFloat) end
@@ -173,7 +192,7 @@ end
           (ComplexF64, Complex{Double64}, Complex{BigFloat})
 
     # Solve: LAPACK for F32/F64, GenericLinearAlgebra for Double64/BigFloat.
-    slv(::Type{T}) where {T} = solve(sp(T), one(T), T(0.2), T(0.1), BOHH; N, J)
+    slv(::Type{T}) where {T} = solve(unit(T), Wavevector(T(0.2), T(0.1)), BOHH(; N, J))
     ω32 = slv(Float32)
     ωd = slv(Double64)
     ωbig = setprecision(128) do; slv(BigFloat) end
@@ -191,39 +210,134 @@ end
     @test err(Md) < err(M64) * big"1e-10"
 
     # BOFluid: same generic path; precision follows wave-parameter promotion.
-    @test eltype(solve((FluidSpecies(1.0, 1.0),), big"1", big"0.2", big"0.1", BOFluid)) === Complex{BigFloat}
-    @test eltype(solve((FluidSpecies(1.0f0, 1.0f0),), 1.0f0, 0.2f0, 0.1f0, BOFluid)) === ComplexF32
+    fluid(::Type{T}, B0) where {T} = Plasma(
+        Population(Particle(T(q), T(mp)), BiMaxwellian(; vth = T(1.0e4)); n = one(T));
+        B0,
+    )
+    @test eltype(solve(fluid(Float64, big"1"), Wavevector(big"0.2", big"0.1"), BOFluid())) === Complex{BigFloat}
+    @test eltype(solve(fluid(Float32, 1.0f0), Wavevector(0.2f0, 0.1f0), BOFluid())) === ComplexF32
 
     # BOPBK assembly follows promoted precision (Double64/BigFloat eigvals
     # convergence is a separate concern of the BiKappa kernel).
-    bk = BiKappa2(:e, 1.0e6, 1.0, 200.0, 2555.0; sigma = 0.0)
-    @test eltype(dispersion_matrix(bk, 1.0e-6, 1.0e-7, 2.0e-7, BOPBK; N = 1)) === ComplexF64
-    @test eltype(dispersion_matrix(bk, Double64(1.0e-6), Double64(1.0e-7), Double64(2.0e-7), BOPBK; N = 1)) === Complex{Double64}
+    e = Electron()
+    bk(B0) = Plasma(Population(e, ProductBiKappa; T = 2555.0, kappa_perp = 200.0, kappa_para = 1.0, n = 1.0e6); B0)
+    @test eltype(dispersion_matrix(bk(1.0e-6), Wavevector(1.0e-7, 2.0e-7), BOPBK(; N = 1))) === ComplexF64
+    @test eltype(dispersion_matrix(bk(Double64(1.0e-6)), Wavevector(Double64(1.0e-7), Double64(2.0e-7)), BOPBK(; N = 1))) === Complex{Double64}
     @test eltype(setprecision(128) do
-        dispersion_matrix(bk, big"1e-6", big"1e-7", big"2e-7", BOPBK; N = 1)
+        dispersion_matrix(bk(big"1e-6"), Wavevector(big"1e-7", big"2e-7"), BOPBK(; N = 1))
     end) === Complex{BigFloat}
 end
 
 @testset "PBK Solver" begin
-    using PlasmaBO: q, me
 
     B0 = 1.0e-6          # [Tesla]
     θ = deg2rad(30)
 
     n = 2.43e6           # [m^-3]
     T = 2555.0           # [eV]
-    κz = 1.0
-    κx = 200.0
-    electron = BiKappa2(:e, n, κz, κx, T; sigma = 0.0)
+    e = Electron()
+    electron = ProductBiKappa(e; T, kappa_perp = 200.0, kappa_para = 1.0)
 
     wce = abs(B0 * q / me)
-    ρce = electron.vtp / wce
+    ρce = kappa_widths(electron)[1] / wce
     kn = 1 / ρce  # so that k/kn = kρce
     kρ_scan = range(1.0e-4, 0.3; length = 80)
     ks = kρ_scan .* kn
-    sol_pbk = solve(electron, B0, ks, θ, BOPBK)
-    @test length(sol_pbk.ωs) == 80
-    @test maximum(real.(sol_pbk.ωs[end])) / wce ≈ 3.0667420557507734
+    sol_pbk = solve(Plasma(Population(e, electron; n); B0), AngleSweep(; k = ks, theta = θ), BOPBK())
+    @test length(sol_pbk.omega) == 80
+    @test maximum(real.(sol_pbk.omega[end])) / wce ≈ 3.0667420557507734
+end
+
+@testset "Negative density subtracts a population" begin
+    e, B0, n = Electron(), 1.0e-6, 2.43e6
+    T = 2555.0
+    kx, kz = 1.0e-3, 2.0e-3
+    for (vdf, alg) in (
+            (ProductBiKappa(e; T, kappa_perp = 200.0, kappa_para = 1.0), BOPBK),
+            (BiMaxwellian(e; T), BOFluid),
+            (BiMaxwellian(e; T), BOHH),
+        )
+        ref = solve(Plasma(Population(e, vdf; n); B0), Wavevector(kx, kz), alg())
+        split = solve(Plasma(Population(e, vdf; n = 2n), Population(e, vdf; n = -n); B0), Wavevector(kx, kz), alg())
+        @test all(ω -> minimum(abs, split .- ω) ≤ 1.0e-5 * maximum(abs, ref), ref)
+    end
+end
+
+@testset "A wavevector's form is explicit" begin
+    e = Electron()
+    plasma = Plasma(Population(e, BiMaxwellian; T = 100.0, n = 1.0e6); B0 = 1.0e-6)
+    k, θ = 1.0e-3, deg2rad(30)
+    alg = BOHH()
+    cartesian = solve(plasma, Wavevector(k .* sincos(θ)...), alg)
+    polar = solve(plasma, AngleSweep(; k = [k], theta = θ), alg).omega[1, 1]
+    @test all(ω -> minimum(abs, polar .- ω) ≤ 1.0e-6 * maximum(abs, cartesian), cartesian)
+    @test_throws MethodError solve(plasma, k, θ, alg)
+    @test_throws MethodError solve(plasma, Wavevector(k, k))
+end
+
+@testset "BOFluid takes a ring's pressure from its second moment" begin
+    ring = GaussianRing(; vr_perp = 1.0e6, w_perp = 1.0e6, vth_para = 1.0e6)
+    vth_perp, vth_para = vth_perp_para(ring)
+    M(d) = dispersion_matrix(Plasma(Population(Electron(), d; n = 1.0e6); B0 = 1.0e-6), Wavevector(1.0e-3, 2.0e-3), BOFluid())
+    @test M(ring) ≈ M(BiMaxwellian(; vth_perp, vth_para))
+end
+
+@testset "Exactly perpendicular propagation" begin
+    e, p = Electron(), Proton()
+    B0, n = 1.0e-5, 1.0e12
+    warm = Plasma(Population(e, BiMaxwellian(e; T = 1.0, vd_para = 1.0e4); n), Population(p, BiMaxwellian(p; T = 1.0); n); B0)
+    kappa = Plasma(Population(e, ProductBiKappa(e; T = 2555.0, kappa_perp = 4.5, kappa_para = 3, loss_cone = 1.0, vd_para = 1.0e6); n = 2.43e6); B0 = 1.0e-6)
+    kx = 0.1
+
+    # The matrix is continuous into k∥ = 0
+    for (plasma, alg) in ((warm, BOHH()), (kappa, BOPBK(; N = 1)))
+        M0 = dispersion_matrix(plasma, Wavevector(kx, 0.0), alg)
+        M1 = dispersion_matrix(plasma, Wavevector(kx, 1.0e-10 * kx), alg)
+        @test all(isfinite, M0)
+        @test all(isapprox.(M0, M1; rtol = 1.0e-7, atol = 1.0e-10 * maximum(abs, M0)))
+    end
+
+    # O-mode: ω² = ωp² + c²k² for kρ ≪ 1
+    ωp2 = n * q^2 / ε0 * (1 / me + 1 / mp)
+    ωs = solve(warm, Wavevector(kx, 0.0), BOHH())
+    @test minimum(abs.(ωs .- sqrt(ωp2 + (c0 * kx)^2))) / sqrt(ωp2) < 1.0e-3
+
+    # Undamped modes at kρ = 1.5, ωpe/ωce ≈ 2; the references are VlasovMaxwellDispersion.jl's roots [ω/ωce]
+    B0, n, T = 1.0e-6, 3.9e7, 100.0
+    wce = abs(gyrofrequency(e, B0))
+    k = Wavevector(1.5 * wce / thermal_speed(e, T), 0.0)
+    for (vdf, alg, roots) in (
+            (BiMaxwellian, BOHH(; N = 8), (1.34938, 2.40623, 3.18098)),
+            (ProductBiKappa, BOPBK(; N = 8), (1.39918, 2.39876, 3.15771)),
+        )
+        kw = vdf === BiMaxwellian ? (;) : (; kappa_perp = 4.0, kappa_para = 4)
+        plasma = Plasma(Population(e, vdf; T, n, kw...), Population(p, vdf; T, n, kw...); B0)
+        ωs = solve(plasma, k, alg) ./ wce
+        @test all(ω -> minimum(abs.(ωs .- ω)) < 3.0e-4, roots)
+    end
+end
+
+@testset "GridVDF through BOHH" begin
+    B0, n = 0.1, 5.0e19
+    p, e = Proton(), Electron()
+    k = Wavevector((31.0613 / 4) .* sincos(deg2rad(45))...)
+    wci = gyrofrequency(p, B0)
+    table(d, (w_perp, w_para), vd = 0.0) = let v_perp = range(0, 12w_perp, 241), v_para = range(vd - 12w_para, vd + 12w_para, 481)
+        GridVDF(v_perp, v_para, [pdf(d, x, z) for x in v_perp, z in v_para])
+    end
+    growth(proton, electron) =
+        maximum(imag, filter(isfinite, solve(Plasma(Population(p, proton; n), Population(e, electron; n); B0), k, BOHH(; N = 2, J = 24)))) / wci
+
+    # A tabulated drifting bi-Maxwellian against the same model solved exactly
+    electron = BiMaxwellian(e; T = 496.683)
+    maxwellian = BiMaxwellian(p; T_perp = 993.367, T_para = 1986.734, vd_para = 1.0e5)
+    @test growth(table(maxwellian, vth_perp_para(maxwellian), 1.0e5), electron) ≈ growth(maxwellian, electron) rtol = 1.0e-2
+
+    # A tabulated kappa expands like its model; the reference is VlasovMaxwellDispersion.jl's susceptibility
+    kappa = ProductBiKappa(p; T_perp = 993.367, T_para = 1986.734, kappa_perp = 6.0, kappa_para = 6)
+    tabulated = growth(table(kappa, vth_perp_para(kappa)), electron)
+    @test tabulated ≈ growth(kappa, electron) rtol = 1.0e-2
+    @test tabulated ≈ 0.06314 rtol = 0.02
 end
 
 include("test_polarization.jl")

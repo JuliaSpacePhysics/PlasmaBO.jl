@@ -48,7 +48,7 @@ This formulation is valid for non-relativistic, arbitrary gyrotropic distributio
 - **Coordinates & Fields**:
     - $z$: direction parallel to the background magnetic field ($B_0$).
     - $x$: one perpendicular direction (any perpendicular direction is equivalent).
-    - Velocities: `vz` (parallel), `vx` (perpendicular), thermal speeds `vtz`, `vtx`.
+    - Velocities: `v_para`, `v_perp`; thermal speeds `vth_para`, `vth_perp`.
 - **Wave Parameters**: Wave vector $\mathbf{k} = (k_\perp, 0, k_\parallel)$, where $θ$ is the propagation angle between $k$ and $B_0$, and $k_∥ = k \cos θ$, $k_⊥ = k \sinθ$.
 
 **Output**:
@@ -89,10 +89,9 @@ Solving the kinetic dispersion relation is traditionally challenging because:
 ## Features
 
 - Hermite-Hermite (BO-HH) expansion solver for arbitrary/analytic distributions
-    - Maxwellian / BiMaxwellian
+    - drifting bi-Maxwellian and ring beam exactly; any other model through its Hermite expansion (`HermiteVDF`)
 - Analytic Product-Bi-Kappa (BO-PBK) solver
 - Multi-fluid solver
-- Integration with [`ChargedParticles.jl`](https://juliaplasma.github.io/ChargedParticles.jl/dev/) for specifying different species, e.g., `Maxwellian("O-18 3+", n, Tpara)`
 
 ## Usage Examples
 

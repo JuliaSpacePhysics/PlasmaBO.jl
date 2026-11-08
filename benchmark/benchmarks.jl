@@ -1,8 +1,12 @@
 using BenchmarkTools
 using PlasmaBO
-using PlasmaBO: q, me, mp, qe, interpolate_complex
+using PlasmaPopulations: gyrofrequency, thermal_speed, debye_length
+using PlasmaPopulations: E_SI as q, ME_SI as me, C_SI as c0, kappa_widths
+using PlasmaBO: hermite_expansion, gen_fv2d, interpolate_complex
 
 const SUITE = BenchmarkGroup()
+
+cattaert_electron() = ProductBiKappa(Electron(); T = 2555.0, kappa_perp = 200.0, kappa_para = 1.0)
 
 let
     # PCHIP path: needs length(z_prev) ≥ 3; size matches a typical k-scan run.
@@ -18,14 +22,16 @@ SUITE["Umeda2012"] = BenchmarkGroup()
 let
     B0 = 96.24e-9  # [Tesla]
     T = 51 # [eV]
-    ring_beam = Maxwellian(:e, 1.0e5, T; vdz = 0.1, vdr = 0.05)
-    background = Maxwellian(:e, 9.0e5, T)
-
-    species = [ring_beam, background]
+    e = Electron()
+    plasma = Plasma(
+        Population(e, (vth = thermal_speed(e, T); GaussianRing(; vr_perp = 0.05c0, w_perp = vth, vth_para = vth, vd_para = 0.1c0)); n = 1.0e5),
+        Population(e, BiMaxwellian; T, n = 9.0e5);
+        B0,
+    )
 
     # Compute normalization
     wce = abs(B0 * q / me)
-    lambdaD = Debye_length(species)
+    lambdaD = debye_length(e, 1.0e6, T)
     kn = 1 / lambdaD
 
     # Wave vector: k*λD = 0.03, θ = 40°
@@ -34,12 +40,12 @@ let
     kx = k * sin(θ)
     kz = k * cos(θ)
 
-    SUITE["Umeda2012"]["solve"] = @benchmarkable solve($species, $B0, $kx, $kz; N = 6, J = 12)
+    SUITE["Umeda2012"]["solve"] = @benchmarkable solve($plasma, $(Wavevector(kx, kz)), BOHH(; N = 6, J = 12))
 
     k_ranges = (0.01:0.05:0.3) .* kn
-    SUITE["Umeda2012"]["scan"] = @benchmarkable solve($species, $B0, $k_ranges, $θ; N = 6)
+    SUITE["Umeda2012"]["scan"] = @benchmarkable solve($plasma, $(AngleSweep(; k = k_ranges, theta = θ)), BOHH(; N = 6))
 
-    sol = solve(species, B0, k_ranges, θ; N = 6)
+    sol = solve(plasma, AngleSweep(; k = k_ranges, theta = θ), BOHH(; N = 6))
     initial_points = [
         (0.1 * kn, 0.3im * wce),
         (0.1 * kn, 0.1im * wce),
@@ -64,9 +70,9 @@ let
     θ = deg2rad(45)
     kx, kz = k .* sincos(θ)
 
-    species = [Maxwellian(:e, n, T), Maxwellian(:p, n, T)]
-    SUITE["FluidVsKinetic"]["kinetic"] = @benchmarkable solve($species, $B0, $kx, $kz; N = 2, J = 8)
-    SUITE["FluidVsKinetic"]["fluid"] = @benchmarkable solve($species, $B0, $kx, $kz, BOFluid)
+    plasma = Plasma(Population(Electron(), BiMaxwellian; T, n), Population(Proton(), BiMaxwellian; T, n); B0)
+    SUITE["FluidVsKinetic"]["kinetic"] = @benchmarkable solve($plasma, $(Wavevector(kx, kz)), BOHH(; N = 2, J = 8))
+    SUITE["FluidVsKinetic"]["fluid"] = @benchmarkable solve($plasma, $(Wavevector(kx, kz)), BOFluid())
 end
 
 # ==============================================================================
@@ -82,28 +88,28 @@ let
     Tpara = 24840.0
     Tperp = 49680.0
 
-    electron = Maxwellian(:e, n, Tpara)
-    proton = Maxwellian(n, Tpara, Tperp)
-
-    species = (proton, electron)
-    params = HHSolverParam.(species, B0)
-    ρᵢ = params[1].ρc
+    p = Proton()
+    plasma = Plasma(
+        Population(p, BiMaxwellian; T_perp = Tperp, T_para = Tpara, n),
+        Population(Electron(), BiMaxwellian; T = Tpara, n);
+        B0,
+    )
+    ρᵢ = thermal_speed(p, Tperp) / sqrt(2) / gyrofrequency(p, B0)
 
     # Selecting a single k for benchmark, from the range (0.005:0.04:0.7) ./ ρᵢ
     # Choosing a value in the middle
     k_val = 0.35 / ρᵢ
     kx, kz = k_val .* sincos(θ)
 
-    SUITE["MirrorMode"]["solve"] = @benchmarkable solve($species, $B0, $kx, $kz)
+    SUITE["MirrorMode"]["solve"] = @benchmarkable solve($plasma, $(Wavevector(kx, kz)), BOHH())
 end
 
 SUITE["HermiteExpansion"] = BenchmarkGroup()
 
 let
-    bk = BiKappa2(:e, 1.0e6, 1.0, 200.0, 2555.0; sigma = 0.0)
-    g = gen_fv2d(bk)
-    SUITE["HermiteExpansion"]["BiKappa2"] = @benchmarkable hermite_expansion(
-        $(g.fv), $(g.vz[:, 1]), $(g.vx[1, :]), $(g.vtz), $(g.vtx); Nz = 16, Nx = 16
+    g = gen_fv2d(cattaert_electron())
+    SUITE["HermiteExpansion"]["ProductBiKappa"] = @benchmarkable hermite_expansion(
+        $(g.fv), $(g.v_para), $(g.v_perp), $(g.w_para), $(g.w_perp); N_para = 16, N_perp = 16
     )
 end
 
@@ -118,17 +124,15 @@ let
 
     n = 2.43e6           # [m^-3]
     T = 2555.0           # [eV]
-    κz = 1.0
-    κx = 200.0
-    electron = BiKappa2(:e, n, κz, κx, T; sigma = 0.0)
+    electron = Plasma(Population(Electron(), cattaert_electron(); n); B0)
 
     wce = abs(B0 * q / me)
-    ρce = electron.vtp / wce
+    ρce = kappa_widths(cattaert_electron())[1] / wce
     kn = 1 / ρce  # so that k/kn = kρce
     kρ_scan = range(1.0e-4, 0.3; length = 80)
     ks = kρ_scan .* kn
 
-    SUITE["PBKSolver"]["solve"] = @benchmarkable solve($electron, $B0, $ks, $θ, BOPBK)
+    SUITE["PBKSolver"]["solve"] = @benchmarkable solve($electron, $(AngleSweep(; k = ks, theta = θ)), BOPBK())
 end
 
 
@@ -137,14 +141,14 @@ SUITE["BuildMatrix"] = BenchmarkGroup()
 
 let
     B0 = 1.0e-6
-    electron = BiKappa2(:e, 2.43e6, 1.0, 200.0, 2555.0; sigma = 0.0)
+    electron = Plasma(Population(Electron(), cattaert_electron(); n = 2.43e6); B0)
     wce = abs(B0 * q / me)
-    ρce = electron.vtp / wce
+    ρce = kappa_widths(cattaert_electron())[1] / wce
     kn = 1 / ρce
     θ = deg2rad(30)
     kx = 0.1 * kn * cos(θ)
     kz = 0.1 * kn * sin(θ)
 
-    SUITE["BuildMatrix"]["HH"] = @benchmarkable dispersion_matrix($electron, $B0, $kx, $kz, BOHH)
-    SUITE["BuildMatrix"]["PBK"] = @benchmarkable dispersion_matrix($electron, $B0, $kx, $kz, BOPBK)
+    SUITE["BuildMatrix"]["HH"] = @benchmarkable dispersion_matrix($electron, $(Wavevector(kx, kz)), BOHH())
+    SUITE["BuildMatrix"]["PBK"] = @benchmarkable dispersion_matrix($electron, $(Wavevector(kx, kz)), BOPBK())
 end
