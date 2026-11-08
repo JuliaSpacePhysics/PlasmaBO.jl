@@ -132,9 +132,9 @@ end
 """
     hermite_expansion(
         fv::AbstractMatrix{T},
-        vz, vx, vtz, vtp;
-        Nz = 16, Nx = 16,
-        dz = zero(T), dx = zero(T),
+        v_para::AbstractVector, v_perp::AbstractVector, w_para, w_perp;
+        N_para = 16, N_perp = 16,
+        vd_para = zero(T), vr_perp = zero(T),
         atol = zero(T)
     ) where {T}
 
@@ -142,32 +142,28 @@ Compute Hermite expansion coefficients from gridded distribution function.
 
 Expands arbitrary 2D distribution f(v_parallel, v_perp) as:
 ```
-f(vz, vx) = Σ_{l=0}^{Nz} Σ_{m=0}^{Nx} a_{l,m} * ρ_l(vz) * u_m(vx)
+f(v_para, v_perp) = Σ_{l=0}^{N_para} Σ_{m=0}^{N_perp} a_{l,m} * ρ_l(v_para) * u_m(v_perp)
 ```
 
-where ρ_l and u_m are normalized Hermite basis functions. `Nz`, `Nx` are the maximum parallel and perpendicular Hermite indices, respectively.
+where ρ_l and u_m are normalized Hermite basis functions. `N_para`, `N_perp` are the maximum parallel and perpendicular Hermite indices, respectively.
 
 # Arguments
-- `fv`: Distribution function values on (vz, vx) grid
-- `vz`: Parallel velocity grid (1D or matches fv size)
-- `vx`: Perpendicular velocity grid (1D or matches fv size)
-- `vtz`: Parallel thermal velocity (default: 1.0)
-- `vtp`: Perpendicular thermal velocity (default: 1.0)
-- `dz`: Parallel drift velocity (default: 0.0)
-- `dx`: Perpendicular drift velocity (default: 0.0)
+- `fv`: Distribution function values, `fv[i_para, i_perp]`
+- `v_para`, `v_perp`: Uniform velocity grids. For non-uniform tables use `HermiteVDF(GridVDF(...))`.
+- `w_para`, `w_perp`: 1/e widths of the reference Gaussian
+- `vd_para`, `vr_perp`: its center, the parallel drift and the ring speed (default: 0)
 - `atol`: Absolute tolerance for zeroing small coefficients
 
 # Returns
 Named tuple with:
-- `alm`: (Nz+1) × (Nx+1) coefficient matrix in power-law basis
-- `a0lm`: (Nz+1) × (Nx+1) coefficient matrix in Hermite basis
+- `alm`: (N_para+1) × (N_perp+1) coefficient matrix in power-law basis
+- `a0lm`: (N_para+1) × (N_perp+1) coefficient matrix in Hermite basis
 
 # Notes
 
 Grid-quadrature noise in high-order coefficients is amplified enormously by the power-basis moment weights (absolute noise as small as 1e-21 at l ≈ 40 produces
-1e-3 relative eigenvalue errors). Therefore, `atol = 1e-10` is recommended whenever
-`Nz` or `Nx` exceeds ~16; genuine coefficients of smooth VDFs are far above
-this level.
+1e-3 relative eigenvalue errors). `atol` removes it from near-Gaussian tables, whose genuine high-order coefficients vanish.
+Do not threshold heavy-tailed models such as kappa: their high-order coefficients are small but genuine, and dropping them produces spurious growth.
 
 # Algorithm
 1. Compute a0_{l,m} via numerical integration:
@@ -180,51 +176,48 @@ this level.
 3. Convert to power-law basis: a_{l,m} = hermite_a0_to_a(a0_{l,m})
 """
 function hermite_expansion(
-        fv::AbstractArray{T},
-        vz, vx, vtz, vtp; Nz = 16, Nx = 16,
-        dz = zero(T), dx = zero(T), atol = zero(T)
+        fv::AbstractMatrix{T},
+        v_para::AbstractVector, v_perp::AbstractVector, w_para, w_perp; N_para = 16, N_perp = 16,
+        vd_para = zero(T), vr_perp = zero(T), atol = zero(T)
     ) where {T}
 
-    # Accept either 1D vectors (preferred) or prebuilt 2D grids.
-    vz_vec = ndims(vz) == 1 ? vz : view(vz, :, 1)
-    vx_vec = ndims(vx) == 1 ? vx : view(vx, 1, :)
-    nz = length(vz_vec)
-    nx = length(vx_vec)
+    nz = length(v_para)
+    nx = length(v_perp)
 
-    @assert size(fv, 1) == nz "Grid size mismatch: fv rows != length(vz)"
-    @assert size(fv, 2) == nx "Grid size mismatch: fv cols != length(vx)"
+    @assert size(fv, 1) == nz "Grid size mismatch: fv rows != length(v_para)"
+    @assert size(fv, 2) == nx "Grid size mismatch: fv cols != length(v_perp)"
 
     # Grid spacing (assuming uniform)
-    dvz = abs(vz_vec[2] - vz_vec[1])
-    dvx = abs(vx_vec[2] - vx_vec[1])
+    dv_para = abs(v_para[2] - v_para[1])
+    dv_perp = abs(v_perp[2] - v_perp[1])
 
-    vx_is_half_space = minimum(vx_vec) >= 0
-    vx0_is_first = abs(vx_vec[1]) <= sqrt(eps(real(T))) * max(one(T), abs(vx_vec[end]))
+    vx_is_half_space = minimum(v_perp) >= 0
+    vx0_is_first = abs(v_perp[1]) <= sqrt(eps(real(T))) * max(one(T), abs(v_perp[end]))
 
-    Lmax = max(Nz, Nx)
+    Lmax = max(N_para, N_perp)
 
     return @no_escape begin
         inv_nrm = @temp_array(T, Lmax + 1)
-        ρmat = @temp_array(T, nz, Nz + 1)
-        Ueff = @temp_array(T, nx, Nx + 1)
-        tmp = @temp_array(T, Nz + 1, nx)
+        ρmat = @temp_array(T, nz, N_para + 1)
+        Ueff = @temp_array(T, nx, N_perp + 1)
+        tmp = @temp_array(T, N_para + 1, nx)
         _hermite_inv_norms!(inv_nrm, Lmax)
 
-        _fill_basis_mat!(ρmat, vz_vec, dz, vtz, Nz, inv_nrm)
+        _fill_basis_mat!(ρmat, v_para, vd_para, w_para, N_para, inv_nrm)
 
         if vx_is_half_space
-            _fill_basis_mat_mirrored!(Ueff, vx_vec, dx, vtp, Nx, inv_nrm, vx0_is_first)
+            _fill_basis_mat_mirrored!(Ueff, v_perp, vr_perp, w_perp, N_perp, inv_nrm, vx0_is_first)
         else
-            _fill_basis_mat!(Ueff, vx_vec, dx, vtp, Nx, inv_nrm)
+            _fill_basis_mat!(Ueff, v_perp, vr_perp, w_perp, N_perp, inv_nrm)
         end
 
         mul!(tmp, ρmat', fv)
         a0lm = tmp * Ueff
-        a0lm .*= (dvz * dvx * 2 / (vtz * vtp))
+        a0lm .*= (dv_para * dv_perp * 2 / (w_para * w_perp))
 
-        bs = dx / vtp
+        bs = vr_perp / w_perp
         As = exp(-bs^2) + sqrt(T(π)) * bs * erfc(-bs)
-        cs0 = 1 / (sqrt(T(π)^3) * vtz * vtp^2 * As)
+        cs0 = 1 / (sqrt(T(π)^3) * w_para * w_perp^2 * As)
 
         alm = hermite_a0_to_a(a0lm)
         alm ./= cs0

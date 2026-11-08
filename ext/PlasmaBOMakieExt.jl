@@ -28,7 +28,7 @@ For 2D solutions (k, θ), creates surface plots.
 - Additional keyword arguments are passed to the plotting functions
 """
 function Makie.plot(sol::DispersionSolution, args...; kwargs...)
-    pf = sol.θs isa Number ? plot_1d : plot_2d
+    pf = sol.theta isa Number ? plot_1d : plot_2d
     return pf(sol, args...; kwargs...)
 end
 
@@ -38,7 +38,7 @@ const LABEL_IMAG = L"ω_i \; / \; ω_n"
 
 function plot_1d(solution, kn, ωn; color = Cycled(1), xlabel = XLABEL, kwargs...)
     return with_2d_axes(; xlabel) do ax1, ax2
-        for (k, ωs) in zip(solution.ks, solution.ωs)
+        for (k, ωs) in zip(solution.k, solution.omega)
             k_norm = fill(k / kn, length(ωs))
             scatter!(ax1, k_norm, real.(ωs) ./ ωn; markersize = 5, color = color, kwargs...)
             scatter!(ax2, k_norm, imag.(ωs) ./ ωn; markersize = 5, color = color, kwargs...)
@@ -68,10 +68,10 @@ end
 
 function plot_2d(sol, kn, ωn; xlabel = XLABEL, color = Cycled(1), figure = (;), kwargs...)
     return with_3d_axes(; figure, xlabel) do ax1, ax2
-        for i in axes(sol.ωs, 1), j in axes(sol.ωs, 2)
-            ωs = sol.ωs[i, j]
-            k_norm = fill(sol.ks[i] / kn, length(ωs))
-            θ_scaled = fill(sol.θs[j], length(ωs))
+        for i in axes(sol.omega, 1), j in axes(sol.omega, 2)
+            ωs = sol.omega[i, j]
+            k_norm = fill(sol.k[i] / kn, length(ωs))
+            θ_scaled = fill(sol.theta[j], length(ωs))
 
             # Extract real and imaginary parts for this point
             z_real = real(ωs) / ωn

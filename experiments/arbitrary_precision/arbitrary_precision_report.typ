@@ -75,8 +75,8 @@ For Hermite-Hermite (`BOHH`), arithmetic follows the promoted types of
 `B0`, `kx`, and `kz`:
 
 ```julia
-M = dispersion_matrix(species, T(B0), T(kx), T(kz), BOHH;
-    N = 2, J = 8)
+M = dispersion_matrix(plasma, Wavevector(T(kx), T(kz)), BOHH(;
+    N = 2, J = 8))
 ```
 
 #table(
@@ -116,19 +116,22 @@ wave parameters constructs an extended-precision matrix; loading
 
 ```julia
 using PlasmaBO, DoubleFloats, GenericLinearAlgebra, SpecialFunctions
+using PlasmaPopulations: thermal_speed
 
-species = Maxwellian(:e, 1.0, 1.0)
+e = Electron()
+v = thermal_speed(e, 1.0)
+plasma(B0) = Plasma(Population(e, BiMaxwellian(; vth_perp = v, vth_para = v); n = 1.0); B0)
 N, J = 1, 4
 
-M64  = dispersion_matrix(species, 1.0, 0.2, 0.1, BOHH; N, J)
-Md   = dispersion_matrix(species, Double64(1), Double64(0.2), Double64(0.1), BOHH; N, J)
+M64  = dispersion_matrix(plasma(1.0), Wavevector(0.2, 0.1), BOHH(; N, J))
+Md   = dispersion_matrix(plasma(Double64(1)), Wavevector(Double64(0.2), Double64(0.1)), BOHH(; N, J))
 Mbig = setprecision(128) do
-    dispersion_matrix(species, big"1", big"0.2", big"0.1", BOHH; N, J)
+    dispersion_matrix(plasma(big"1"), Wavevector(big"0.2", big"0.1"), BOHH(; N, J))
 end
 
-ω64  = solve(species, 1.0, 0.2, 0.1, BOHH; N, J)         # LAPACK
+ω64  = solve(plasma(1.0), Wavevector(0.2, 0.1), BOHH(; N, J))         # LAPACK
 ωbig = setprecision(128) do
-    solve(species, big"1", big"0.2", big"0.1", BOHH; N, J) # GenericLinearAlgebra
+    solve(plasma(big"1"), Wavevector(big"0.2", big"0.1"), BOHH(; N, J)) # GenericLinearAlgebra
 end
 ```
 
@@ -142,7 +145,7 @@ distribution is a parallel top-hat plateau with smooth perpendicular profile:
 vz = collect(range(-6, 6; length = 1201))
 vx = collect(range(0, 6; length = 201))
 fv = [abs(z) <= 1 ? exp(-x^2) : 0.0 for z in vz, x in vx]
-alm = hermite_expansion(fv, vz, vx, 1.0, 1.0; Nz = 32, Nx = 0).alm
+alm = hermite_expansion(fv, vz, vx, 1.0, 1.0; N_para = 32, N_perp = 0).alm
 
 # Assemble BOHH with N = 1, J = 4 and compare its 3 x 3
 # accumulated susceptibility block against BigFloat(256).
@@ -177,7 +180,7 @@ error is dominated by numerical integration may realize fewer digits.
 For solution comparison, an Astfalk-like firehose proton distribution was
 truncated with the hard parallel cutoff
 `abs(sqrt(2) * v_parallel / vtz) <= 2.35`, then solved at
-`Nz = 128`, `N = 2`, and `J = 4`.
+`N_para = 128`, `N = 2`, and `J = 4`.
 `GenericLinearAlgebra.jl` was used on `Double64` and `BigFloat` matrices, while LAPACK
 solved the `Float64` matrix. Roots inside
 `abs(real(omega / Omega_p)) < 5` and `abs(imag(omega / Omega_p)) < 2` were

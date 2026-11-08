@@ -5,6 +5,7 @@ using DoubleFloats
 using GenericLinearAlgebra
 using LinearAlgebra
 using PlasmaBO
+import PlasmaPopulations
 using Printf
 using SpecialFunctions
 using Statistics
@@ -15,7 +16,7 @@ setprecision(BigFloat, 256)
 vz = collect(range(-6, 6; length = 1201))
 vx = collect(range(0, 6; length = 201))
 fv = [abs(z) <= 1 ? exp(-x^2) : 0.0 for z in vz, x in vx]
-alm = hermite_expansion(fv, vz, vx, 1.0, 1.0; Nz = 32, Nx = 0).alm
+alm = PlasmaBO.hermite_expansion(fv, vz, vx, 1.0, 1.0; N_para = 32, N_perp = 0).alm
 
 const N = 1
 const J = 4
@@ -31,10 +32,10 @@ const TYPES = [
 ]
 
 function report_matrix(::Type{T}) where {T}
-    p = HHSolverParam{T}(
-        one(T), one(T), one(T), one(T), one(T), zero(T), zero(T), T.(alm),
-    )
-    return dispersion_matrix((p,), one(T), T(0.2), T(0.1), BOHH; N, J)
+    # unit gyro- and plasma frequency, unit thermal speeds
+    vdf = HermiteVDF(; w_perp = one(T), w_para = one(T), alm = T.(alm))
+    plasma = Plasma(Population(Particle(one(T), one(T)), vdf; n = T(PlasmaPopulations.EPS0_SI)); B0 = one(T))
+    return dispersion_matrix(plasma, Wavevector(T(0.2), T(0.1)), BOHH(; N, J))
 end
 
 report_block(T) = report_matrix(T)[ROWS, COLS]

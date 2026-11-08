@@ -1,18 +1,16 @@
 # Case: Ion cyclotron emission
 
-Ion cyclotron emission (ICE) driven by a ring ion beam distribution in a magnetized fusion device
+Ion cyclotron emission (ICE) driven by a ring ion beam distribution
 
 ```@example ice
 using PlasmaBO
-using PlasmaBO: gyrofrequency, Alfven_speed
+using PlasmaPopulations: gyrofrequency, thermal_speed, alfven_speed
+using PlasmaPopulations: E_SI as qe, MP_SI as mp, C_SI as c0
 
 using DelimitedFiles
 
 # Magnetic field (Tesla)
 B0 = 2.1
-
-# Wave vector angle between k and B0
-θ = deg2rad(89.5)
 
 # Species table taken from the original BO MATLAB input
 fpath = pkgdir(PlasmaBO, "test/ice_Irvine18.in")
@@ -23,17 +21,23 @@ readdlm(fpath)
 
 ```@example ice
 tbl = readdlm(fpath, Float64; skipstart = 1)
+# charge in e, mass in proton masses, temperatures in eV, drift and ring speeds in c
 species = map(eachrow(tbl)) do row
-    Z, A, n_s, Tz_s, Tp_s, vdz_s, vdr_s = row[1:7]
-    Maxwellian(n_s, Tz_s, Tp_s; vdz = vdz_s, vdr = vdr_s, Z , A)
+    z, m, n, Tz, Tp, vd, vr = row[1:7]
+    p = Particle(z * qe, m * mp)
+    vdf = GaussianRing(; vr_perp = vr * c0, w_perp = thermal_speed(p, Tp), vth_para = thermal_speed(p, Tz), vd_para = vd * c0)
+    Population(p, vdf; n)
 end
+plasma = Plasma(species...; B0)
 
-ωn = gyrofrequency(B0, species[1])
-vA = Alfven_speed(B0, species)
+ωn = gyrofrequency(species[1].particle, B0)
+vA = alfven_speed(plasma)
+
+theta = deg2rad(89.5)
 kn = ωn / vA
 
-ks = (9.5:0.025:11.5) .* kn
-results = solve(species, B0, ks, θ; N = 12, J = 4)
+k = (9.5:0.025:11.5) .* kn
+results = solve(plasma, AngleSweep(; k, theta), BOHH(; N = 12, J = 4))
 ```
 
 ```@example ice

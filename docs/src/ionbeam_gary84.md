@@ -40,7 +40,7 @@ The following reproduces Figure 1, showing all four drift velocities in a 2×2 l
 
 ```@example gary84_fig1
 using PlasmaBO
-using PlasmaBO: c0, μ0, mp, q
+using PlasmaPopulations: C_SI as c0, MU0_SI as μ0, MP_SI as mp, E_SI as q
 using CairoMakie
 
 vA_c = 1.0e-4
@@ -83,11 +83,13 @@ sols = map(v0_vals) do v0
     v0m = -nb * v0 / (nm + nb)
     v0b = v0m + v0
 
-    main_ion = Maxwellian(:p, nm, Tm_eV; vdz = v0m / c0)
-    beam_ion = Maxwellian(:p, nb, Tb_eV; vdz = v0b / c0)
-    electron = Maxwellian(:e, ne, Te_eV)
-    species = (main_ion, beam_ion, electron)
-    solve(species, B0, k_ranges, θ; N = 3)
+    plasma = Plasma(
+        Population(Proton(), BiMaxwellian; T = Tm_eV, vd_para = v0m, n = nm),
+        Population(Proton(), BiMaxwellian; T = Tb_eV, vd_para = v0b, n = nb),
+        Population(Electron(), BiMaxwellian; T = Te_eV, n = ne);
+        B0,
+    )
+    solve(plasma, AngleSweep(; k = k_ranges, theta = θ), BOHH(; N = 3))
 end
 
 fig = Figure(size = (900, 600), fontsize = 20)
@@ -129,7 +131,7 @@ Requires either a high drift velocity or a high beam density.
 
 ```@example gary84_fig2
 using PlasmaBO
-using PlasmaBO: c0, μ0, mp, q
+using PlasmaPopulations: C_SI as c0, MU0_SI as μ0, MP_SI as mp, E_SI as q
 using CairoMakie
 
 vA_c = 1.0e-4
@@ -171,11 +173,13 @@ sols = map(v0_vals) do v0
     v0m = -nb * v0 / (nm + nb)
     v0b = v0m + v0
 
-    main_ion = Maxwellian(:p, nm, Tm_eV; vdz = v0m / c0)
-    beam_ion = Maxwellian(:p, nb, Tb_eV; vdz = v0b / c0)
-    electron = Maxwellian(:e, ne, Te_eV)
-    species = (main_ion, beam_ion, electron)
-    solve(species, B0, k_ranges, θ; N = 3)
+    plasma = Plasma(
+        Population(Proton(), BiMaxwellian; T = Tm_eV, vd_para = v0m, n = nm),
+        Population(Proton(), BiMaxwellian; T = Tb_eV, vd_para = v0b, n = nb),
+        Population(Electron(), BiMaxwellian; T = Te_eV, n = ne);
+        B0,
+    )
+    solve(plasma, AngleSweep(; k = k_ranges, theta = θ), BOHH(; N = 3))
 end
 
 fig = Figure(size = (900, 600), fontsize = 20)
@@ -218,7 +222,7 @@ A secondary axis is used because the growth rate $\gamma$ is scaled an order of 
 
 ```@example gary84_mode3
 using PlasmaBO
-using PlasmaBO: c0, μ0, mp, q
+using PlasmaPopulations: C_SI as c0, MU0_SI as μ0, MP_SI as mp, E_SI as q
 using CairoMakie
 
 vA_c = 1.0e-4
@@ -254,11 +258,13 @@ sols = map(v0_vals) do v0
     v0m = -nb * v0 / (nm + nb)
     v0b = v0m + v0
 
-    main_ion = Maxwellian(:p, nm, Tm_eV; vdz = v0m / c0)
-    beam_ion = Maxwellian(:p, nb, Tb_eV; vdz = v0b / c0)
-    electron = Maxwellian(:e, ne, Te_eV)
-    species = (main_ion, beam_ion, electron)
-    solve(species, B0, k_ranges, θ; N = 4)
+    plasma = Plasma(
+        Population(Proton(), BiMaxwellian; T = Tm_eV, vd_para = v0m, n = nm),
+        Population(Proton(), BiMaxwellian; T = Tb_eV, vd_para = v0b, n = nb),
+        Population(Electron(), BiMaxwellian; T = Te_eV, n = ne);
+        B0,
+    )
+    solve(plasma, AngleSweep(; k = k_ranges, theta = θ), BOHH(; N = 4))
 end
 
 fig = Figure(size = (900, 600), fontsize = 18)
@@ -297,7 +303,7 @@ Driven by temperature anisotropy rather than drift velocity. This mode persists 
 
 ```@example gary84_mode4
 using PlasmaBO
-using PlasmaBO: c0, μ0, mp, q
+using PlasmaPopulations: C_SI as c0, MU0_SI as μ0, MP_SI as mp, E_SI as q
 using CairoMakie
 
 vA_c = 1.0e-4
@@ -320,14 +326,17 @@ Te_eV = 1.0 * Tm_eV
 Tparallel_b = 1.0 * Tb_eV
 Tperp_b = 10.0 * Tb_eV
 
-main_ion = Maxwellian(:p, nm, Tm_eV)
-beam_ion = Maxwellian(:p, nb, Tparallel_b, Tperp_b)
-electron = Maxwellian(:e, ne, Te_eV)
-species = (main_ion, beam_ion, electron)
+p = Proton()
+plasma = Plasma(
+    Population(p, BiMaxwellian; T = Tm_eV, n = nm),
+    Population(p, BiMaxwellian; T_perp = Tperp_b, T_para = Tparallel_b, n = nb),
+    Population(Electron(), BiMaxwellian; T = Te_eV, n = ne);
+    B0,
+)
 
 k_norm = ωcp / vm 
 k_ranges = (0.01:0.01:1.0) .* k_norm
-sol = solve(species, B0, k_ranges, θ; N = 6)
+sol = solve(plasma, AngleSweep(; k = k_ranges, theta = θ), BOHH(; N = 6))
 
 fig = Figure(size = (800, 400), fontsize = 18)
 ax1 = Axis(fig[1, 1], ylabel = L"$\omega_r / \omega_{cp}$", xlabel = L"$k\,a_{m}$")
@@ -347,7 +356,7 @@ When examining oblique propagation at a large drift speed ($v_0 = 30 v_m$), high
 
 ```@example gary84_mode5
 using PlasmaBO
-using PlasmaBO: c0, μ0, mp, q
+using PlasmaPopulations: C_SI as c0, MU0_SI as μ0, MP_SI as mp, E_SI as q
 using CairoMakie
 
 vA_c = 1.0e-4
@@ -369,18 +378,20 @@ v0 = 30.0 * vm
 v0m = -nb * v0 / (nm + nb)
 v0b = v0m + v0
 
-main_ion = Maxwellian(:p, nm, Tm_eV; vdz = v0m / c0)
-beam_ion = Maxwellian(:p, nb, Tb_eV; vdz = v0b / c0)
-electron = Maxwellian(:e, ne, Te_eV)
-species = (main_ion, beam_ion, electron)
+plasma = Plasma(
+    Population(Proton(), BiMaxwellian; T = Tm_eV, vd_para = v0m, n = nm),
+    Population(Proton(), BiMaxwellian; T = Tb_eV, vd_para = v0b, n = nb),
+    Population(Electron(), BiMaxwellian; T = Te_eV, n = ne);
+    B0,
+)
 
 k_target = 0.44 * ωcp / vm
 θ_vals = range(66, 84, length = 40) .* (π / 180)
 
 γ_vals = map(θ_vals) do θ
-    sol = solve(species, B0, [k_target], θ; N = 6)
+    sol = solve(plasma, AngleSweep(; k = [k_target], theta = θ), BOHH(; N = 6))
     # Extract the mode with the maximum growth rate at this configuration
-    maximum(imag.(sol.ωs[1]))
+    maximum(imag.(sol.omega[1]))
 end
 
 fig = Figure(size = (600, 400), fontsize = 18)

@@ -1,6 +1,6 @@
 name = "PlasmaBO"
 uuid = "89aa2b4b-ed13-41a6-8160-6e24b4388da4"
-version = "0.2.2"
+version = "0.3.0"
 authors = ["Beforerr <zzj956959688@gmail.com> and contributors"]
 
 [workspace]
@@ -9,13 +9,13 @@ projects = ["test", "docs", "benchmark"]
 [deps]
 Bessels = "0e736298-9ec6-45e8-9647-e4fc86a2fe38"
 Bumper = "8ce10254-0962-460f-a3d8-1f77fea1446e"
-ChargedParticles = "e91dad46-2c06-47f2-8668-7ffa57fde2d9"
+CommonSolve = "38540f10-b2f7-11e9-35d8-d573e4eb0ff2"
 FastInterpolations = "9ea80cae-fc13-4c00-8066-6eaedb12f34b"
 Gamma = "a0844989-3bd2-4988-8bea-c9407ab0941b"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+PlasmaPopulations = "19fe0aba-210f-40e6-8711-72208e0968be"
 ProgressMeter = "92933f4c-e287-5a05-a399-4b506db050ca"
 QuadGK = "1fd47b50-473d-5c70-9696-f719f8f3bcdc"
-Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 
 [weakdeps]
 Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
@@ -28,13 +28,16 @@ PlasmaBOSpecialFunctionsExt = "SpecialFunctions"
 [compat]
 Bessels = "0.2"
 Bumper = "0.7"
-ChargedParticles = "0.3.1"
+CommonSolve = "0.2"
 FastInterpolations = "0.4"
 Gamma = "1"
 LinearAlgebra = "1"
+PlasmaPopulations = "0.1"
 Makie = "0.23, 0.24"
 ProgressMeter = "1"
 QuadGK = "2"
 SpecialFunctions = "2"
-Unitful = "1"
 julia = "1.10"
+
+[sources]
+PlasmaPopulations = {url = "https://github.com/JuliaPlasma/PlasmaPopulations.jl"}

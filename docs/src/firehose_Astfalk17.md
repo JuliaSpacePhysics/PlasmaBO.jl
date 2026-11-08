@@ -1,7 +1,7 @@
 # Case: Firehose instability (kappa distribution)
 
 This page demonstrates test firehose instability using Hermite-Hermite (HH) expansion for bi-kappa distribution.
-Here we first generate numerical samples of the distribution function using `gen_fv2d`. Then we use `hermite_expansion` to compute the Hermite expansion coefficients (this would also work for arbitrary distributions).
+`BOHH` expands every non-Maxwellian model into a `HermiteVDF` about its thermal speeds and drift. Use `HermiteVDF(model; w_perp, w_para, N_para, N_perp)` to control the expansion, and `HermiteVDF(GridVDF(v_perp, v_para, f))` for tabulated distributions. The series is truncated, so low κ needs care: see [BO-PBK](rlp_Cattaert07.md) for integer κ∥.
 
 ### Simulation Parameters
 
@@ -18,29 +18,25 @@ Here we first generate numerical samples of the distribution function using `gen
 
 ```@example firehose
 using PlasmaBO
+using PlasmaPopulations: gyrofrequency
 
 B0 = 0.1  # [Tesla]
 θ = deg2rad(45)
 n = 5.0e19
 
-electron = Maxwellian(:e, n, 496.683)
-
-κz = 5.5
-κx = 5.5
-proton = BiKappa2(5.e19, κz, κx, 1986.734, 993.367)
-data = gen_fv2d(proton)
+p, e = Proton(), Electron()
+electron = BiMaxwellian(e; T = 496.683)
+proton = ProductBiKappa(p; T_perp = 993.367, T_para = 1986.734, kappa_perp = 5.5, kappa_para = 5.5)
 ```
 
 ```@example firehose
-alm = hermite_expansion(data.fv, data.vz, data.vx, data.vtz, data.vtx).alm
-proton_param = HHSolverParam(proton, B0; alm = alm)
+plasma = Plasma(Population(p, proton; n), Population(e, electron; n); B0)
 
 kn = 31.0613
 k = kn / 4
-wci = proton_param.wc
-species = (proton_param, electron)
+wci = gyrofrequency(p, B0)
 
-ωs = solve(species, B0, k .* sincos(θ)...; N = 2, J = 24)
+ωs = solve(plasma, Wavevector(k .* sincos(θ)...), BOHH(; N = 2, J = 24))
 ω_unstable = filter(ω -> isfinite(ω) && imag(ω) > 0.001 * wci, ωs)
 println("Unstable modes (ω/ωci): ", ω_unstable ./ wci)
 ```
@@ -49,7 +45,7 @@ println("Unstable modes (ω/ωci): ", ω_unstable ./ wci)
 
 ```@repl firehose
 k_ranges = (0.05:0.02:0.5) .* kn;
-sol = solve(species, B0, k_ranges, θ; N = 2, J = 24);
+sol = solve(plasma, AngleSweep(; k = k_ranges, theta = θ), BOHH(; N = 2, J = 24));
 ```
 
 ```@example firehose

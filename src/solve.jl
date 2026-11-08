@@ -14,10 +14,13 @@ end
 
 _complex_type(pb) = Complex{_realtype(pb)}
 
+_prepared(pb::DispersionProblem, alg) =
+    DispersionProblem(prepare(alg, pb.species, pb.B0, _realtype(pb)), pb.B0, pb.kx, pb.kz)
+
 function dispersion_matrix(pb::DispersionProblem, alg; kw...)
+    pb = _prepared(pb, alg)
     n = matrix_size(alg, pb.species)
-    CT = _complex_type(pb)
-    return dispersion_matrix!(zeros(CT, n, n), pb, alg; kw...)
+    return dispersion_matrix!(zeros(_complex_type(pb), n, n), pb, alg; kw...)
 end
 
 # LAPACK eigvals! accepts UnsafeArray views; GenericLinearAlgebra's Householder
@@ -29,6 +32,7 @@ _for_eigvals(M::AbstractMatrix{<:Union{ComplexF32, ComplexF64}}) = M
 _for_eigvals(M::AbstractMatrix) = Matrix(M)
 
 function solve(pb::DispersionProblem, alg)
+    pb = _prepared(pb, alg)
     CT = _complex_type(pb)
     n = matrix_size(alg, pb.species)
     return @no_escape begin
@@ -58,26 +62,20 @@ function solve(pb::EnsembleProblem, alg)
 end
 
 """
-    solve(species, B0, kx, kz, alg = BOHH; kw...)
-    solve(species, B0, ks, θs, alg = BOHH; kw...)
+    solve(plasma::Plasma, k::Wavevector, alg) -> Vector of ω [rad/s]
+    solve(plasma::Plasma, sweep::AngleSweep, alg) -> DispersionSolution
 
-Convenience interface for solving a single wavevector `(kx, kz)` or
-    dispersion scan over multiple wavevectors `(ks, θs)`.
-
-Keyword arguments are passed to the algorithm constructor. Defaults to `BOHH` solver.
+All modes at one wavevector [m⁻¹], or over `sweep.k` [m⁻¹] × `sweep.theta` [rad].
 
 See also: [`BOHH`](@ref), [`BOPBK`](@ref), [`BOFluid`](@ref)
 """
-function solve end
+solve(plasma::Plasma, k::Wavevector, alg::AbstractDispersionAlgorithm) = solve(DispersionProblem(plasma, k), alg)
+solve(plasma::Plasma, sweep::AngleSweep, alg::AbstractDispersionAlgorithm) = solve(EnsembleProblem(plasma, sweep), alg)
 
-function dispersion_matrix(species, B0, kx::Number, kz::Number, alg = BOHH; kw...)
-    return dispersion_matrix(DispersionProblem(species, B0, kx, kz), alg(; kw...))
-end
+"""
+    dispersion_matrix(plasma::Plasma, k::Wavevector, alg)
 
-function solve(species, B0, kx::Number, kz::Number, alg = BOHH; kw...)
-    return solve(DispersionProblem(species, B0, kx, kz), alg(; kw...))
-end
-
-function solve(species, B0, ks, θs, alg = BOHH; kw...)
-    return solve(EnsembleProblem(species, B0, ks, θs), alg(; kw...))
-end
+The linear operator whose eigenvalues are the modes returned by [`solve`](@ref).
+"""
+dispersion_matrix(plasma::Plasma, k::Wavevector, alg::AbstractDispersionAlgorithm) =
+    dispersion_matrix(DispersionProblem(plasma, k), alg)

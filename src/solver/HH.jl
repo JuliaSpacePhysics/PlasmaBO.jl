@@ -26,51 +26,15 @@ struct HHSolverParam{T}
     aslm::Matrix{T}             # Hermite expansion coefficients
 end
 
-_convert_hh_param(param::HHSolverParam{T}, ::Type{T}) where {T} = param
-function _convert_hh_param(param::HHSolverParam, ::Type{T}) where {T}
-    return HHSolverParam{T}(
-        T(param.wc), T(param.wp), T(param.ρc), T(param.vtz), T(param.vtp),
-        T(param.vdz), T(param.vdr), Matrix{T}(param.aslm),
-    )
-end
-
-# Susceptibility is linear in alm
-# Negative density is realized as |n| with negated coefficients.
-_alm(s::Maxwellian) = sign(s.n) * ones(eltype(s), 1, 1)
-function _alm(vdf::BiKappa2)
-    data = gen_fv2d(vdf)
-    return hermite_expansion(data.fv, data.vz, data.vx, data.vtz, data.vtx).alm
-end
-
-_vtz(s) = sqrt(2 * kb * temperature(s.Tz) / s.m)
-_vtp(s) = sqrt(2 * kb * temperature(s.Tp) / s.m)
-
-function HHSolverParam(species, B0; alm = _alm(species))
-    T = float(promote_type(typeof(B0), eltype(alm)))
-    # Compute derived quantities for each species
-    q = T(species.q)
-    m = T(species.m)
-    vtzs = T(_vtz(species))
-    vtp = T(_vtp(species))
-    wp = plasma_frequency(q, T(abs(species.n)), m)
+# Susceptibility is linear in alm: a negative density is |n| with negated coefficients.
+function HHSolverParam(s::Population, B0, ::Type{T}) where {T}
+    h = HermiteVDF(s.vdf)
+    q, m, n = T(s.particle.q), T(s.particle.m), T(s.n)
     wc = T(B0) * q / m
+    wp = abs(q) * sqrt(abs(n) / (m * T(ε0)))
+    vtp = T(h.w_perp)
     ρc = vtp / sqrt(T(2)) / wc
-    vdz = T(species.vdz) * T(c0)
-    vdr = T(species.vdr) * T(c0)
-    return HHSolverParam{T}(wc, wp, ρc, vtzs, vtp, vdz, vdr, Matrix{T}(alm))
-end
-
-# Direct constructor from SI quantities.
-# NB: `vtz`, `vtp`, `vdz`, `vdr` are in m/s here
-# unlike distribution structs (`Maxwellian`, `BiKappa`) which use units of c.
-function HHSolverParam(q, m, n, B0, vtz, vtp, vdz, vdr, alm)
-    T = float(promote_type(map(typeof, (q, m, n, B0, vtz, vtp, vdz, vdr))..., eltype(alm)))
-    wc = T(B0) * T(q) / T(m)
-    wp = plasma_frequency(T(q), T(abs(n)), T(m))
-    ρc = T(vtp) / sqrt(T(2)) / wc
-    return HHSolverParam{T}(
-        wc, wp, ρc, T(vtz), T(vtp), T(vdz), T(vdr), sign(n) * Matrix{T}(alm),
-    )
+    return HHSolverParam{T}(wc, wp, ρc, T(h.w_para), vtp, T(h.vd_para), T(h.vr_perp), sign(n) * Matrix{T}(h.alm))
 end
 
 # Precompute alm-weighted m-sums (independent of j) used inside the (n, j)-loop.
@@ -118,8 +82,6 @@ function _assemble_species_core!(
     vr = vtp / vtz
     dr = vdz / vtz
     vr2 = vr * vr
-    kzvtz = kz * vtz
-    kzvtp = kz * vtp
     vtzp = vtz / vtp
 
     Ils .= funIn.(Ref(eltype(Ils)), 0:(l_max + 2))
@@ -152,7 +114,10 @@ function _assemble_species_core!(
         for j in 1:J
             snj += 1
             cⱼ = cj[j]
-            cnj = cⱼ * kzvtz + kz * vdz + nw_c
+            u = cⱼ * vtz + vdz
+            cnj = nw_c + kz * u
+            # Residues divide by the pole cnj; at n = 0 its k∥ cancels exactly, keeping k∥ = 0 regular.
+            nw_r, kz_r = iszero(n) ? (z, inv(u)) : (nw_c / cnj, kz / cnj)
 
             s11_1 = s11_2 = z
             s12_1 = s12_2 = z
@@ -185,13 +150,13 @@ function _assemble_species_core!(
                 s33_1 += f33a * tA; s33_2 += f33b * uA
             end
 
-            tmp = wp2 * bzj[j] / cnj
-            p11 = nwkp^2 * (nw_c * s11_1 + kzvtz * vr2 * s11_2) * tmp
-            p12 = 1im * nwkp * (nw_c * s12_1 + kzvtz * vr2 * s12_2) * tmp
-            p22 = (nw_c * s22_1 + kzvtz * vr2 * s22_2) * tmp
-            p13 = nwkp * (vtzp * nw_c * s13_1 + kzvtp * s13_2) * tmp
-            p23 = -1im * (vtzp * nw_c * s23_1 + kzvtp * s23_2) * tmp
-            p33 = vtzp * (vtzp * nw_c * s33_1 + kzvtp * s33_2) * tmp
+            tmp = wp2 * bzj[j]
+            p11 = nwkp^2 * (nw_r * s11_1 + kz_r * vtz * vr2 * s11_2) * tmp
+            p12 = 1im * nwkp * (nw_r * s12_1 + kz_r * vtz * vr2 * s12_2) * tmp
+            p22 = (nw_r * s22_1 + kz_r * vtz * vr2 * s22_2) * tmp
+            p13 = nwkp * (vtzp * nw_r * s13_1 + kz_r * vtp * s13_2) * tmp
+            p23 = -1im * (vtzp * nw_r * s23_1 + kz_r * vtp * s23_2) * tmp
+            p33 = vtzp * (vtzp * nw_r * s33_1 + kz_r * vtp * s33_2) * tmp
 
             jjx = snj
             jjy = snj + SNJ1
@@ -249,15 +214,13 @@ matrix_size(alg::BOHH, species) = let S = length(species)
     3 * (S * (2 * alg.N + 1) * alg.J + S) + 6
 end
 
-prepare(::BOHH, species, B0, ::Type{T}) where {T} = map(species) do sp
-    sp isa HHSolverParam ? _convert_hh_param(sp, T) : _convert_hh_param(HHSolverParam(sp, B0), T)
-end
+prepare(::BOHH, species, B0, ::Type{T}) where {T} = map(sp -> HHSolverParam(sp, B0, T), species)
 
 function dispersion_matrix!(M, pb::DispersionProblem, alg::BOHH; c2 = c0^2)
     T = _realtype(eltype(M))
     kx, kz = pb.kx, pb.kz
     N = alg.N
-    params = prepare(alg, pb.species, pb.B0, T)
+    params = pb.species
     S = length(params)
     (; J, bzj, czj) = get_jpole_coefficients(alg.J, T)
 
