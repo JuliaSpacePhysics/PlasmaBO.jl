@@ -89,15 +89,32 @@ end
 bsnl(p, n, l, kz, r) = -n * p.wc * _csl(p, l, kz, r)
 bsl(p, l, kz, r) = -l * kz^(2 - r) * p.vtx^2 * _csl(p, l, kz) / 2
 
-function funcS_pbk(p, n, λ::T, p1, p2, p3, p4; EPS0 = 1.0e-2) where {T}
+# J_ν(z) / (z/2)^ν, finite at z = 0
+function _besselj_scaled(ν, z::T) where {T}
+    t = (z / 2)^2
+    t < sqrt(eps(T)) && return (1 - t / (ν + 1)) / gamma(T(ν + 1))
+    return besselj(ν, z) / (z / 2)^ν
+end
+
+# J_ν'(z) / (z/2)^|ν - 1|
+function _dbesselj_scaled(ν, z)
+    iszero(ν) && return -_besselj_scaled(1, z)
+    return (_besselj_scaled(ν - 1, z) - (z / 2)^2 * _besselj_scaled(ν + 1, z)) / 2
+end
+
+# aᵐ S with a = k⊥ρc. As a → 0, S ~ a^(p3 - 3 + p1ν + p2|ν - 1|) with ν = |n|: some S diverge, but
+# each such S is multiplied by λ, k⊥², or a factor vanishing at n = 0. Callers fold the first two
+# in through `m` and skip the last; the small-λ branch factors the Bessel powers out of the
+# integrand so the folded result is finite at k⊥ = 0.
+function funcS_pbk(p, n, λ::T, p1, p2, p3, p4; m = 0, EPS0 = 1.0e-2) where {T}
     κx = p.κx
     sgm = p.sigma
     eps0 = eps(one(T))
+    C = 4 * κx^(-sgm - 1) * exp(loggamma(κx + sgm + 1) - loggamma(κx)) / gamma(sgm + 1)
 
     # Denominator is computed via `log1p` to avoid exponent overflow in
     # extended precision (Double64 maxes at ~1e308 like Float64).
     if λ > EPS0
-        S0 = 4 * (2 * λ)^(-sgm - 2) * κx^(-sgm - 1) * exp(loggamma(κx + sgm + 1) - loggamma(κx)) / gamma(sgm + 1)
         function integrand1(x)
             jn = besselj(n, x)
             djn = (besselj(n - 1, x) - besselj(n + 1, x)) / 2
@@ -105,65 +122,68 @@ function funcS_pbk(p, n, λ::T, p1, p2, p3, p4; EPS0 = 1.0e-2) where {T}
             log_den = (κx + sgm + p4) * log1p(x^2 / λ / κx / 2)
             return num * exp(-log_den)
         end
-
         tmp = quadgk(integrand1, zero(T), T(Inf))[1]
-        return S0 * tmp
+        return C * (2 * λ)^(m // 2 - sgm - 2) * tmp
     else
-        S0 = 4 * (2 * λ)^(p3 / 2 - 3//2) * κx^(-sgm - 1) * exp(loggamma(κx + sgm + 1) - loggamma(κx)) / gamma(sgm + 1)
         a = sqrt(2 * λ)
+        ν = abs(n)
+        q = abs(ν - 1)
+        eJ = p1 * ν + p2 * q
+        sgn = n < 0 && isodd(ν * (p1 + p2)) ? -1 : 1
         function integrand2(x)
-            jn = besselj(n, x * a)
-            djn = (besselj(n - 1, x * a) - besselj(n + 1, x * a)) / 2
-            num = (x + eps0)^(2 * sgm + p3) * jn^p1 * djn^p2
+            z = x * a
+            jn = iszero(p1) ? one(z) : _besselj_scaled(ν, z)^p1
+            djn = iszero(p2) ? one(z) : _dbesselj_scaled(ν, z)^p2
+            num = (x + eps0)^(2 * sgm + p3) * x^eJ * jn * djn
             log_den = (κx + sgm + p4) * log1p(x^2 / κx)
             return num * exp(-log_den)
         end
         tmp = quadgk(integrand2, zero(T), T(Inf))[1]
-        return S0 * tmp
+        return sgn * C * a^(p3 - 3 + m + eJ) * tmp / 2^eJ
     end
 end
 
-function b1snl(p, n, l, kz, λ; r = 0, EPS0 = 1.0e-2)
+# Skips the integrals where their prefactor vanishes (n = 0, or k∥ = 0 above the pole order),
+# where some diverge as k⊥ → 0.
+_times(S, c) = iszero(c) ? zero(c) : c * S()
+
+b1snl(p, n, l, kz, λ; r = 0, EPS0 = 1.0e-2) = _times(bsnl(p, n, l, kz, r)) do
+    κx, sgm = p.κx, p.sigma
     S1 = funcS_pbk(p, n, λ, 2, 0, 1, 2; EPS0)
-    S7 = funcS_pbk(p, n, λ, 2, 0, -1, 1; EPS0)
-    κx = p.κx
-    sgm = p.sigma
-    S17 = (κx + sgm + 1) / κx * S1 - 2 * sgm * λ * S7
-    return S17 * bsnl(p, n, l, kz, r)
+    λS7 = funcS_pbk(p, n, λ, 2, 0, -1, 1; m = 2, EPS0) / 2
+    (κx + sgm + 1) / κx * S1 - 2 * sgm * λS7
 end
 
-function b2snl(p, n, l, kz, λ; r = 0, EPS0 = 1.0e-2)
-    S2 = funcS_pbk(p, n, λ, 2, 0, 1, 1; EPS0)
-    return S2 * bsl(p, l, kz, r)
-end
+b2snl(p, n, l, kz, λ; r = 0, m = 0, EPS0 = 1.0e-2) =
+    _times(bsl(p, l, kz, r)) do
+        funcS_pbk(p, n, λ, 2, 0, 1, 1; m, EPS0)
+    end
 
-function b3snl(p, n, l, kz, λ; r = 0, EPS0 = 1.0e-2)
+kx2b2snl(p, n, l, kz, λ; kw...) = b2snl(p, n, l, kz, λ; m = 2, kw...) / p.rhoc^2
+
+b3snl(p, n, l, kz, λ; r = 0, EPS0 = 1.0e-2) = _times(bsnl(p, n, l, kz, r)) do
+    κx, sgm = p.κx, p.sigma
     S3 = funcS_pbk(p, n, λ, 1, 1, 2, 2; EPS0)
-    S8 = funcS_pbk(p, n, λ, 1, 1, 0, 1; EPS0)
-    κx = p.κx
-    sgm = p.sigma
-    S38 = (κx + sgm + 1) / κx * S3 - 2 * sgm * λ * S8
-    return S38 * bsnl(p, n, l, kz, r)
+    λS8 = funcS_pbk(p, n, λ, 1, 1, 0, 1; m = 2, EPS0) / 2
+    (κx + sgm + 1) / κx * S3 - 2 * sgm * λS8
 end
 
-function b4snl(p, n, l, kz, λ; r = 0, EPS0 = 1.0e-2)
-    S4 = funcS_pbk(p, n, λ, 1, 1, 2, 1; EPS0)
-    return S4 * bsl(p, l, kz, r)
-end
+b4snl(p, n, l, kz, λ; r = 0, EPS0 = 1.0e-2) =
+    _times(bsl(p, l, kz, r)) do
+        funcS_pbk(p, n, λ, 1, 1, 2, 1; EPS0)
+    end
 
-function b5snl(p, n, l, kz, λ; EPS0 = 1.0e-2)
+b5snl(p, n, l, kz, λ; EPS0 = 1.0e-2) = _times(bsnl(p, n, l, kz, 0)) do
+    κx, sgm = p.κx, p.sigma
     S5 = funcS_pbk(p, n, λ, 0, 2, 3, 2; EPS0)
-    S9 = funcS_pbk(p, n, λ, 0, 2, 1, 1; EPS0)
-    κx = p.κx
-    sgm = p.sigma
-    S59 = (κx + sgm + 1) / κx * S5 - 2 * sgm * λ * S9
-    return S59 * bsnl(p, n, l, kz, 0)
+    λS9 = funcS_pbk(p, n, λ, 0, 2, 1, 1; m = 2, EPS0) / 2
+    (κx + sgm + 1) / κx * S5 - 2 * sgm * λS9
 end
 
-function b6snl(p, n, l, kz, λ; EPS0 = 1.0e-2)
-    S6 = funcS_pbk(p, n, λ, 0, 2, 3, 1; EPS0)
-    return S6 * bsl(p, l, kz, 0)
-end
+b6snl(p, n, l, kz, λ; EPS0 = 1.0e-2) =
+    _times(bsl(p, l, kz, 0)) do
+        funcS_pbk(p, n, λ, 0, 2, 3, 1; EPS0)
+    end
 
 bx11snl(wp2, n, b1) = -1im * ε0 * wp2 * n^2 * b1
 bx12snl(wp2, n, b2) = -1im * ε0 * wp2 * n^2 * b2
@@ -179,9 +199,10 @@ by31snl(wp2, wc, kx, ξ, b3, b4_kz) = -ε0 * kx * wp2 * (b3 * ξ + b4_kz) / wc
 by32snl(wp2, wc, kx, ξ, b4) = -ε0 * kx * wp2 * b4 * ξ / wc
 by33snl(wp2, wc, kx, b3_kz) = -ε0 * kx * wp2 * b3_kz / wc
 
-bz31snl(wp2, wc, kx, ξ, b1, b2_kz) = -1im * ε0 * kx^2 * wp2 * (b1 * ξ^2 + 2 * b2_kz * ξ) / wc^2
-bz32snl(wp2, wc, kx, ξ, b2) = -1im * ε0 * kx^2 * wp2 * b2 * ξ^2 / wc^2
-bz33snl(wp2, wc, kx, ξ, b1_kz, b2_kz2) = -1im * ε0 * kx^2 * wp2 * (2 * b1_kz * ξ + b2_kz2) / wc^2
+# `kx2b2*` = k⊥² b2*, finite at k⊥ = 0 where b2 at n = 0 is not
+bz31snl(wp2, wc, kx, ξ, b1, kx2b2_kz) = -1im * ε0 * wp2 * (kx^2 * b1 * ξ^2 + 2 * kx2b2_kz * ξ) / wc^2
+bz32snl(wp2, wc, ξ, kx2b2) = -1im * ε0 * wp2 * kx2b2 * ξ^2 / wc^2
+bz33snl(wp2, wc, kx, ξ, b1_kz, kx2b2_kz2) = -1im * ε0 * wp2 * (2 * kx^2 * b1_kz * ξ + kx2b2_kz2) / wc^2
 bz34snl(wp2, wc, kx, b1_kz2) = -1im * ε0 * kx^2 * wp2 * b1_kz2 / wc^2
 
 lmax(κz; threshold = 10) = min(κz + 1, threshold)
@@ -211,6 +232,8 @@ function _pbk_add_species_Mxy!(
                 M[snlj, firstIndex + snlj + 1] += 1
             end
 
+            # Every Jx source term carries a factor n
+            MatrixNo == 1 && iszero(n) && continue
             if jj == l
                 if MatrixNo == 1
                     b1 = b1snl(p, n, l, kz, λ; EPS0)
@@ -294,24 +317,25 @@ function _pbk_add_species_Mz!(
                 M[snlj, firstIndex + snlj + 1] += 1
             end
 
+            # Ex terms carry a factor n, so b2 (divergent at n = 0 as k⊥ → 0) enters them only for n ≠ 0
             if jj == l
                 b1 = b1snl(p, n, l, kz, λ; EPS0)
-                b2_kz = b2snl(p, n, l, kz, λ; r = 1, EPS0)
                 b3 = b3snl(p, n, l, kz, λ; EPS0)
                 b4_kz = b4snl(p, n, l, kz, λ; r = 1, EPS0)
+                kx2b2_kz = kx2b2snl(p, n, l, kz, λ; r = 1, EPS0)
 
-                M[snlj, end - ExNo] += bx31snl(wp2, wc, n, kx, ξ, b1, b2_kz)
+                iszero(n) || (M[snlj, end - ExNo] += bx31snl(wp2, wc, n, kx, ξ, b1, b2snl(p, n, l, kz, λ; r = 1, EPS0)))
                 M[snlj, end - EyNo] += -by31snl(wp2, wc, kx, ξ, b3, b4_kz)
-                M[snlj, end - EzNo] += bz31snl(wp2, wc, kx, ξ, b1, b2_kz)
+                M[snlj, end - EzNo] += bz31snl(wp2, wc, kx, ξ, b1, kx2b2_kz)
 
                 if l <= κz
                     b1_kz = b1snl(p, n, l + 1, kz, λ; r = 1, EPS0)
-                    b2_kz2 = b2snl(p, n, l + 1, kz, λ; r = 2, EPS0)
+                    kx2b2_kz2 = kx2b2snl(p, n, l + 1, kz, λ; r = 2, EPS0)
                     b3_kz = b3snl(p, n, l + 1, kz, λ; r = 1, EPS0)
 
                     M[snlj, end - ExNo] += bx33snl(wp2, wc, n, kx, b1_kz)
                     M[snlj, end - EyNo] += -by33snl(wp2, wc, kx, b3_kz)
-                    M[snlj, end - EzNo] += bz33snl(wp2, wc, kx, ξ, b1_kz, b2_kz2)
+                    M[snlj, end - EzNo] += bz33snl(wp2, wc, kx, ξ, b1_kz, kx2b2_kz2)
                 end
 
                 if l <= κz - 1
@@ -319,12 +343,11 @@ function _pbk_add_species_Mz!(
                     M[snlj, end - EzNo] += bz34snl(wp2, wc, kx, b1_kz2)
                 end
             elseif jj == l + 1
-                b2 = b2snl(p, n, l, kz, λ; EPS0)
                 b4 = b4snl(p, n, l, kz, λ; EPS0)
 
-                M[snlj, end - ExNo] += bx32snl(wp2, wc, n, kx, ξ, b2)
+                iszero(n) || (M[snlj, end - ExNo] += bx32snl(wp2, wc, n, kx, ξ, b2snl(p, n, l, kz, λ; EPS0)))
                 M[snlj, end - EyNo] += -by32snl(wp2, wc, kx, ξ, b4)
-                M[snlj, end - EzNo] += bz32snl(wp2, wc, kx, ξ, b2)
+                M[snlj, end - EzNo] += bz32snl(wp2, wc, ξ, kx2b2snl(p, n, l, kz, λ; EPS0))
             end
         end
     end
