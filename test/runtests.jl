@@ -330,6 +330,17 @@ end
     end
 end
 
+@testset "Exactly parallel propagation" begin
+    # The matrix is continuous into k⊥ = 0, where some S integrals diverge
+    e = Electron()
+    plasma = Plasma(Population(e, ProductBiKappa(e; T = 2555.0, kappa_perp = 4.5, kappa_para = 3, loss_cone = 1.0, vd_para = 1.0e6); n = 2.43e6); B0 = 1.0e-6)
+    kz = 1.0e-3
+    M0 = dispersion_matrix(plasma, Wavevector(0.0, kz), BOPBK())
+    M1 = dispersion_matrix(plasma, Wavevector(1.0e-10 * kz, kz), BOPBK())
+    @test all(isfinite, M0)
+    @test all(isapprox.(M0, M1; rtol = 1.0e-7, atol = 1.0e-10 * maximum(abs, M0)))
+end
+
 @testset "GridVDF through BOHH" begin
     B0, n = 0.1, 5.0e19
     p, e = Proton(), Electron()
