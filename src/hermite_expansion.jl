@@ -41,83 +41,22 @@ function hermite_H(n::Int, x::T) where {T <: Number}
 end
 
 
-"""
-    hermite_coefficients_matrix(nmax)
-
-Compute coefficient matrix for expanding Hermite polynomials in power basis given the maximum order `nmax`.
-
-Returns matrix `cHn[n+1, k+1]` such that:
-```
-H_n(x) / √(2^n n! √π) = Σ_k cHn[n+1, k+1] * x^k / √(2^{n-k} n! √π)
-```
-
-This is used to convert between normalized Hermite basis and power-law basis.
-
-# Returns
-- `cHn`: (nmax+1) × (nmax+1) coefficient matrix
-"""
-function hermite_coefficients_matrix(nmax)
-    # Build coefficients for physicists' Hermite polynomials via polynomial recurrence:
-    # H_0(x)=1, H_1(x)=2x, H_{n+1}(x)=2x H_n(x) - 2n H_{n-1}(x)
-    cHn0 = zeros(Float64, nmax + 1, nmax + 1)
-    cHn0[1, 1] = 1.0
-    if nmax >= 1
-        cHn0[2, 2] = 2.0
-    end
-
-    for n in 1:(nmax - 1)
-        # Compute H_{n+1} coefficients from H_n and H_{n-1}
+function _fill_hermite_coefficients!(C)
+    T = eltype(C)
+    nmax = size(C, 1) - 1
+    fill!(C, zero(T))
+    @inbounds C[1, 1] = inv(sqrt(sqrt(T(π))))
+    nmax == 0 && return C
+    @inbounds C[2, 2] = 2 * C[1, 1]
+    @inbounds for n in 1:(nmax - 1)
+        a = 2 / sqrt(T(n + 1))
+        b = sqrt(T(n) / T(n + 1))
         for k in 0:(n + 1)
-            term1 = k >= 1 ? 2.0 * cHn0[n + 1, k] : 0.0
-            term2 = 2.0 * n * cHn0[n, k + 1]
-            cHn0[n + 2, k + 1] = term1 - term2
+            C[n + 2, k + 1] = (k >= 1 ? a * C[n + 1, k] : zero(T)) -
+                              (k <= n - 1 ? b * C[n, k + 1] : zero(T))
         end
     end
-
-    # Convert to coefficients consistent with Matlab funa0lm2alm.m
-    # Matlab uses a k-dependent normalization (see funa0lm2alm.m lines 39-42):
-    #   cHn(n,k) = cHn0(n,k) / sqrt(2^((n-1)-(k-1)) * (n-1)! * sqrt(pi))
-    # with 1-based indexing and Hermite order = n-1, power = k-1.
-    cHn = zeros(Float64, nmax + 1, nmax + 1)
-    for n in 0:nmax
-        for k in 0:n
-            lognrm = ((n - k) * log(2.0) + loggamma(Float64(n + 1)) + 0.5 * log(π)) / 2
-            cHn[n + 1, k + 1] = cHn0[n + 1, k + 1] / exp(lognrm)
-        end
-    end
-
-    return cHn
-end
-
-
-"""
-    hermite_a0_to_a(a0lm)
-
-Convert normalized Hermite basis coefficients: `a0lm` -> alm
-
-Transforms expansion:
-```
-f(z,x) = Σ_{l,m} a0_{l,m} * ρ_l(z) * u_m(x)
-```
-to:
-```
-f(z,x) = Σ_{l,m} a_{l,m} * g_l(z) * h_m(x)
-```
-
-where:
-- ρ_l, u_m are normalized Hermite functions
-- g_l(z) ∝ z^l * exp(-z²/2)
-- h_m(x) ∝ x^m * exp(-x²/2)
-"""
-function hermite_a0_to_a(a0lm)
-    lmax, mmax = size(a0lm)
-    nmax = max(lmax, mmax)
-    cHn = hermite_coefficients_matrix(nmax - 1)
-    #   alm = C_z' * a0lm * C_x
-    # with C_z = cHn[1:lmax, 1:lmax] and C_x = cHn[1:mmax, 1:mmax].
-    Cz = @view cHn[1:lmax, 1:lmax]
-    Cx = @view cHn[1:mmax, 1:mmax]
-    return Cz' * a0lm * Cx
+    return C
 end
 
 @inline function hermite_basis(ξ, l)
@@ -158,16 +97,7 @@ where ρ_l and u_m are normalized Hermite basis functions. `Nz`, `Nx` are the ma
 - `atol`: Absolute tolerance for zeroing small coefficients
 
 # Returns
-Named tuple with:
-- `alm`: (Nz+1) × (Nx+1) coefficient matrix in power-law basis
-- `a0lm`: (Nz+1) × (Nx+1) coefficient matrix in Hermite basis
-
-# Notes
-
-Grid-quadrature noise in high-order coefficients is amplified enormously by the power-basis moment weights (absolute noise as small as 1e-21 at l ≈ 40 produces
-1e-3 relative eigenvalue errors). Therefore, `atol = 1e-10` is recommended whenever
-`Nz` or `Nx` exceeds ~16; genuine coefficients of smooth VDFs are far above
-this level.
+`a0lm`: (Nz+1) × (Nx+1) coefficient matrix in Hermite basis, normalized for BOHH.
 
 # Algorithm
 1. Compute a0_{l,m} via numerical integration:
@@ -177,7 +107,7 @@ this level.
 
 2. Normalize by distribution integral
 
-3. Convert to power-law basis: a_{l,m} = hermite_a0_to_a(a0_{l,m})
+3. Normalize by the Maxwellian reference factor used by BOHH.
 """
 function hermite_expansion(
         fv::AbstractArray{T},
@@ -226,13 +156,12 @@ function hermite_expansion(
         As = exp(-bs^2) + sqrt(T(π)) * bs * erfc(-bs)
         cs0 = 1 / (sqrt(T(π)^3) * vtz * vtp^2 * As)
 
-        alm = hermite_a0_to_a(a0lm)
-        alm ./= cs0
+        a0lm ./= cs0
         if atol > 0
-            @. alm = ifelse(abs(alm) < atol, zero(T), alm)
+            @. a0lm = ifelse(abs(a0lm) < atol, zero(T), a0lm)
         end
 
-        (; alm, a0lm)
+        a0lm
     end
 end
 
