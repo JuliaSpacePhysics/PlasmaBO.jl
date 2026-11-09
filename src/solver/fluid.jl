@@ -71,7 +71,7 @@ function _assemble_fluid_species!(M, s, ind, SJ, kx, kz, B0)
     M[ind + 4, SJ + 3] = 1im * qm
 
     # dv ~ B (magnetic force and pressure anisotropy)
-    Δ = B0 == 0 ? 0.0 : (Pp - Pz) / B0 / ρ
+    Δ = B0 == 0 ? 0.0 : (Pz - Pp) / B0 / ρ
     M[ind + 2, SJ + 4] = kz * Δ
     M[ind + 2, SJ + 5] = -1im * qm * vdz
     M[ind + 4, SJ + 4] = kx * Δ

@@ -102,6 +102,19 @@ end
     @test_throws ArgumentError solve(plasma, Wavevector(0.0, k), BOFluid(; gamma_para = [3.0]))
 end
 
+@testset "BOFluid: firehose threshold, low-k parallel Alfvén wave" begin
+    using PlasmaPopulations: MU0_SI as μ0
+    B0, n, k = 1.0e-8, 1.0e6, 1.0e-9  # k dᵢ ≈ 2e-4
+    p, e = Proton(), Electron()
+    for (T_perp, T_para) in ((1000.0, 250.0), (250.0, 1000.0))  # β∥ - β⊥ ≈ ∓3: stable, unstable
+        plasma = Plasma(Population(p, BiMaxwellian(p; T_perp, T_para); n), Population(e, BiMaxwellian(e; T = 1.0); n); B0)
+        ρ = n * (mp + me)
+        ω = k * sqrt(complex(B0^2 / (μ0 * ρ) + n * (T_perp - T_para) * q / ρ))
+        ωs = solve(plasma, Wavevector(0.0, k), BOFluid())
+        @test minimum(abs, ωs .- ω) ≤ 1.0e-3 * abs(ω)
+    end
+end
+
 @testset "Astfalk 2017 firehose instability" begin
     using PlasmaBO
     using MAT: matopen
