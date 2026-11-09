@@ -22,8 +22,6 @@ concurrency:
 jobs:
   test:
     uses: JuliaSpacePhysics/actions/.github/workflows/julia-ci.yml@main
-    with:
-      versions: '["1", "lts", "pre"]'
     permissions:
       actions: write
       contents: read

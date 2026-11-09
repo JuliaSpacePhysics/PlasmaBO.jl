@@ -106,7 +106,8 @@ end
 # each such S is multiplied by λ, k⊥², or a factor vanishing at n = 0. Callers fold the first two
 # in through `m` and skip the last; the small-λ branch factors the Bessel powers out of the
 # integrand so the folded result is finite at k⊥ = 0.
-function funcS_pbk(p, n, λ::T, p1, p2, p3, p4; m = 0, EPS0 = 1.0e-2) where {T}
+# Every caller has p1 + p2 = 2, so S is even in n and takes ν = |n|.
+function funcS_pbk(p, ν, λ::T, p1, p2, p3, p4; m = 0, EPS0 = 1.0e-2) where {T}
     κx = p.κx
     sgm = p.sigma
     eps0 = eps(one(T))
@@ -116,8 +117,8 @@ function funcS_pbk(p, n, λ::T, p1, p2, p3, p4; m = 0, EPS0 = 1.0e-2) where {T}
     # extended precision (Double64 maxes at ~1e308 like Float64).
     if λ > EPS0
         function integrand1(x)
-            jn = besselj(n, x)
-            djn = (besselj(n - 1, x) - besselj(n + 1, x)) / 2
+            jn = besselj(ν, x)
+            djn = (besselj(ν - 1, x) - besselj(ν + 1, x)) / 2
             num = (x + eps0)^(2 * sgm + p3) * jn^p1 * djn^p2
             log_den = (κx + sgm + p4) * log1p(x^2 / λ / κx / 2)
             return num * exp(-log_den)
@@ -126,10 +127,8 @@ function funcS_pbk(p, n, λ::T, p1, p2, p3, p4; m = 0, EPS0 = 1.0e-2) where {T}
         return C * (2 * λ)^(m // 2 - sgm - 2) * tmp
     else
         a = sqrt(2 * λ)
-        ν = abs(n)
         q = abs(ν - 1)
         eJ = p1 * ν + p2 * q
-        sgn = n < 0 && isodd(ν * (p1 + p2)) ? -1 : 1
         function integrand2(x)
             z = x * a
             jn = iszero(p1) ? one(z) : _besselj_scaled(ν, z)^p1
@@ -139,21 +138,21 @@ function funcS_pbk(p, n, λ::T, p1, p2, p3, p4; m = 0, EPS0 = 1.0e-2) where {T}
             return num * exp(-log_den)
         end
         tmp = quadgk(integrand2, zero(T), T(Inf))[1]
-        return sgn * C * a^(p3 - 3 + m + eJ) * tmp / 2^eJ
+        return C * a^(p3 - 3 + m + eJ) * tmp / 2^eJ
     end
 end
 
-# Combinations of the S integrals for harmonic n, shared by every l. At n = 0 those entering only
+# Combinations of the S integrals for harmonics ±ν, shared by every l. At ν = 0 those entering only
 # with a factor n are left zero: the products vanish, while some of the integrals diverge as k⊥ → 0.
-function _pbk_S(p, n, kx; EPS0)
+function _pbk_S(p, ν, kx; EPS0)
     λ = kx^2 * p.rhoc^2 / 2
-    S(p1, p2, p3, p4; m = 0) = funcS_pbk(p, n, λ, p1, p2, p3, p4; m, EPS0)
+    S(p1, p2, p3, p4; m = 0) = funcS_pbk(p, ν, λ, p1, p2, p3, p4; m, EPS0)
     c, σ = (p.κx + p.sigma + 1) / p.κx, p.sigma
     # S(…; m = 2) = 2λ S
     kx2s2 = S(2, 0, 1, 1; m = 2) / p.rhoc^2
     s4, s6 = S(1, 1, 2, 1), S(0, 2, 3, 1)
     z = zero(λ)
-    iszero(n) && return (; s17 = z, s2 = z, kx2s2, s38 = z, s4, s59 = z, s6)
+    iszero(ν) && return (; s17 = z, s2 = z, kx2s2, s38 = z, s4, s59 = z, s6)
     return (;
         s17 = c * S(2, 0, 1, 2) - σ * S(2, 0, -1, 1; m = 2),
         s2 = S(2, 0, 1, 1), kx2s2,
@@ -207,7 +206,7 @@ function _pbk_add_species_Mxy!(
     ξ = _ξ(p)
 
     for (idx_n, n) in enumerate(-N:N)
-        S = Ss[idx_n]
+        S = Ss[abs(n) + 1]
         csn = n * wc + kz * ξ
         for l in 1:lmax(κz), jj in 1:(l + 1)
             snlj = _pbk_snl_index(params, s, idx_n, l, jj, N)
@@ -290,7 +289,7 @@ function _pbk_add_species_Mz!(
     wc = p.wc
     ξ = _ξ(p)
     for (idx_n, n) in enumerate(-N:N)
-        S = Ss[idx_n]
+        S = Ss[abs(n) + 1]
         csn = n * wc + kz * ξ
         for l in 1:lmax(κz), jj in 1:(l + 1)
             snlj = _pbk_snl_index(params, s, idx_n, l, jj, N)
@@ -361,7 +360,7 @@ function dispersion_matrix!(M, pb::DispersionProblem, alg::BOPBK; EPS0 = 1.0e-2,
     Mz = @view M[(2 * len_sub + 1):(3 * len_sub), :]
 
     for s in eachindex(params)
-        Ss = [_pbk_S(params[s], n, kx; EPS0) for n in -N:N]
+        Ss = [_pbk_S(params[s], ν, kx; EPS0) for ν in 0:N]
         _pbk_add_species_Mxy!(Mx, params, Ss, s, kx, kz; MatrixNo = 1, ExNo = 5, EyNo = 4, EzNo = 3, ExyNo = 5, bx10_by20, N, len_sub)
         _pbk_add_species_Mxy!(My, params, Ss, s, kx, kz; MatrixNo = 2, ExNo = 5, EyNo = 4, EzNo = 3, ExyNo = 4, bx10_by20, N, len_sub)
         _pbk_add_species_Mz!(Mz, params, Ss, s, kx, kz; MatrixNo = 3, ExNo = 5, EyNo = 4, EzNo = 3, by20 = bx10_by20, N, len_sub)
