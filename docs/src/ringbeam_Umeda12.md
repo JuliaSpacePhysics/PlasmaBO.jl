@@ -55,26 +55,23 @@ kz = k * cos(θ)
 
 ## Dispersion Curve Scan
 
-Scan k*λD from 0.01 to 0.3
-
-Every eigenvalue over the scan, then the three unstable branches, each through a seed near one of its roots:
-
-```@repl matrix
-sweep = AngleSweep(; k = collect(0.01:0.005:0.3) .* kn, theta = θ);
-survey = solve(DispersionProblem(plasma, sweep), BOHH(; N=6))
-at(kλD) = Wavevector(; k = kλD * kn, theta = θ);
-seeds = [(0.1, 2.32 + 0.33im), (0.1, 3.27 + 0.13im), (0.2, 3.17 + 0.23im)];
-branches = [track(survey, ω * wce, at(kλD)) for (kλD, ω) in seeds];
-```
+Every eigenvalue over `0.01 ≤ kλD ≤ 0.3`, linked into branches; the unstable ones are found without seeds:
 
 ```@example matrix
-for (i, b) in enumerate(branches)
-    println("Branch $i: max growth rate γ/ωce = ", maximum(imag, b.omega) / wce)
-end
+sweep = AngleSweep(; k = collect(0.01:0.005:0.3) .* kn, theta = θ)
+survey = solve(DispersionProblem(plasma, sweep), BOHH(; N=6))
+unstable = filter(isgrowing, link(survey))
+[maximum(imag, b.omega) / wce for b in unstable]   # peak growth rates
 ```
+
+The unstable branches over every root (gray), zoomed by axis limits:
 
 ```@example matrix
 using CairoMakie
 
-dispersion_diagram(branches; k_unit = kn, omega_unit = wce, xlabel = "kλD")
+fig, (axr, axi) = dispersion_diagram(survey; k_unit = kn, omega_unit = wce, xlabel = "kλD")
+dispersion_diagram!((axr, axi), unstable; k_unit = kn, omega_unit = wce)
+ylims!(axr, 0, 8)
+ylims!(axi, -1, 0.4)
+fig
 ```

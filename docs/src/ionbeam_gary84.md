@@ -23,20 +23,20 @@ These baseline parameters are used throughout the study unless otherwise specifi
 
 | Instability Name | Propagation | Polarization | Resonance Type | Dominant Conditions |
 | :--- | :--- | :--- | :--- | :--- |
-| Right-hand resonant | Parallel | Right-hand circular (P = +1) | Beam resonant ($\|ζ_b\| \approx 1$) | Modest $v_0/v_A$, $T_b/T_m$, and $n_b/n_p$; resonant at large $k$ |
-| Right-hand nonresonant | Antiparallel | Right-hand circular (P = -1 for $\omega_r < 0$) | Nonresonant ($\|ζ_j\| > 1$) | Sufficiently large $n_b/n_p$ or $v_0/v_A$; $T_b > T_m$ |
-| Left-hand resonant | Parallel | Left-hand circular | Beam resonant ($\|ζ_b\| < 1$) | Large $T_b/T_m$ (diffuse distributions); lower threshold than right-hand nonresonant |
-| Ion cyclotron anisotropy | Antiparallel | Left-hand circular | Resonant | Driven by temperature anisotropy ($T_{\perp}/T_{\parallel} > 1$, e.g., 4 to 9); modest $v_0/v_A$; persists at $v_0=0$ |
-| Right oblique | Oblique to $\mathbf{B}$ | Right-hand elliptic (P > 0) | Higher harmonic resonant ($m = 2, 3...$) | High $v_0/v_A$ (e.g., $v_0 = 30 v_m$); free energy well above threshold of field-aligned mode |
-| Left oblique | Oblique to $\mathbf{B}$ | Left-hand elliptic (P < 0) | Higher harmonic resonant ($m = 2, 3...$) | High drift speed ($v_0 = 30 v_m$); faster growth than right oblique $m=2$ |
+| Right-hand resonant | With beam | Right-hand circular (P = +1) | Beam resonant ($\|ζ_b^+\| \lesssim 1$) | Largest $\gamma_m$ for modest $v_0/v_A$, $T_b/T_m$ and $n_b/n_p$ |
+| Right-hand nonresonant | Against beam ($\omega_r < 0$) | Right-hand circular (P = +1) | Nonresonant ($\|ζ_j^-\| > 1$ for all $j$) | Largest $\gamma_m$ for sufficiently large $n_b/n_p$ or $v_0/v_A$ |
+| Left-hand resonant | With beam | Left-hand circular (P = -1) | Beam resonant ($\|ζ_b^-\| < 1$) | Hot beams, beam thermal speed $\gtrsim v_{0b}$; much lower threshold than right-hand nonresonant |
+| Ion cyclotron anisotropy | Against beam | Left-hand circular | Resonant | $T_{\perp b} > T_{\parallel b}$ (observed 4 to 9, Fig. 6 uses 10) and $v_0/v_A$ not too large; persists at $v_0 = 0$ |
+| Right oblique | Oblique to $\mathbf{B}$ | Right-hand elliptic (P > 0) | Higher harmonic resonant ($m = 2, 3...$) | High $v_0/v_A$ (e.g., $v_0 = 30 v_m$); free energy well above the right-hand nonresonant threshold |
+| Left oblique | Oblique to $\mathbf{B}$ | Evolves from the left-hand $\omega_r > 0$ wave; nearly linear at large $\theta$ | Higher harmonic resonant ($m = 2, 3...$) | High drift speed ($v_0 = 30 v_m$); its $m = 2$ peak grows faster than the right oblique one |
 
 ## Simulating Specific Modes in PlasmaBO.jl
 
 Based on the parameter sets defined in [garyElectromagneticIonBeam1984](@citet), here are complete `PlasmaBO.jl` configurations to demonstrate each instability mode.
 
-### Right-Hand Resonant Ion Beam Instability
+### Right-hand resonant ion beam instability (Fig. 1)
 
-The following reproduces Figure 1, showing all four drift velocities in a 2×2 layout with $\omega_r/\omega_{cp}$ and $\gamma/\omega_{cp}$ plotted together on each panel. The wave number is normalized by the thermal proton gyroradius $r_L$ (i.e. $a_m$ in the original paper). Note that $\frac{r_L}{d_i} = \frac{v_{ti}}{v_A} = \sqrt{\beta/2}$.
+The following reproduces Figure 1, showing all four drift velocities in a 2×2 layout with $\omega_r/\omega_{cp}$ and $\gamma/\omega_{cp}$ plotted together on each panel. The wave number is normalized by the main-ion thermal gyroradius $a_m = v_m/\Omega_p$, with $v_m = \sqrt{T_m/m_p}$; $v_m/v_A = \sqrt{\beta_m/2}$.
 
 ```@example gary84_fig1
 using PlasmaBO
@@ -101,7 +101,7 @@ for (idx, (plasma, label)) in enumerate(zip(plasmas, v0_labels))
     ax = Axis(fig[row, col], title = label)
 
     col == 1 ? (ax.ylabel = L"$\omega\,/\,\omega_{cp}$") : hideydecorations!(ax, grid = false)
-    row == 2 ? (ax.xlabel = L"$k\,r_{L,main}$") : hidexdecorations!(ax, grid = false)
+    row == 2 ? (ax.xlabel = L"$k\,a_m$") : hidexdecorations!(ax, grid = false)
 
     # Tracking from given seeding points
     k0, ω0 = initial_points[idx]
@@ -127,9 +127,9 @@ Legend(fig[3, 1:2],
 fig
 ```
 
-### Right-hand Nonresonant Ion Beam Instability
+### Right-hand nonresonant ion beam instability (Fig. 2)
 
-Requires either a high drift velocity or a high beam density.
+Requires either a high drift velocity or a high beam density. Figure 2 shows the two waves of Eq. (5−): the left-hand Alfvén wave ($\omega_r > 0$) and the right-hand wave propagating against the beam ($\omega_r < 0$). Above threshold they merge at small $k$ into a pair with equal $\omega_r$ and opposite $\gamma$; the growing one is the nonresonant instability.
 
 ```@example gary84_fig2
 using PlasmaBO
@@ -161,14 +161,10 @@ v0_labels = [L"v_0 = 0",
              L"v_0 = 20\,v_m",
              L"v_0 = 30\,v_m"]
 
-# The nonresonant mode is backward-propagating (ω_r < 0) and grows at low k.
-# For v0=0 there is no beam-driven nonresonant mode; target the stable Alfvén branch.
-initial_points = [
-    (0.1 * k_norm,  0.15 * ωcp),     # v0=0: stable Alfvén branch (real seed)
-    (0.1 * k_norm, 0.1 * ωcp + 0.001im * ωcp),  # v0=10 vm: nonresonant mode (low k)
-    (0.02 * k_norm, (0.0042 + 0.0429im) * ωcp),  # v0=20 vm: stronger nonresonant growth
-    (0.02 * k_norm, (0.015 + 0.0861im) * ωcp),   # v0=30 vm: peak nonresonant instability
-]
+# Seeds at k a_m = 0.18 on the two Eq. (5−) waves: ω_r > 0 left-hand, ω_r < 0 right-hand.
+# The right-hand one carries the nonresonant instability at small k for v0 ≥ 20 vm.
+k_seed = 0.18 * k_norm
+seeds = [(0.1981, -0.3004), (0.1665, -0.2829), (0.1183, -0.2525), (0.0574, -0.2091)]
 
 plasmas = map(v0_vals) do v0
     v0m = -nb * v0 / (nm + nb)
@@ -193,15 +189,16 @@ for (idx, (plasma, label)) in enumerate(zip(plasmas, v0_labels))
     ax = Axis(fig[row, col], title = label)
 
     col == 1 ? (ax.ylabel = L"$\omega\,/\,\omega_{cp}$") : hideydecorations!(ax, grid = false)
-    row == 2 ? (ax.xlabel = L"$k\,r_{L,main}$") : hidexdecorations!(ax, grid = false)
+    row == 2 ? (ax.xlabel = L"$k\,a_m$") : hidexdecorations!(ax, grid = false)
 
-    k0, ω0 = initial_points[idx]
-    seed = Seed(ω0, Wavevector(; k = k0, theta = θ))
-    ω_branch = solve(DispersionProblem(plasma, seed, AngleSweep(; k = collect(k_ranges), theta = θ)), alg).omega
-    scatterlines!(ax, k_ranges ./ k_norm, real.(ω_branch) ./ ωcp;
-        linewidth = 2, color = :royalblue)
-    scatterlines!(ax, k_ranges ./ k_norm, imag.(ω_branch) ./ ωcp;
-        linewidth = 2, color = :orangered)
+    survey = solve(DispersionProblem(plasma, AngleSweep(; k = collect(k_ranges), theta = θ)), alg)
+    for ω0 in seeds[idx]
+        ω_branch = track(survey, ω0 * ωcp, Wavevector(; k = k_seed, theta = θ)).omega
+        scatterlines!(ax, k_ranges ./ k_norm, real.(ω_branch) ./ ωcp;
+            linewidth = 2, color = :royalblue)
+        scatterlines!(ax, k_ranges ./ k_norm, imag.(ω_branch) ./ ωcp;
+            linewidth = 2, color = :orangered)
+    end
 
     xlims!(ax, 0, 0.2)
     ylims!(ax, -0.2, 0.2)
@@ -218,7 +215,7 @@ Legend(fig[3, 1:2],
 fig
 ```
 
-#### 3. Left-hand Resonant Ion Beam Instability
+### Left-hand resonant ion beam instability (Fig. 7)
 
 This instability operates efficiently for hot, diffuse beam distributions where $T_b = 100 T_m$.
 The setup generates the 4-panel layout corresponding to Figure 7.
@@ -304,9 +301,9 @@ colgap!(fig.layout, 30)
 fig
 ```
 
-#### 4. Ion Cyclotron Anisotropy Instability
+### Ion cyclotron anisotropy instability (Fig. 6)
 
-Driven by temperature anisotropy rather than drift velocity. This mode persists even when the bulk drift velocity is zero.
+Driven by temperature anisotropy rather than drift velocity. This mode persists even when the bulk drift velocity is zero: with $T_{\perp b} = 10\,T_{\parallel b}$ and $v_0 = 0$, its maximum growth rate is the $v_0 = 0$ end of the hatched line in Fig. 6, $\gamma_m \approx 0.07\,\Omega_p$.
 
 ```@example gary84_mode4
 using PlasmaBO
@@ -342,7 +339,7 @@ plasma = Plasma(
 )
 
 k_norm = ωcp / vm 
-k_ranges = (0.01:0.01:1.0) .* k_norm
+k_ranges = (0.01:0.005:0.4) .* k_norm
 
 fig = Figure(size = (800, 400), fontsize = 18)
 ax1 = Axis(fig[1, 1], ylabel = L"$\omega_r / \omega_{cp}$", xlabel = L"$k\,a_{m}$")
@@ -357,9 +354,9 @@ lines!(ax2, k_ranges ./ k_norm, imag.(ω_branch) ./ ωcp, linewidth = 2, color =
 fig
 ```
 
-#### 5. Oblique Instabilities (Right & Left)
+### Oblique instabilities (Fig. 10)
 
-When examining oblique propagation at a large drift speed ($v_0 = 30 v_m$), higher-order cyclotron resonances emerge. This calculates the growth rate against the propagation angle $\theta$ for the Left Oblique mode at $k a_m = 0.44$, recreating Figure 10 which highlights the $m=2$ peak.
+When examining oblique propagation at a large drift speed ($v_0 = 30 v_m$), higher-order cyclotron resonances emerge. This calculates the growth rate against the propagation angle $\theta$ for the left oblique mode at $k a_m = 0.44$, recreating Figure 10: relative maxima at the $m = 3$ (near 76°) and $m = 2$ (near 81°) beam cyclotron resonances, $\omega_r \approx k_z v_{0b} - m\Omega_p$.
 
 ```@example gary84_mode5
 using PlasmaBO
@@ -397,7 +394,7 @@ k_target = 0.44 * ωcp / vm
 
 γ_vals = map(θ_vals) do θ
     sol = solve(DispersionProblem(plasma, Wavevector(; k = k_target, theta = θ)), BOHH(; N = 6))
-    # Extract the mode with the maximum growth rate at this configuration
+    # The left oblique mode is the only growing one here
     maximum(imag, sol.omega)
 end
 

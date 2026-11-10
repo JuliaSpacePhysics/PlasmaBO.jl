@@ -39,13 +39,12 @@ using CairoMakie
 sweep = AngleSweep(; k = collect(0.01:1:100) .* kn, theta = θ);
 ```
 
-Every eigenvalue over the sweep, then a seed near a root at `k = 50 kn` picks the branch to follow:
+A `Seed` target follows the one branch through a root near `ω0` at `at`, here the whistler, damped by electron cyclotron resonance at large `k`:
 
 ```@example surface
-survey = solve(DispersionProblem(plasma, sweep), BOHH(; N))
 at = Wavevector(; k = 50kn, theta = θ)
-branch = track(survey, (640 - 672im) * wn, at)
-dispersion_diagram(branch; k_unit = kn, omega_unit = wn, xlabel = "k/kn")
+whistler = solve(DispersionProblem(plasma, Seed((640 - 672im) * wn, at), sweep), BOHH(; N))
+dispersion_diagram(whistler; k_unit = kn, omega_unit = wn, xlabel = "k/kn")
 ```
 
 ## Dispersion Surface Scan (2D)

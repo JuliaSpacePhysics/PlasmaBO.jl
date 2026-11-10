@@ -31,65 +31,43 @@ ks = kρ_scan .* kn
 
 ## Analytic PBK (BO-PBK) solver
 
-Solve the same case with the analytic PBK (BO-PBK) solver:
-
-```@repl rlp
-sweep = AngleSweep(; k = collect(ks), theta = θ);
-box = ((0.0 - 1.0im) * wce, (3.0 + 7.0im) * wce);
-sol_pbk = solve(DispersionProblem(electron, box, sweep), BOPBK())
-```
+Every eigenvalue, for context, and the four branches tracked through them from their roots at $kρ_{ce} = 0.1$:
 
 ```@example rlp
 using CairoMakie
 
-dispersion_diagram(sol_pbk; k_unit = kn, omega_unit = wce, xlabel = "kρce")
-```
+sweep = AngleSweep(; k = collect(ks), theta = θ)
+at = Wavevector(; k = 0.1kn, theta = θ)
+seeds = ["upper R-X" => 1.37366, "O (P)" => 1.07271, "L-X" => 0.75519, "lower R-X" => 0.39861]
 
-### Plot the tracked PBK branches:
+function branch_diagram(plasma, alg; imlims = (-0.012, 0.004))
+    survey = solve(DispersionProblem(plasma, sweep), alg)
+    fig, (axr, axi) = dispersion_diagram(survey; k_unit = kn, omega_unit = wce, xlabel = "kρce")
+    for (name, ω0) in seeds
+        dispersion_diagram!((axr, axi), track(survey, ω0 * wce, at); k_unit = kn, omega_unit = wce, label = name)
+    end
+    axislegend(axr; position = :lt)
+    ylims!(axr, 0, 3.2)
+    ylims!(axi, imlims...)
+    return fig
+end
 
-Seeds at $kρ_{ce} = 0.1$ are used to identify the branches: upper R-X, O(P), L-X, lower R-X
-
-```@example rlp
-seed_kρ = 0.1
-seeds_ω = [1.37366, 1.07271, 0.75519, 0.39861] .* wce
-
-at = Wavevector(; k = seed_kρ * kn, theta = θ)
-# Every eigenvalue, so the branches are not cut where they leave `box`
-all_pbk = solve(DispersionProblem(electron, sweep), BOPBK())
-branches_pbk = [track(all_pbk, ω0, at) for ω0 in seeds_ω]
-
-f, (ax1, ax2) = dispersion_diagram(branches_pbk; k_unit = kn, omega_unit = wce, xlabel = "kρce")
-ylims!(ax2, -0.01, 0.001)
-f
+branch_diagram(electron, BOPBK())
 ```
 
 ## General HH solver
 
-Solve the same case with the general Hermite-Hermite (HH) basis solver:
+The same with the general Hermite-Hermite (HH) basis solver:
 
 ```@example rlp
-using CairoMakie
-
-sol_HH = solve(DispersionProblem(electron, box, sweep), BOHH(; N = 4, J = 16))
-all_HH = solve(DispersionProblem(electron, sweep), BOHH(; N = 4, J = 16))
-branches_HH = [track(all_HH, ω0, at) for ω0 in seeds_ω]
-
-dispersion_diagram(sol_HH; k_unit = kn, omega_unit = wce, xlabel = "kρce")
+branch_diagram(electron, BOHH(; N = 4, J = 16); imlims = (-0.012, 0.04))
 ```
 
-Plot the tracked branches
+HH departs from PBK, even growing where PBK damps: the small parallel kappa index needs more Hermite terms than this truncation keeps. Its roots nearest the L-X and lower R-X seeds are not waves but pole roots of the expansion, near-straight lines `ω ≈ nωce + c k` (`n = 1, 0`).
 
-```@example rlp
-dispersion_diagram(branches_HH; k_unit = kn, omega_unit = wce, xlabel = "kρce")
-```
-
-We can see that the results from the HH solver is very different from the PBK solver. It does not yield the same branches as the PBK solver due to the small parallel kappa index.
-
-As a comparison, we solve it for a Maxwellian electron population:
+For comparison, a Maxwellian electron population with the same thermal speed:
 
 ```@example rlp
 maxwellian = Plasma(Population(e, BiMaxwellian(; vth); n); B0)
-sol_M = solve(DispersionProblem(maxwellian, box, sweep), BOHH(; N = 3))
-
-dispersion_diagram(sol_M; k_unit = kn, omega_unit = wce, xlabel = "kρce")
+branch_diagram(maxwellian, BOHH(; N = 3))
 ```
