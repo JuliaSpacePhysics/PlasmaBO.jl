@@ -37,14 +37,12 @@ theta = deg2rad(89.5)
 kn = ωn / vA
 
 k = (9.5:0.025:11.5) .* kn
-results = solve(plasma, AngleSweep(; k, theta), BOHH(; N = 12, J = 4))
+box = ((0.0 - 0.5im) * ωn, (15.0 + 0.5im) * ωn)
+results = solve(DispersionProblem(plasma, box, AngleSweep(; k = collect(k), theta)), BOHH(; N = 12, J = 4))
 ```
 
 ```@example ice
 using CairoMakie
 
-f, (ax, ax2) = plot(results, kn, ωn)
-ylims!(ax, [0, 15])
-ylims!(ax2, [-0.5, 0.5])
-f
+dispersion_diagram(results; k_unit = kn, omega_unit = ωn, xlabel = "k/kn")
 ```

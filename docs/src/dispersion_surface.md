@@ -36,39 +36,34 @@ N = 3
 using CairoMakie
 
 θ = deg2rad(45);
-k_ranges = (0.01:1:100) .* kn;
-results = solve(plasma, AngleSweep(; k = k_ranges, theta = θ), BOHH(; N))
+sweep = AngleSweep(; k = collect(0.01:1:100) .* kn, theta = θ);
 ```
 
-```@example surface
-plot(results, kn, wn)
-```
+Every eigenvalue over the sweep, then a seed near a root at `k = 50 kn` picks the branch to follow:
 
 ```@example surface
-
-# k, ω pairs for initial branch points (see `BranchPoint` for more control over tracking)
-initial_point = (50 * kn, -600 * wn *im)
-branch = track(results, initial_point)
-f, (ax1, ax2) = plot_branches((branch,), kn, wn)
-ylims!(ax2, -3500,500)
-f
+survey = solve(DispersionProblem(plasma, sweep), BOHH(; N))
+at = Wavevector(; k = 50kn, theta = θ)
+branch = track(survey, (640 - 672im) * wn, at)
+dispersion_diagram(branch; k_unit = kn, omega_unit = wn, xlabel = "k/kn")
 ```
 
 ## Dispersion Surface Scan (2D)
 
 ```@repl surface
-ks = (0.1:10:100.0) .* kn;
+ks = collect(0.1:10:100.0) .* kn;
 θs = deg2rad.(10.0:10.0:90.0);
-res2d = solve(plasma, AngleSweep(; k = ks, theta = θs), BOHH(; N))
+# Seed at a reference k and angle; the branch is linked over the (k, θ) grid
+at = Wavevector(; k = 90.5kn, theta = deg2rad(20))
+surface2d = solve(DispersionProblem(plasma, Seed((1000 - 3000im) * wn, at), AngleSweep(; k = ks, theta = θs)), BOHH(; N))
 ```
 
 ```@example surface
-plot(res2d, kn, wn)
-```
-
-```@example surface
-# Choose a reference angle and reference k for seeding the tracked mode
-seed = (90.5 * kn, deg2rad(20), (1000 - 3000im) * wn)
-branch = track(res2d, seed)
-plot_branches((branch,), kn, wn)
+let fig = Figure(size = (900, 400))
+    for (i, (part, label)) in enumerate(((real, "Re ω/ωci"), (imag, "Im ω/ωci")))
+        ax = Axis3(fig[1, i]; xlabel = "k/kn", ylabel = "θ [°]", zlabel = label)
+        surface!(ax, ks ./ kn, rad2deg.(θs), part.(surface2d.omega) ./ wn)
+    end
+    fig
+end
 ```

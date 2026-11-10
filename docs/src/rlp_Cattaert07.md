@@ -34,15 +34,15 @@ ks = kρ_scan .* kn
 Solve the same case with the analytic PBK (BO-PBK) solver:
 
 ```@repl rlp
-sol_pbk = solve(electron, AngleSweep(; k = ks, theta = θ), BOPBK());
+sweep = AngleSweep(; k = collect(ks), theta = θ);
+box = ((0.0 - 1.0im) * wce, (3.0 + 7.0im) * wce);
+sol_pbk = solve(DispersionProblem(electron, box, sweep), BOPBK())
 ```
 
 ```@example rlp
 using CairoMakie
 
-f, axs = plot(sol_pbk, kn, wce)
-ylims!(axs[1], 0, 3)
-f
+dispersion_diagram(sol_pbk; k_unit = kn, omega_unit = wce, xlabel = "kρce")
 ```
 
 ### Plot the tracked PBK branches:
@@ -53,11 +53,12 @@ Seeds at $kρ_{ce} = 0.1$ are used to identify the branches: upper R-X, O(P), L-
 seed_kρ = 0.1
 seeds_ω = [1.37366, 1.07271, 0.75519, 0.39861] .* wce
 
-initial_points = [(seed_kρ * kn, ω0) for ω0 in seeds_ω]
-branches_pbk = track.(sol_pbk, initial_points)
+at = Wavevector(; k = seed_kρ * kn, theta = θ)
+# Every eigenvalue, so the branches are not cut where they leave `box`
+all_pbk = solve(DispersionProblem(electron, sweep), BOPBK())
+branches_pbk = [track(all_pbk, ω0, at) for ω0 in seeds_ω]
 
-f, (ax1, ax2) = plot_branches(branches_pbk, kn, wce)
-ylims!(ax1, nothing, 3)
+f, (ax1, ax2) = dispersion_diagram(branches_pbk; k_unit = kn, omega_unit = wce, xlabel = "kρce")
 ylims!(ax2, -0.01, 0.001)
 f
 ```
@@ -69,18 +70,17 @@ Solve the same case with the general Hermite-Hermite (HH) basis solver:
 ```@example rlp
 using CairoMakie
 
-sol_HH = solve(electron, AngleSweep(; k = ks, theta = θ), BOHH(; N = 4, J = 16))
-branches_HH = track.(sol_HH, initial_points)
+sol_HH = solve(DispersionProblem(electron, box, sweep), BOHH(; N = 4, J = 16))
+all_HH = solve(DispersionProblem(electron, sweep), BOHH(; N = 4, J = 16))
+branches_HH = [track(all_HH, ω0, at) for ω0 in seeds_ω]
 
-f, axs = plot(sol_HH, kn, wce)
-ylims!(axs[1], 0, 3)
-f
+dispersion_diagram(sol_HH; k_unit = kn, omega_unit = wce, xlabel = "kρce")
 ```
 
 Plot the tracked branches
 
 ```@example rlp
-plot_branches(branches_HH, kn, wce)
+dispersion_diagram(branches_HH; k_unit = kn, omega_unit = wce, xlabel = "kρce")
 ```
 
 We can see that the results from the HH solver is very different from the PBK solver. It does not yield the same branches as the PBK solver due to the small parallel kappa index.
@@ -89,9 +89,7 @@ As a comparison, we solve it for a Maxwellian electron population:
 
 ```@example rlp
 maxwellian = Plasma(Population(e, BiMaxwellian(; vth); n); B0)
-sol_M = solve(maxwellian, AngleSweep(; k = ks, theta = θ), BOHH(; N = 3))
+sol_M = solve(DispersionProblem(maxwellian, box, sweep), BOHH(; N = 3))
 
-f, axs = plot(sol_M, kn, wce)
-ylims!(axs[1], 0, 3)
-f
+dispersion_diagram(sol_M; k_unit = kn, omega_unit = wce, xlabel = "kρce")
 ```

@@ -47,7 +47,7 @@ kx = k * sin(θ)
 kz = k * cos(θ)
 
 # J=12 provides good accuracy (J-pole approximation order)
-ωs = solve(plasma, Wavevector(kx, kz), BOHH(; N=6, J=12))
+ωs = solve(DispersionProblem(plasma, Wavevector(kx, kz)), BOHH(; N=6, J=12)).omega
 
 # Filter for unstable modes (ω/ωce) with positive growth rate
 ω_unstable = filter(ω -> isfinite(ω) && imag(ω) > 0.001*wce, ωs)[1] ./wce
@@ -57,33 +57,24 @@ kz = k * cos(θ)
 
 Scan k*λD from 0.01 to 0.3
 
+Every eigenvalue over the scan, then the three unstable branches, each through a seed near one of its roots:
+
 ```@repl matrix
-k_ranges = (0.01:0.005:0.3) .* kn;
-sol = solve(plasma, AngleSweep(; k = k_ranges, theta = θ), BOHH(; N=6))
+sweep = AngleSweep(; k = collect(0.01:0.005:0.3) .* kn, theta = θ);
+survey = solve(DispersionProblem(plasma, sweep), BOHH(; N=6))
+at(kλD) = Wavevector(; k = kλD * kn, theta = θ);
+seeds = [(0.1, 2.32 + 0.33im), (0.1, 3.27 + 0.13im), (0.2, 3.17 + 0.23im)];
+branches = [track(survey, ω * wce, at(kλD)) for (kλD, ω) in seeds];
 ```
 
 ```@example matrix
-# k, ω pairs for initial branch points (see `BranchPoint` for more control over tracking)
-initial_points = [
-    (0.1 * kn, 0.3im * wce),
-    (0.1 * kn, 0.1im * wce),
-    (0.2 * kn, 0.25im * wce)
-]
-
-branches = track.(sol, initial_points)
-
-# Extract individual branches
-for (i, (k_branch, ω_branch)) in enumerate(branches)
-    println("Branch $i:")
-    println("  k range: $(minimum(k_branch)) to $(maximum(k_branch))")
-    println("  Max growth rate: γ = $(maximum(imag.(ω_branch)))")
+for (i, b) in enumerate(branches)
+    println("Branch $i: max growth rate γ/ωce = ", maximum(imag, b.omega) / wce)
 end
 ```
-
-Plot all branches
 
 ```@example matrix
 using CairoMakie
 
-plot_branches(branches, kn, wce)
+dispersion_diagram(branches; k_unit = kn, omega_unit = wce, xlabel = "kλD")
 ```

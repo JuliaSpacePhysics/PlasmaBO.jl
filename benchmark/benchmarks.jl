@@ -2,20 +2,11 @@ using BenchmarkTools
 using PlasmaBO
 using PlasmaPopulations: gyrofrequency, thermal_speed, debye_length
 using PlasmaPopulations: E_SI as q, ME_SI as me, C_SI as c0, kappa_widths
-using PlasmaBO: hermite_expansion, gen_fv2d, interpolate_complex
+using PlasmaBO: hermite_expansion, gen_fv2d
 
 const SUITE = BenchmarkGroup()
 
 cattaert_electron() = ProductBiKappa(Electron(); T = 2555.0, kappa_perp = 200.0, kappa_para = 1.0)
-
-let
-    # PCHIP path: needs length(z_prev) ≥ 3; size matches a typical k-scan run.
-    x_prev = collect(range(0.0, 1.0; length = 16))
-    z_prev = ComplexF64.(2.0 .* x_prev .+ 1.0, 0.1 .* x_prev .+ 0.5 .* sin.(x_prev))
-    x_new = 1.05  # slight extrapolation, as in real tracking
-    SUITE["Track"]["interpolate_complex_pchip"] =
-        @benchmarkable interpolate_complex($z_prev, $x_prev, $x_new)
-end
 
 SUITE["Umeda2012"] = BenchmarkGroup()
 
@@ -40,18 +31,15 @@ let
     kx = k * sin(θ)
     kz = k * cos(θ)
 
-    SUITE["Umeda2012"]["solve"] = @benchmarkable solve($plasma, $(Wavevector(kx, kz)), BOHH(; N = 6, J = 12))
+    SUITE["Umeda2012"]["solve"] = @benchmarkable solve($(DispersionProblem(plasma, Wavevector(kx, kz))), BOHH(; N = 6, J = 12))
 
     k_ranges = (0.01:0.05:0.3) .* kn
-    SUITE["Umeda2012"]["scan"] = @benchmarkable solve($plasma, $(AngleSweep(; k = k_ranges, theta = θ)), BOHH(; N = 6))
-
-    sol = solve(plasma, AngleSweep(; k = k_ranges, theta = θ), BOHH(; N = 6))
-    initial_points = [
-        (0.1 * kn, 0.3im * wce),
-        (0.1 * kn, 0.1im * wce),
-        (0.2 * kn, 0.25im * wce),
-    ]
-    SUITE["Umeda2012"]["track"] = @benchmarkable track.($sol, $initial_points)
+    sweep = AngleSweep(; k = collect(k_ranges), theta = θ)
+    SUITE["Umeda2012"]["scan"] = @benchmarkable solve($(DispersionProblem(plasma, sweep)), BOHH(; N = 6))
+    ω0, k0 = (2.32 + 0.33im) * wce, Wavevector((0.1kn) .* sincos(θ)...)
+    survey = solve(DispersionProblem(plasma, sweep), BOHH(; N = 6))
+    SUITE["Umeda2012"]["link"] = @benchmarkable link($survey)
+    SUITE["Umeda2012"]["track"] = @benchmarkable track($survey, $ω0, $k0)
 end
 
 # ==============================================================================
@@ -71,8 +59,8 @@ let
     kx, kz = k .* sincos(θ)
 
     plasma = Plasma(Population(Electron(), BiMaxwellian; T, n), Population(Proton(), BiMaxwellian; T, n); B0)
-    SUITE["FluidVsKinetic"]["kinetic"] = @benchmarkable solve($plasma, $(Wavevector(kx, kz)), BOHH(; N = 2, J = 8))
-    SUITE["FluidVsKinetic"]["fluid"] = @benchmarkable solve($plasma, $(Wavevector(kx, kz)), BOFluid())
+    SUITE["FluidVsKinetic"]["kinetic"] = @benchmarkable solve($(DispersionProblem(plasma, Wavevector(kx, kz))), BOHH(; N = 2, J = 8))
+    SUITE["FluidVsKinetic"]["fluid"] = @benchmarkable solve($(DispersionProblem(plasma, Wavevector(kx, kz))), BOFluid())
 end
 
 # ==============================================================================
@@ -101,7 +89,7 @@ let
     k_val = 0.35 / ρᵢ
     kx, kz = k_val .* sincos(θ)
 
-    SUITE["MirrorMode"]["solve"] = @benchmarkable solve($plasma, $(Wavevector(kx, kz)), BOHH())
+    SUITE["MirrorMode"]["solve"] = @benchmarkable solve($(DispersionProblem(plasma, Wavevector(kx, kz))), BOHH())
 end
 
 SUITE["HermiteExpansion"] = BenchmarkGroup()
@@ -132,7 +120,7 @@ let
     kρ_scan = range(1.0e-4, 0.3; length = 80)
     ks = kρ_scan .* kn
 
-    SUITE["PBKSolver"]["solve"] = @benchmarkable solve($electron, $(AngleSweep(; k = ks, theta = θ)), BOPBK())
+    SUITE["PBKSolver"]["solve"] = @benchmarkable solve($(DispersionProblem(electron, AngleSweep(; k = collect(ks), theta = θ))), BOPBK())
 end
 
 

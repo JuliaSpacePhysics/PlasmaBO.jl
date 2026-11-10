@@ -96,17 +96,11 @@ for i in sorted_indices
     desc = ""
     
     if abs(ω) < 1e1
-        if abs(Bz) > 0.9
-            desc = "spurious ∇·B null mode (δBz)"
-        elseif abs(v[1]) > 0.9 && abs(v[5]) > 0.9
-            desc = "Static Neutral Plasma Perturbation (physical)"
-        elseif abs(v[1]) > 0.9
-            desc = "spurious Gauss's Law violation (static δne)"
-        elseif abs(v[5]) > 0.9
-            desc = "spurious Gauss's Law violation (static δnp)"
-        else
-            desc = "Static Neutral Plasma Perturbation"
-        end
+        # Species entries are scaled per species, so only whether δne, δnp vanish is meaningful
+        δne, δnp = abs(v[1]) > 1e-3, abs(v[5]) > 1e-3
+        desc = abs(Bz) > 0.9 ? "spurious ∇·B null mode (δBz)" :
+            δne && δnp ? "Static Neutral Plasma Perturbation" :
+            δne ? "spurious Gauss's Law violation (static δne)" : "spurious Gauss's Law violation (static δnp)"
     else
         # Calculate residual to verify if the computed eigenvalue satisfies 
         # the cold-plasma dispersion relation for its physical polarization handedness

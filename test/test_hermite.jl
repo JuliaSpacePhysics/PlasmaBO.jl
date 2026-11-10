@@ -53,7 +53,7 @@ end
         B0,
     )
     kz = 0.34 * wpe / c0_
-    ωs = solve(plasma, Wavevector(0.0, kz), BOHH(; N = 2, J = 24))
+    ωs = modes(plasma, Wavevector(0.0, kz), BOHH(; N = 2, J = 24))
     ωref = (0.09041982747948 - 0.00223551957235im) * wce   # exact Z-solver Maxwellian whistler
     @test ωs[argmin(abs.(ωs .- ωref))] ≈ ωref rtol = 1.0e-5
 end

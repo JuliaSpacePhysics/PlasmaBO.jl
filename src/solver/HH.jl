@@ -26,12 +26,13 @@ struct HHSolverParam{T}
 end
 
 # Susceptibility is linear in alm: a negative density is |n| with negated coefficients.
-function HHSolverParam(s::Population, B0, ::Type{T}) where {T}
+function HHSolverParam(s, ::Type{T}) where {T}
+    iszero(s.Omega) && throw(ArgumentError("BOHH expands about the gyration: needs B0 ≠ 0"))
     h = HermiteVDF(s.vdf)
-    q, m, n = T(s.particle.q), T(s.particle.m), T(s.n)
-    wp = abs(q) * sqrt(abs(n) / (m * T(ε0)))
+    c = T(s.c)
     return HHSolverParam{T}(
-        T(B0) * q / m, wp, T(h.w_para), T(h.w_perp), T(h.vd_para), T(h.vr_perp), sign(n) * Matrix{T}(h.alm)
+        T(s.Omega), sqrt(abs(T(s.Pi2))), T(h.w_para) / c, T(h.w_perp) / c, T(h.vd_para) / c, T(h.vr_perp) / c,
+        sign(T(s.Pi2)) * Matrix{T}(h.alm)
     )
 end
 
@@ -154,18 +155,17 @@ matrix_size(alg::BOHH, species) = let S = length(species)
     3 * (S * (2 * alg.N + 1) * alg.J + S) + 6
 end
 
-prepare(::BOHH, species, B0, ::Type{T}) where {T} = map(sp -> HHSolverParam(sp, B0, T), species)
+prepare(::BOHH, populations, ::Type{T}) where {T} = map(sp -> HHSolverParam(sp, T), populations)
 
-function dispersion_matrix!(M, pb::DispersionProblem, alg::BOHH; c2 = c0^2)
-    T = _realtype(eltype(M))
+function dispersion_matrix!(M, params, k::Wavevector, alg::BOHH)
+    T = real(eltype(M))
     N = alg.N
-    params = pb.species
     S = length(params)
     (; J, bzj, czj) = get_jpole_coefficients(alg.J, T)
 
     # The k⊥ → 0 limit is finite but each factor (nwkp, Bessel moments) is singular there.
-    kx = iszero(pb.kx) ? T(1.0e-30) : T(pb.kx)
-    kz = T(pb.kz)
+    kx = iszero(k.k_perp) ? T(1.0e-30) : T(k.k_perp)
+    kz = T(k.k_para)
     kz < 0 && (czj = -czj)
     SNJ = S * (2N + 1) * J
     SNJ1 = SNJ + S
@@ -180,16 +180,17 @@ function dispersion_matrix!(M, pb::DispersionProblem, alg::BOHH; c2 = c0^2)
     M[SNJ3 + 1, 1:SNJ1] .= -1
     M[SNJ3 + 2, (SNJ1 + 1):2SNJ1] .= -1
     M[SNJ3 + 3, (2SNJ1 + 1):3SNJ1] .= -1
-    _B_E_part!(M, SNJ3, kx, kz; c2)
+    _B_E_part!(M, SNJ3, kx, kz)
     return M
 end
 
-function _B_E_part!(M, idx, kx, kz; c2 = c0^2)
-    # E(B) coupling: Maxwell's equations
-    M[idx + 1, idx + 5] = c2 * kz
-    M[idx + 2, idx + 4] = -c2 * kz
-    M[idx + 2, idx + 6] = c2 * kx
-    M[idx + 3, idx + 5] = -c2 * kx
+# Maxwell's curl equations in units with c = 1
+function _B_E_part!(M, idx, kx, kz)
+    # E(B) coupling: Ampère's law
+    M[idx + 1, idx + 5] = kz
+    M[idx + 2, idx + 4] = -kz
+    M[idx + 2, idx + 6] = kx
+    M[idx + 3, idx + 5] = -kx
 
     # B(E) coupling: Faraday's law
     M[idx + 4, idx + 2] = -kz

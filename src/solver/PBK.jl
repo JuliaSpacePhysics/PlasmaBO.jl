@@ -1,8 +1,9 @@
 module PBK
 using QuadGK: quadgk
-using ..PlasmaBO: AbstractDispersionAlgorithm, DispersionProblem, _realtype, c0, ε0
+using ..PlasmaBO: AbstractDispersionAlgorithm
 using ..PlasmaBO: besselj, loggamma, gamma
-using PlasmaPopulations: Population, ProductBiKappa, kappa_widths
+using PlasmaPopulations: ProductBiKappa, kappa_widths
+using PlasmaDispersionBase: Wavevector
 import ..PlasmaBO: dispersion_matrix!, matrix_size, prepare
 
 """
@@ -17,21 +18,21 @@ the dispersion matrix.
     N::Int = 2
 end
 
-function PBK_param(s::Population, B0, ::Type{T}) where {T}
+function PBK_param(s, ::Type{T}) where {T}
+    iszero(s.Omega) && throw(ArgumentError("BOPBK expands about the gyration: needs B0 ≠ 0"))
     d = s.vdf
     d isa ProductBiKappa || throw(ArgumentError("BOPBK solves ProductBiKappa species, got $(nameof(typeof(d)))"))
     isinteger(d.kappa_para) || throw(ArgumentError("BOPBK needs an integer κ∥, got $(d.kappa_para)"))
-    m, q = T(s.particle.m), T(s.particle.q)
-    wp2 = T(s.n) * q^2 / (m * T(ε0))   # signed: the response is linear in n
-    wc = (T(B0) * q) / m
-    vtx, vtz = T.(kappa_widths(d))
+    c = T(s.c)
+    vtx, vtz = T.(kappa_widths(d)) ./ c
+    wc = T(s.Omega)
     return (;
-        u0 = T(d.vd_para), sigma = T(d.loss_cone), κz = Int(d.kappa_para), κx = T(d.kappa_perp),
-        wp2, wc, vtz, vtx, rhoc = vtx / abs(wc),
+        u0 = T(d.vd_para) / c, sigma = T(d.loss_cone), κz = Int(d.kappa_para), κx = T(d.kappa_perp),
+        wp2 = T(s.Pi2), wc, vtz, vtx, rhoc = vtx / abs(wc),   # signed wp2: the response is linear in n
     )
 end
 
-prepare(::BOPBK, species, B0, ::Type{T}) where {T} = map(sp -> PBK_param(sp, B0, T), species)
+prepare(::BOPBK, populations, ::Type{T}) where {T} = map(sp -> PBK_param(sp, T), populations)
 
 _pbk_per_n(κ) = (κ + 1) * (κ + 4) ÷ 2
 
@@ -170,24 +171,24 @@ b4snl(S, p, l, kz; r = 0) = S.s4 * bsl(p, l, kz, r)
 b5snl(S, p, n, l, kz) = S.s59 * bsnl(p, n, l, kz, 0)
 b6snl(S, p, l, kz) = S.s6 * bsl(p, l, kz, 0)
 
-bx11snl(wp2, n, b1) = -1im * ε0 * wp2 * n^2 * b1
-bx12snl(wp2, n, b2) = -1im * ε0 * wp2 * n^2 * b2
-bx21snl(wp2, n, b3) = ε0 * wp2 * n * b3
-bx22snl(wp2, n, b4) = ε0 * wp2 * n * b4
-bx31snl(wp2, wc, n, kx, ξ, b1, b2_kz) = -1im * ε0 * kx * wp2 * n * (b1 * ξ + b2_kz) / wc
-bx32snl(wp2, wc, n, kx, ξ, b2) = -1im * ε0 * kx * wp2 * n * b2 * ξ / wc
-bx33snl(wp2, wc, n, kx, b1_kz) = -1im * ε0 * kx * wp2 * n * b1_kz / wc
+bx11snl(wp2, n, b1) = -1im * wp2 * n^2 * b1
+bx12snl(wp2, n, b2) = -1im * wp2 * n^2 * b2
+bx21snl(wp2, n, b3) = wp2 * n * b3
+bx22snl(wp2, n, b4) = wp2 * n * b4
+bx31snl(wp2, wc, n, kx, ξ, b1, b2_kz) = -1im * kx * wp2 * n * (b1 * ξ + b2_kz) / wc
+bx32snl(wp2, wc, n, kx, ξ, b2) = -1im * kx * wp2 * n * b2 * ξ / wc
+bx33snl(wp2, wc, n, kx, b1_kz) = -1im * kx * wp2 * n * b1_kz / wc
 
-by21snl(wp2, b5) = -1im * ε0 * wp2 * b5
-by22snl(wp2, b6) = -1im * ε0 * wp2 * b6
-by31snl(wp2, wc, kx, ξ, b3, b4_kz) = -ε0 * kx * wp2 * (b3 * ξ + b4_kz) / wc
-by32snl(wp2, wc, kx, ξ, b4) = -ε0 * kx * wp2 * b4 * ξ / wc
-by33snl(wp2, wc, kx, b3_kz) = -ε0 * kx * wp2 * b3_kz / wc
+by21snl(wp2, b5) = -1im * wp2 * b5
+by22snl(wp2, b6) = -1im * wp2 * b6
+by31snl(wp2, wc, kx, ξ, b3, b4_kz) = -kx * wp2 * (b3 * ξ + b4_kz) / wc
+by32snl(wp2, wc, kx, ξ, b4) = -kx * wp2 * b4 * ξ / wc
+by33snl(wp2, wc, kx, b3_kz) = -kx * wp2 * b3_kz / wc
 
-bz31snl(wp2, wc, kx, ξ, b1, kx2b2_kz) = -1im * ε0 * wp2 * (kx^2 * b1 * ξ^2 + 2 * kx2b2_kz * ξ) / wc^2
-bz32snl(wp2, wc, ξ, kx2b2) = -1im * ε0 * wp2 * kx2b2 * ξ^2 / wc^2
-bz33snl(wp2, wc, kx, ξ, b1_kz, kx2b2_kz2) = -1im * ε0 * wp2 * (2 * kx^2 * b1_kz * ξ + kx2b2_kz2) / wc^2
-bz34snl(wp2, wc, kx, b1_kz2) = -1im * ε0 * kx^2 * wp2 * b1_kz2 / wc^2
+bz31snl(wp2, wc, kx, ξ, b1, kx2b2_kz) = -1im * wp2 * (kx^2 * b1 * ξ^2 + 2 * kx2b2_kz * ξ) / wc^2
+bz32snl(wp2, wc, ξ, kx2b2) = -1im * wp2 * kx2b2 * ξ^2 / wc^2
+bz33snl(wp2, wc, kx, ξ, b1_kz, kx2b2_kz2) = -1im * wp2 * (2 * kx^2 * b1_kz * ξ + kx2b2_kz2) / wc^2
+bz34snl(wp2, wc, kx, b1_kz2) = -1im * kx^2 * wp2 * b1_kz2 / wc^2
 
 lmax(κz; threshold = 10) = min(κz + 1, threshold)
 
@@ -347,13 +348,12 @@ end
 
 matrix_size(alg::BOPBK, species) = 3 * _pbk_len_sub(species, alg.N) + 6
 
-function dispersion_matrix!(M, pb::DispersionProblem, alg::BOPBK; EPS0 = 1.0e-2, c2 = real(zero(eltype(M)) + c0)^2)
-    T = _realtype(eltype(M))
-    params = pb.species
-    kx, kz = T(pb.kx), T(pb.kz)
+function dispersion_matrix!(M, params, k::Wavevector, alg::BOPBK; EPS0 = 1.0e-2)
+    T = real(eltype(M))
+    kx, kz = T(k.k_perp), T(k.k_para)
     N = alg.N
     len_sub = _pbk_len_sub(params, N)
-    bx10_by20 = 1im * T(ε0) * sum(sp.wp2 for sp in params)
+    bx10_by20 = 1im * sum(sp.wp2 for sp in params)
 
     Mx = @view M[1:len_sub, :]
     My = @view M[(len_sub + 1):(2 * len_sub), :]
@@ -370,16 +370,15 @@ function dispersion_matrix!(M, pb::DispersionProblem, alg::BOPBK; EPS0 = 1.0e-2,
     idx_Jy = 2 * len_sub
     idx_Jz = 3 * len_sub
 
-    inv_ε0 = 1im / T(ε0)
-    M[end - 5, end - 1] += c2 * kz
-    M[end - 5, idx_Jx] -= inv_ε0
+    M[end - 5, end - 1] += kz
+    M[end - 5, idx_Jx] -= 1im
 
-    M[end - 4, end - 2] -= c2 * kz
-    M[end - 4, end] += c2 * kx
-    M[end - 4, idx_Jy] -= inv_ε0
+    M[end - 4, end - 2] -= kz
+    M[end - 4, end] += kx
+    M[end - 4, idx_Jy] -= 1im
 
-    M[end - 3, end - 1] -= c2 * kx
-    M[end - 3, idx_Jz] -= inv_ε0
+    M[end - 3, end - 1] -= kx
+    M[end - 3, idx_Jz] -= 1im
 
     M[end - 2, end - 4] -= kz
     M[end - 1, end - 5] += kz

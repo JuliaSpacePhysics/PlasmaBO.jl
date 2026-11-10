@@ -1,27 +1,10 @@
+abstract type AbstractDispersionAlgorithm end
+
 include("solver/PBK.jl"); using .PBK: BOPBK
 include("solver/HH.jl")
 include("solver/fluid.jl")
 
 zero!(M) = fill!(M, zero(eltype(M)))
-
-# Promoted real (floating-point) element type carried by a problem.
-function _realtype(::DispersionProblem{S, B, K}) where {S, B, K}
-    return float(promote_type(B, K))
-end
-function _realtype(::EnsembleProblem{S, B, Ks, Θs}) where {S, B, Ks, Θs}
-    return float(promote_type(B, eltype(Ks), eltype(Θs)))
-end
-
-_complex_type(pb) = Complex{_realtype(pb)}
-
-_prepared(pb::DispersionProblem, alg) =
-    DispersionProblem(prepare(alg, pb.species, pb.B0, _realtype(pb)), pb.B0, pb.kx, pb.kz)
-
-function dispersion_matrix(pb::DispersionProblem, alg; kw...)
-    pb = _prepared(pb, alg)
-    n = matrix_size(alg, pb.species)
-    return dispersion_matrix!(zeros(_complex_type(pb), n, n), pb, alg; kw...)
-end
 
 # LAPACK eigvals! accepts UnsafeArray views; GenericLinearAlgebra's Householder
 # does not. Aliasing the Bumper buffer via `unsafe_wrap(Array, ...)` segfaults
@@ -31,51 +14,33 @@ end
 _for_eigvals(M::AbstractMatrix{<:Union{ComplexF32, ComplexF64}}) = M
 _for_eigvals(M::AbstractMatrix) = Matrix(M)
 
-function solve(pb::DispersionProblem, alg)
-    pb = _prepared(pb, alg)
-    CT = _complex_type(pb)
-    n = matrix_size(alg, pb.species)
-    return @no_escape begin
-        M = @temp_array(CT, n, n)
-        dispersion_matrix!(zero!(M), pb, alg)
-        eigvals!(_for_eigvals(M))
-    end
-end
+# The static parameter keeps the closure's element type inferable.
+pointsolver(prob, alg::AbstractDispersionAlgorithm) =
+    _eigenroots(prepare(alg, prob.plasma.populations, realtype(prob)), alg, Complex{realtype(prob)})
 
-function solve(pb::EnsembleProblem, alg)
-    T = _realtype(pb)
-    CT = Complex{T}
-    ωs = Matrix{Vector{CT}}(undef, length(pb.ks), length(pb.θs))
-    solve_with_threads(1) do
-        species = prepare(alg, pb.species, pb.B0, T)
-        n = matrix_size(alg, species)
-        with_progress(pb) do ik, iθ, kx, kz
-            @no_escape begin
-                M = @temp_array(CT, n, n)
-                sub = DispersionProblem(species, pb.B0, kx, kz)
-                dispersion_matrix!(zero!(M), sub, alg)
-                ωs[ik, iθ] = eigvals!(_for_eigvals(M))
-            end
+function _eigenroots(params, alg, ::Type{CT}) where {CT}
+    n = matrix_size(alg, params)
+    return function (k)
+        ωs = @no_escape begin
+            M = @temp_array(CT, n, n)
+            dispersion_matrix!(zero!(M), params, k, alg)
+            eigvals!(_for_eigvals(M))
         end
+        return (; omega = ωs, resid = nothing, nevals = 1, converged = true)
     end
-    return DispersionSolution(pb.ks, pb.θs, ωs)
 end
 
 """
-    solve(plasma::Plasma, k::Wavevector, alg) -> Vector of ω [rad/s]
-    solve(plasma::Plasma, sweep::AngleSweep, alg) -> DispersionSolution
+    dispersion_matrix(plasma, k::Wavevector, alg; ref)
 
-All modes at one wavevector [m⁻¹], or over `sweep.k` [m⁻¹] × `sweep.theta` [rad].
-
-See also: [`BOHH`](@ref), [`BOPBK`](@ref), [`BOFluid`](@ref)
+The linear operator whose eigenvalues are the roots `ω`, in the units of `plasma` (see
+`DispersionProblem` for `ref`). Its eigenvectors end in the fields `(E, B)` with `c = 1`.
 """
-solve(plasma::Plasma, k::Wavevector, alg::AbstractDispersionAlgorithm) = solve(DispersionProblem(plasma, k), alg)
-solve(plasma::Plasma, sweep::AngleSweep, alg::AbstractDispersionAlgorithm) = solve(EnsembleProblem(plasma, sweep), alg)
-
-"""
-    dispersion_matrix(plasma::Plasma, k::Wavevector, alg)
-
-The linear operator whose eigenvalues are the modes returned by [`solve`](@ref).
-"""
-dispersion_matrix(plasma::Plasma, k::Wavevector, alg::AbstractDispersionAlgorithm) =
-    dispersion_matrix(DispersionProblem(plasma, k), alg)
+function dispersion_matrix(plasma, k::Wavevector, alg::AbstractDispersionAlgorithm; ref...)
+    prob, u = normalized(DispersionProblem(plasma, k; ref...))
+    T = realtype(prob)
+    params = prepare(alg, prob.plasma.populations, T)
+    n = matrix_size(alg, params)
+    M = dispersion_matrix!(zeros(Complex{T}, n, n), params, prob.k, alg)
+    return M .*= u.omega
+end
