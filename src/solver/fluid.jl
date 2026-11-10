@@ -13,51 +13,46 @@ end
 _per_species(x::Number, i) = x
 _per_species(x, i) = x[i]
 
-function _fluid_param(s::Population, gamma_p, gamma_z, ::Type{T}) where {T}
-    vth_perp, vth_para = T.(vth_perp_para(s.vdf))
-    q, m, n = T(s.particle.q), T(s.particle.m), T(s.n)
+# Pressure anisotropy pulls along the perturbed field line, a force ∝ ΔP δB/B₀: no B₀-free limit.
+function _fluid_param(s, gamma_p, gamma_z, ::Type{T}) where {T}
+    c = T(s.c)
+    vth_perp, vth_para = T.(vth_perp_para(s.vdf)) ./ c
+    wc, wp = T(s.Omega), sqrt(abs(T(s.Pi2)))
+    Δ = (vth_para^2 - vth_perp^2) / 2
+    aniso = iszero(Δ) || iszero(wp) ? zero(T) : iszero(wc) ?
+        throw(ArgumentError("BOFluid: an anisotropic population needs B0 ≠ 0")) : Δ * wp / wc
     return (;
-        q, m, n, vdz = T(mean(s.vdf)[3]), Pz = n * m * vth_para^2 / 2, Pp = n * m * vth_perp^2 / 2,
-        gamma_z = T(gamma_z), gamma_p = T(gamma_p),
+        wc, wp, sgn = sign(T(s.Pi2)), vdz = T(mean(s.vdf)[3]) / c, aniso,
+        csp2 = T(gamma_p) * vth_perp^2 / 2, csz2 = T(gamma_z) * vth_para^2 / 2,
     )
 end
 
-function prepare(alg::BOFluid, species, B0, ::Type{T}) where {T}
-    S = length(species)
+function prepare(alg::BOFluid, populations, ::Type{T}) where {T}
+    S = length(populations)
     for γ in (alg.gamma_perp, alg.gamma_para)
         γ isa Number || length(γ) == S ||
             throw(ArgumentError("BOFluid polytropic index $γ: need a scalar or one entry per population ($S)"))
     end
-    return ntuple(i -> _fluid_param(species[i], _per_species(alg.gamma_perp, i), _per_species(alg.gamma_para, i), T), S)
+    return ntuple(i -> _fluid_param(populations[i], _per_species(alg.gamma_perp, i), _per_species(alg.gamma_para, i), T), S)
 end
 
 # Matrix dimensions: 4 variables per species (n, vx, vy, vz) + 6 fields (Ex, Ey, Ez, Bx, By, Bz)
 matrix_size(::BOFluid, species) = 4 * length(species) + 6
 
-function _assemble_fluid_species!(M, s, ind, SJ, kx, kz, B0)
-    q = s.q
-    m = s.m
-    n = s.n
-    vdz = s.vdz
-    Pz = s.Pz
-    Pp = s.Pp
-
-    ρ = m * n # Mass density (kg/m³)
-    wc = q * B0 / m # Cyclotron frequency
-    csz = sqrt(s.gamma_z * Pz / ρ)
-    csp = sqrt(s.gamma_p * Pp / ρ)
-
-    # k dot v_drift
+# Fields are E and B with c = 1; a species' δn/n and v (in c) are scaled by ω_p/Ω, so that its
+# couplings to the fields need ω_p and Ω only, never their ratio, and survive B₀ = 0.
+function _assemble_fluid_species!(M, s, ind, SJ, kx, kz)
+    (; wc, wp, vdz, aniso, csp2, csz2) = s
     kvd = kz * vdz
 
-    # dn ~ n & v (continuity equation)
+    # dn ~ v (continuity equation)
     M[ind + 1, ind + 1] = kvd
-    M[ind + 1, ind + 2] = kx * n
-    M[ind + 1, ind + 4] = kz * n
+    M[ind + 1, ind + 2] = kx
+    M[ind + 1, ind + 4] = kz
 
     # dv ~ n & v (momentum equation)
-    M[ind + 2, ind + 1] = kx * csp^2 / n
-    M[ind + 4, ind + 1] = kz * csz^2 / n
+    M[ind + 2, ind + 1] = kx * csp2
+    M[ind + 4, ind + 1] = kz * csz2
     M[ind + 2, ind + 2] = kvd
     M[ind + 3, ind + 3] = kvd
     M[ind + 4, ind + 4] = kvd
@@ -65,37 +60,33 @@ function _assemble_fluid_species!(M, s, ind, SJ, kx, kz, B0)
     M[ind + 2, ind + 3] = 1im * wc
 
     # dv ~ E (Lorentz force)
-    qm = q / m
-    M[ind + 2, SJ + 1] = 1im * qm
-    M[ind + 3, SJ + 2] = 1im * qm
-    M[ind + 4, SJ + 3] = 1im * qm
+    M[ind + 2, SJ + 1] = 1im * wp
+    M[ind + 3, SJ + 2] = 1im * wp
+    M[ind + 4, SJ + 3] = 1im * wp
 
     # dv ~ B (magnetic force and pressure anisotropy)
-    Δ = B0 == 0 ? 0.0 : (Pz - Pp) / B0 / ρ
-    M[ind + 2, SJ + 4] = kz * Δ
-    M[ind + 2, SJ + 5] = -1im * qm * vdz
-    M[ind + 4, SJ + 4] = kx * Δ
-    M[ind + 3, SJ + 4] = 1im * qm * vdz
-    M[ind + 3, SJ + 5] = kz * Δ
+    M[ind + 2, SJ + 4] = kz * aniso
+    M[ind + 2, SJ + 5] = -1im * wp * vdz
+    M[ind + 4, SJ + 4] = kx * aniso
+    M[ind + 3, SJ + 4] = 1im * wp * vdz
+    M[ind + 3, SJ + 5] = kz * aniso
 
-    # dE ~ n
-    M[SJ + 3, ind + 1] = -1im * q * vdz / ε0
-    # dE ~ v
-    M[SJ + 1, ind + 2] = -1im * q * n / ε0
-    M[SJ + 2, ind + 3] = -1im * q * n / ε0
-    M[SJ + 3, ind + 4] = -1im * q * n / ε0
+    # dE ~ n & v (current density)
+    a = s.sgn * wp
+    M[SJ + 3, ind + 1] = -1im * a * vdz
+    M[SJ + 1, ind + 2] = -1im * a
+    M[SJ + 2, ind + 3] = -1im * a
+    M[SJ + 3, ind + 4] = -1im * a
     return nothing
 end
 
-function dispersion_matrix!(M, pb::DispersionProblem, alg::BOFluid; c2 = c0^2)
-    B0, kx, kz = pb.B0, pb.kx, pb.kz
-    species = pb.species
+function dispersion_matrix!(M, species, k::Wavevector, alg::BOFluid)
+    kx, kz = k.k_perp, k.k_para
     S = length(species)
     SJ = 4 * S
     for i in 1:S
-        _assemble_fluid_species!(M, species[i], (i - 1) * 4, SJ, kx, kz, B0)
+        _assemble_fluid_species!(M, species[i], (i - 1) * 4, SJ, kx, kz)
     end
-    _B_E_part!(M, SJ, kx, kz; c2)
+    _B_E_part!(M, SJ, kx, kz)
     return M
 end
-

@@ -99,8 +99,12 @@ Check out the [ring beam instability example](ringbeam_Umeda12.md) for detailed 
 
 ## Solvers
 
+Problems, targets and solutions follow [PlasmaDispersionBase.jl](https://github.com/JuliaPlasma/PlasmaDispersionBase.jl#readme): `solve(DispersionProblem(plasma, [box,] k), alg)` for every root and `link` to join them into branches, `solve(DispersionProblem(plasma, Seed(ω, at), k), alg)` for the one through a seed, and `track(sol, ω, at)` for several seeds through one boxless survey.
+
 ```@docs; canonical = false
-solve
+BOHH
+BOPBK
+BOFluid
 ```
 
 BO-PBK ([`BOPBK`](@ref)) is an analytic, distribution-aware eigen-solver optimized for kappa plasmas, whereas BO-Arbitrary ([`BOHH`](@ref)) is a universal but numerically heavier framework that approximates any distribution at the cost of efficiency and low-κ accuracy.

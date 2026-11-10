@@ -35,8 +35,12 @@ We scan `k` at fixed propagation angle `theta = 60°`.
 theta = deg2rad(60)
 kn_scan = 0.01:2.0:100.0;
 k = kn_scan .* kn;
-kinetic = solve(plasma, AngleSweep(; k, theta), BOHH());
-fluid_ωs = solve(plasma, AngleSweep(; k, theta), BOFluid());
+# Every mode at each wavevector
+modes(alg) = map(k) do x
+    solve(DispersionProblem(plasma, Wavevector(; k = x, theta)), alg).omega
+end
+kinetic = modes(BOHH());
+fluid_ωs = modes(BOFluid());
 # The fluid closure is set on the solver, e.g. `BOFluid(; gamma_perp = 2.0, gamma_para = 3.0)`
 ```
 
@@ -48,7 +52,7 @@ let
     ax1 = Axis(fig[1, 1], xlabel = "k [k_n]", ylabel = "Re(ω)/ω_ci")
     ax2 = Axis(fig[1, 2], xlabel = "k [k_n]", ylabel = "Im(ω)/ω_ci")
 
-    for (k_norm, ωs_k, ωs_f) in zip(kn_scan, kinetic.omega, fluid_ωs.omega)
+    for (k_norm, ωs_k, ωs_f) in zip(kn_scan, kinetic, fluid_ωs)
         xk = fill(k_norm, length(ωs_k))
         xf = fill(k_norm, length(ωs_f))
 

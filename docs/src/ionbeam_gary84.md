@@ -70,16 +70,15 @@ v0_labels = [L"v_0 = 0",
              L"v_0 = 20\,v_m",
              L"v_0 = 30\,v_m"]
 
-# v0=0: real seed targets the stable R-wave (Alfvén branch)
-# v0>0: imaginary seed hunts the growing beam-resonant mode
+# (k, ω) seeds: v0=0 on the stable R-wave (Alfvén branch), v0>0 on the growing beam-resonant mode
 initial_points = [
     (0.1 * ωcp / vm, 0.15 * ωcp),
-    (0.1 * ωcp / vm, 0.08im * ωcp),
-    (0.05 * ωcp / vm, 0.1im * ωcp),
-    (0.04 * ωcp / vm, 0.15im * ωcp),
+    (0.1 * ωcp / vm, (0.167 + 0.0855im) * ωcp),
+    (0.05 * ωcp / vm, (0.127 + 0.14im) * ωcp),
+    (0.04 * ωcp / vm, (0.187 + 0.148im) * ωcp),
 ]
 
-sols = map(v0_vals) do v0
+plasmas = map(v0_vals) do v0
     v0m = -nb * v0 / (nm + nb)
     v0b = v0m + v0
 
@@ -89,12 +88,13 @@ sols = map(v0_vals) do v0
         Population(Electron(), BiMaxwellian; T = Te_eV, n = ne);
         B0,
     )
-    solve(plasma, AngleSweep(; k = k_ranges, theta = θ), BOHH(; N = 3))
+    plasma
 end
+alg = BOHH(; N = 3)
 
 fig = Figure(size = (900, 600), fontsize = 20)
 
-for (idx, (sol, label)) in enumerate(zip(sols, v0_labels))
+for (idx, (plasma, label)) in enumerate(zip(plasmas, v0_labels))
     row = (idx - 1) ÷ 2 + 1
     col = (idx - 1) % 2 + 1
 
@@ -104,10 +104,12 @@ for (idx, (sol, label)) in enumerate(zip(sols, v0_labels))
     row == 2 ? (ax.xlabel = L"$k\,r_{L,main}$") : hidexdecorations!(ax, grid = false)
 
     # Tracking from given seeding points
-    k_branch, ω_branch = track(sol, initial_points[idx])
-    scatterlines!(ax, k_branch ./ k_norm, real.(ω_branch) ./ ωcp;
+    k0, ω0 = initial_points[idx]
+    seed = Seed(ω0, Wavevector(; k = k0, theta = θ))
+    ω_branch = solve(DispersionProblem(plasma, seed, AngleSweep(; k = collect(k_ranges), theta = θ)), alg).omega
+    scatterlines!(ax, k_ranges ./ k_norm, real.(ω_branch) ./ ωcp;
         linewidth = 2, color = :royalblue)
-    scatterlines!(ax, k_branch ./ k_norm, imag.(ω_branch) ./ ωcp;
+    scatterlines!(ax, k_ranges ./ k_norm, imag.(ω_branch) ./ ωcp;
         linewidth = 2, color = :orangered)
 
     xlims!(ax, 0, 0.2)
@@ -160,16 +162,15 @@ v0_labels = [L"v_0 = 0",
              L"v_0 = 30\,v_m"]
 
 # The nonresonant mode is backward-propagating (ω_r < 0) and grows at low k.
-# Seed with imaginary ω to target the growing nonresonant branch.
 # For v0=0 there is no beam-driven nonresonant mode; target the stable Alfvén branch.
 initial_points = [
     (0.1 * k_norm,  0.15 * ωcp),     # v0=0: stable Alfvén branch (real seed)
     (0.1 * k_norm, 0.1 * ωcp + 0.001im * ωcp),  # v0=10 vm: nonresonant mode (low k)
-    (0.02 * k_norm, 0.0 + 0.1im * ωcp),   # v0=20 vm: stronger nonresonant growth
-    (0.02 * k_norm, 0.0 + 0.25im * ωcp), # v0=30 vm: peak nonresonant instability
+    (0.02 * k_norm, (0.0042 + 0.0429im) * ωcp),  # v0=20 vm: stronger nonresonant growth
+    (0.02 * k_norm, (0.015 + 0.0861im) * ωcp),   # v0=30 vm: peak nonresonant instability
 ]
 
-sols = map(v0_vals) do v0
+plasmas = map(v0_vals) do v0
     v0m = -nb * v0 / (nm + nb)
     v0b = v0m + v0
 
@@ -179,12 +180,13 @@ sols = map(v0_vals) do v0
         Population(Electron(), BiMaxwellian; T = Te_eV, n = ne);
         B0,
     )
-    solve(plasma, AngleSweep(; k = k_ranges, theta = θ), BOHH(; N = 3))
+    plasma
 end
+alg = BOHH(; N = 3)
 
 fig = Figure(size = (900, 600), fontsize = 20)
 
-for (idx, (sol, label)) in enumerate(zip(sols, v0_labels))
+for (idx, (plasma, label)) in enumerate(zip(plasmas, v0_labels))
     row = (idx - 1) ÷ 2 + 1
     col = (idx - 1) % 2 + 1
 
@@ -193,10 +195,12 @@ for (idx, (sol, label)) in enumerate(zip(sols, v0_labels))
     col == 1 ? (ax.ylabel = L"$\omega\,/\,\omega_{cp}$") : hideydecorations!(ax, grid = false)
     row == 2 ? (ax.xlabel = L"$k\,r_{L,main}$") : hidexdecorations!(ax, grid = false)
 
-    k_branch, ω_branch = track(sol, initial_points[idx])
-    scatterlines!(ax, k_branch ./ k_norm, real.(ω_branch) ./ ωcp;
+    k0, ω0 = initial_points[idx]
+    seed = Seed(ω0, Wavevector(; k = k0, theta = θ))
+    ω_branch = solve(DispersionProblem(plasma, seed, AngleSweep(; k = collect(k_ranges), theta = θ)), alg).omega
+    scatterlines!(ax, k_ranges ./ k_norm, real.(ω_branch) ./ ωcp;
         linewidth = 2, color = :royalblue)
-    scatterlines!(ax, k_branch ./ k_norm, imag.(ω_branch) ./ ωcp;
+    scatterlines!(ax, k_ranges ./ k_norm, imag.(ω_branch) ./ ωcp;
         linewidth = 2, color = :orangered)
 
     xlims!(ax, 0, 0.2)
@@ -254,7 +258,7 @@ initial_points = [
     (0.1 * k_norm, 0.1 * ωcp + 0.005im * ωcp),
 ]
 
-sols = map(v0_vals) do v0
+plasmas = map(v0_vals) do v0
     v0m = -nb * v0 / (nm + nb)
     v0b = v0m + v0
 
@@ -264,12 +268,13 @@ sols = map(v0_vals) do v0
         Population(Electron(), BiMaxwellian; T = Te_eV, n = ne);
         B0,
     )
-    solve(plasma, AngleSweep(; k = k_ranges, theta = θ), BOHH(; N = 4))
+    plasma
 end
+alg = BOHH(; N = 4)
 
 fig = Figure(size = (900, 600), fontsize = 18)
 
-for (idx, (sol, label)) in enumerate(zip(sols, v0_labels))
+for (idx, (plasma, label)) in enumerate(zip(plasmas, v0_labels))
     row = (idx - 1) ÷ 2 + 1
     col = (idx - 1) % 2 + 1
 
@@ -282,10 +287,12 @@ for (idx, (sol, label)) in enumerate(zip(sols, v0_labels))
     col == 2 ? (ax2.ylabel = L"$\gamma\,/\,\omega_{cp}$") : hideydecorations!(ax2, grid = false)
     row == 2 ? (ax1.xlabel = L"$k\,a_{m}$") : hidexdecorations!(ax1, grid = false)
 
-    k_branch, ω_branch = track(sol, initial_points[idx])
+    k0, ω0 = initial_points[idx]
+    seed = Seed(ω0, Wavevector(; k = k0, theta = θ))
+    ω_branch = solve(DispersionProblem(plasma, seed, AngleSweep(; k = collect(k_ranges), theta = θ)), alg).omega
     
-    lines!(ax1, k_branch ./ k_norm, real.(ω_branch) ./ ωcp; linewidth = 2, color = :royalblue)
-    scatter!(ax2, k_branch ./ k_norm, imag.(ω_branch) ./ ωcp; markersize = 6, color = :orangered)
+    lines!(ax1, k_ranges ./ k_norm, real.(ω_branch) ./ ωcp; linewidth = 2, color = :royalblue)
+    scatter!(ax2, k_ranges ./ k_norm, imag.(ω_branch) ./ ωcp; markersize = 6, color = :orangered)
 
     xlims!(ax1, 0, 0.2)
     xlims!(ax2, 0, 0.2)
@@ -336,16 +343,16 @@ plasma = Plasma(
 
 k_norm = ωcp / vm 
 k_ranges = (0.01:0.01:1.0) .* k_norm
-sol = solve(plasma, AngleSweep(; k = k_ranges, theta = θ), BOHH(; N = 6))
 
 fig = Figure(size = (800, 400), fontsize = 18)
 ax1 = Axis(fig[1, 1], ylabel = L"$\omega_r / \omega_{cp}$", xlabel = L"$k\,a_{m}$")
 ax2 = Axis(fig[1, 2], ylabel = L"$\gamma / \omega_{cp}$", xlabel = L"$k\,a_{m}$")
 
-k_branch, ω_branch = track(sol, (0.2 * k_norm, 0.1im * ωcp))
+seed = Seed((-0.22 + 0.0661im) * ωcp, Wavevector(; k = 0.2k_norm, theta = θ))
+ω_branch = solve(DispersionProblem(plasma, seed, AngleSweep(; k = collect(k_ranges), theta = θ)), BOHH(; N = 6)).omega
 
-lines!(ax1, k_branch ./ k_norm, real.(ω_branch) ./ ωcp, linewidth = 2, color = :royalblue)
-lines!(ax2, k_branch ./ k_norm, imag.(ω_branch) ./ ωcp, linewidth = 2, color = :orangered)
+lines!(ax1, k_ranges ./ k_norm, real.(ω_branch) ./ ωcp, linewidth = 2, color = :royalblue)
+lines!(ax2, k_ranges ./ k_norm, imag.(ω_branch) ./ ωcp, linewidth = 2, color = :orangered)
 
 fig
 ```
@@ -389,9 +396,9 @@ k_target = 0.44 * ωcp / vm
 θ_vals = range(66, 84, length = 40) .* (π / 180)
 
 γ_vals = map(θ_vals) do θ
-    sol = solve(plasma, AngleSweep(; k = [k_target], theta = θ), BOHH(; N = 6))
+    sol = solve(DispersionProblem(plasma, Wavevector(; k = k_target, theta = θ)), BOHH(; N = 6))
     # Extract the mode with the maximum growth rate at this configuration
-    maximum(imag.(sol.omega[1]))
+    maximum(imag, sol.omega)
 end
 
 fig = Figure(size = (600, 400), fontsize = 18)
