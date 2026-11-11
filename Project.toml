@@ -15,6 +15,7 @@ PlasmaDispersionBase = "d133dfe1-3f12-4270-b956-f7134e633753"
 PlasmaPopulations = "19fe0aba-210f-40e6-8711-72208e0968be"
 QuadGK = "1fd47b50-473d-5c70-9696-f719f8f3bcdc"
 Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
+Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 
 [weakdeps]
 SpecialFunctions = "276daf66-3868-5448-9aa4-cd146d93841b"
@@ -32,6 +33,7 @@ PlasmaPopulations = "0.1"
 QuadGK = "2"
 Reexport = "1"
 SpecialFunctions = "2"
+Statistics = "1"
 julia = "1.10"
 
 [sources]

@@ -3,8 +3,9 @@ module PlasmaBO
 using QuadGK: quadgk, quadgk!
 using Bumper: @no_escape, @alloc
 using LinearAlgebra
+using Statistics: mean
 using PlasmaPopulations
-using PlasmaPopulations: si_velocity, kappa_widths
+using PlasmaPopulations: si_velocity, kappa_widths, pdf
 using Reexport: @reexport
 @reexport using PlasmaDispersionBase
 using PlasmaDispersionBase: normalized, realtype
