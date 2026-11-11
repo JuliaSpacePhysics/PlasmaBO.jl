@@ -10,11 +10,16 @@ the dispersion matrix.
     N::Int = 2
 end
 
+# Past this κ∥, roundoff spreads the pole's chain into the roots (docs/src/math_notes.md).
+const _PBK_KAPPA_PARA_MAX = 24
+
 function PBK_param(s, ::Type{T}) where {T}
     iszero(s.Omega) && throw(ArgumentError("BOPBK expands about the gyration: needs B0 ≠ 0"))
     d = s.vdf
     d isa ProductBiKappa || throw(ArgumentError("BOPBK solves ProductBiKappa species, got $(nameof(typeof(d)))"))
-    isinteger(d.kappa_para) || throw(ArgumentError("BOPBK needs an integer κ∥, got $(d.kappa_para)"))
+    isinteger(d.kappa_para) && 1 ≤ d.kappa_para ≤ _PBK_KAPPA_PARA_MAX || throw(ArgumentError(
+        "BOPBK needs an integer κ∥ in 1:$_PBK_KAPPA_PARA_MAX, beyond which roundoff moves its roots, got $(d.kappa_para)"
+    ))
     c = T(s.c)
     vtx, vtz = T.(kappa_widths(d)) ./ c
     wc = T(s.Omega)
@@ -168,51 +173,64 @@ function _pbk_tail(S, p, n, l, kx, kz, ξ)
     )
 end
 
-# Z_κ∥ is rational in ξ with a pole of order κ∥ + 1. Level l = 1:κ∥+1 of the expansion couples E
-# to (ω - csn)^-l (head) and (ω - csn)^-(l+1) (tail) through its own chain of l + 1 states. A single
-# chain of κ∥ + 2 states per harmonic is equivalent and smaller, but worse conditioned.
+# One chain of κ∥ + 2 states per harmonic, scaled by the pole width s; see docs/src/math_notes.md.
 # Each component (x, y, z) has the chains of every species and its current J last.
-_pbk_nstates(p, N) = (2N + 1) * (p.κz + 1) * (p.κz + 4) ÷ 2
+_pbk_nstates(p, N) = (2N + 1) * (p.κz + 2)
 
 matrix_size(alg::BOPBK, params) = 3 * (sum(p -> _pbk_nstates(p, alg.N), params) + 1) + 6
 
 # Fills the chains of one species after row `r` of each component block of `L` rows; returns its last row.
 function _pbk_species!(M, p, r, L, kx, kz, N)
     ξ = _ξ(p)
+    s = 2 * sqrt(p.κz) * p.vtz * abs(kz)
+    iszero(s) && (s = one(s))
+    m = p.κz + 2
     Ss = [_pbk_S(p, ν, kx) for ν in 0:N]
     for n in -N:N
         S = Ss[abs(n) + 1]
         csn = n * p.wc + kz * ξ
-        for l in 1:min(p.κz + 1, 10)
+        for c in 0:2
+            M[(c + 1) * L, c * L + r + 1] = 1
+        end
+        for j in 1:m
+            r += 1
             for c in 0:2
-                M[(c + 1) * L, c * L + r + 1] = 1
+                M[c * L + r, c * L + r] = csn
+                j < m && (M[c * L + r, c * L + r + 1] = s)
             end
-            for j in 1:(l + 1)
-                r += 1
-                for c in 0:2
-                    M[c * L + r, c * L + r] = csn
-                    j <= l && (M[c * L + r, c * L + r + 1] = 1)
-                end
-                j == l && _couple_E!(M, r, L, 3L, _pbk_head(S, p, n, l, kx, kz, ξ))
-                j == l + 1 && _couple_E!(M, r, L, 3L, _pbk_tail(S, p, n, l, kx, kz, ξ))
-            end
+            b = j < m ? _pbk_head(S, p, n, j, kx, kz, ξ) : ntuple(_ -> zero(csn), 6)
+            j > 1 && (b = b .+ _pbk_tail(S, p, n, j - 1, kx, kz, ξ))
+            _couple_E!(M, r, L, 3L, b ./ s^(j - 1))
         end
     end
     return r
 end
 
+# The closed form of Z_κ∥ follows the Landau contour only for k∥ > 0. k∥ < 0 is the mirror image
+# z → -z with drifts reversed, mapped back by flipping the signs of Jz's chains, Ez, Bx and By.
 function dispersion_matrix!(M, params, k::Wavevector, alg::BOPBK)
     T = real(eltype(M))
     kx, kz = T(k.k_perp), T(k.k_para)
-    L = sum(p -> _pbk_nstates(p, alg.N), params) + 1
+    kz < 0 || (_pbk_matrix!(M, params, kx, kz, alg.N); return M)
+    L = _pbk_matrix!(M, map(p -> merge(p, (; u0 = -p.u0)), params), kx, -kz, alg.N)
+    for I in ((2L + 1):3L, (3L + 3):(3L + 5))
+        M[I, :] .*= -1
+        M[:, I] .*= -1
+    end
+    return M
+end
+
+function _pbk_matrix!(M, params, kx, kz, N)
+    L = sum(p -> _pbk_nstates(p, N), params) + 1
     r = 0
     for p in params
-        r = _pbk_species!(M, p, r, L, kx, kz, alg.N)
+        r = _pbk_species!(M, p, r, L, kx, kz, N)
     end
     iwp2 = 1im * sum(p -> p.wp2, params)
     for c in 1:3
         M[c * L, 3L + c] = iwp2
         M[3L + c, c * L] = -1im
     end
-    return _B_E_part!(M, 3L, kx, kz)
+    _B_E_part!(M, 3L, kx, kz)
+    return L
 end
