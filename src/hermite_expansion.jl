@@ -1,47 +1,4 @@
 """
-Hermite expansion utilities for arbitrary velocity distributions.
-
-Reference: https://docs.sciml.ai/PolyChaos/stable/orthogonal_polynomials_canonical
-"""
-
-"""
-    hermite_H(n::Int, x)
-
-Compute physicists' Hermite polynomial H_n(x) using recurrence relation.
-
-# Recurrence Relations
-- H_0(x) = 1
-- H_1(x) = 2x
-- H_{n+1}(x) = 2x*H_n(x) - 2n*H_{n-1}(x)
-
-# Examples
-```julia
-hermite_H(0, 1.5)  # Returns 1.0
-hermite_H(1, 1.5)  # Returns 3.0 (= 2*1.5)
-hermite_H(2, 1.5)  # Returns 7.0 (= 2*1.5*3.0 - 2*1*1.0)
-```
-"""
-function hermite_H(n::Int, x::T) where {T <: Number}
-    @assert n >= 0 "Hermite polynomial order must be non-negative"
-
-    n == 0 && return one(T)
-    n == 1 && return 2 * x
-
-    # Use recurrence relation
-    H_prev2 = one(T)
-    H_prev1 = 2 * x
-
-    for k in 2:n
-        H_curr = 2 * x * H_prev1 - 2 * (k - 1) * H_prev2
-        H_prev2 = H_prev1
-        H_prev1 = H_curr
-    end
-
-    return H_prev1
-end
-
-
-"""
     hermite_coefficients_matrix(nmax)
 
 Compute coefficient matrix for expanding Hermite polynomials in power basis given the maximum order `nmax`.
@@ -118,15 +75,6 @@ function hermite_a0_to_a(a0lm)
     Cz = @view cHn[1:lmax, 1:lmax]
     Cx = @view cHn[1:mmax, 1:mmax]
     return Cz' * a0lm * Cx
-end
-
-@inline function hermite_basis(ξ, l)
-    return hermite_H(l, ξ) * exp(-ξ^2 / 2) / sqrt(2^l * factorial(l) * sqrt(π))
-end
-
-@inline function hermite_basis(x, x0, μ, l)
-    ξ = sqrt(2) * (x - x0) / μ
-    return hermite_basis(ξ, l)
 end
 
 """

@@ -1,15 +1,7 @@
 using Bessels: Bessels
 using Gamma: Gamma
 
-"""
-    funIn(n)
-    funIn(T, n)
-
-Normalization integral I_n = ∫ v^n exp(-v²) dv / √π.
-
-Returns Γ((n+1)/2)/√π for even n, 0 for odd n.
-"""
-funIn(n) = funIn(Float64, n)
+# Normalization integral Iₙ = ∫ vⁿ exp(-v²) dv / √π: Γ((n+1)/2)/√π for even n, 0 for odd n.
 function funIn(::Type{T}, n) where {T <: Real}
     isodd(n) && return zero(T)
     I = one(T)
