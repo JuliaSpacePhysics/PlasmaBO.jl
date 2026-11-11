@@ -1,15 +1,3 @@
-"""
-    JPoleCoefficients{T}
-
-J-pole approximation coefficients for the plasma dispersion function.
-Z(ζ) ≈ Σⱼ bⱼ/(ζ - cⱼ)
-"""
-struct JPoleCoefficients{T <: Complex}
-    J::Int
-    bzj::Vector{T}
-    czj::Vector{T}
-end
-
 const bzj24 = [
     -579.77656932346560644 - 844.01436313629880827im,
     -179.52530851977905732 - 86.660002027244731382im,
@@ -41,9 +29,9 @@ const czj24 = [
 ]
 
 """
-    get_jpole_coefficients(J=8)
+    get_jpole_coefficients(J = 8, T = Float64) -> (; bzj, czj)
 
-Get J-pole approximation coefficients for the plasma dispersion function.
+J-pole approximation of the plasma dispersion function, Z(ζ) ≈ Σⱼ bⱼ/(ζ - cⱼ).
 
 Supported values: J ∈ {4, 6, 8, 10, 12, 16, 20, 24, 28, 32}
 """
@@ -239,9 +227,5 @@ function get_jpole_coefficients(J::Int = 8, ::Type{R} = Float64) where {R <: Rea
     end
 
     # Add conjugate pairs
-    Jhalf = length(bzj)
-    bzj_full = vcat(bzj, conj.(bzj))
-    czj_full = vcat(czj, -conj.(czj))
-
-    return JPoleCoefficients{T}(J, bzj_full, czj_full)
+    return (; bzj = vcat(bzj, conj.(bzj)), czj = vcat(czj, -conj.(czj)))
 end

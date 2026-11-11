@@ -78,7 +78,7 @@ function _couple_E!(M, r, SNJ1, SNJ3, (p11, p12, p13, p22, p23, p33))
 end
 
 # Fills the pole rows r0 + (n + N)·J + j of one species; returns its E-coupling for the species rows.
-function _assemble_species!(M, p::HHSolverParam{T}, r0, kx, kz, SNJ1, SNJ3, czj, bzj, N) where {T}
+function _assemble_species!(M, p::HHSolverParam{T}, r0, kx, kz, SNJ1, SNJ3, (; bzj, czj), N) where {T}
     (; wc, vtz, vtp, vdz, alm) = p
     J = length(czj)
     wp2 = p.wp^2
@@ -114,7 +114,7 @@ function _assemble_species!(M, p::HHSolverParam{T}, r0, kx, kz, SNJ1, SNJ3, czj,
             b = b .- mult * wp2 .* (s11, 0, 0, s22, 0, s33)
 
             for j in 1:J
-                cⱼ = czj[j]
+                cⱼ = kz < 0 ? -czj[j] : czj[j]   # the poles of Z(ζ) mirror for k∥ < 0
                 P, Q = _pole_sums(Tₗ, Uₗ, cⱼ)
                 u = cⱼ * vtz + vdz
                 w = u / vtp
@@ -142,27 +142,28 @@ end
 # Indices SNJ3+1 to SNJ3+6:    E_x, E_y, E_z, B_x, B_y, B_z
 # where SNJ1 = SNJ + S (SNJ pole velocities + S species auxiliary j's)
 
-matrix_size(alg::BOHH, species) = let S = length(species)
+matrix_size(alg::BOHH, params) = let S = length(params.species)
     3 * (S * (2 * alg.N + 1) * alg.J + S) + 6
 end
 
-prepare(::BOHH, populations, ::Type{T}) where {T} = map(sp -> HHSolverParam(sp, T), populations)
+prepare(alg::BOHH, populations, ::Type{T}) where {T} =
+    (; species = map(sp -> HHSolverParam(sp, T), populations), jpole = get_jpole_coefficients(alg.J, T))
 
 function dispersion_matrix!(M, params, k::Wavevector, alg::BOHH)
     T = real(eltype(M))
     N = alg.N
-    S = length(params)
-    (; J, bzj, czj) = get_jpole_coefficients(alg.J, T)
+    (; species, jpole) = params
+    S = length(species)
+    J = length(jpole.czj)
 
     kx = T(k.k_perp)
     kz = T(k.k_para)
-    kz < 0 && (czj = -czj)
     SNJ = S * (2N + 1) * J
     SNJ1 = SNJ + S
     SNJ3 = 3SNJ1
 
-    for (s, param) in enumerate(params)
-        b = _assemble_species!(M, param, (s - 1) * (2N + 1) * J, kx, kz, SNJ1, SNJ3, czj, bzj, N)
+    for (s, param) in enumerate(species)
+        b = _assemble_species!(M, param, (s - 1) * (2N + 1) * J, kx, kz, SNJ1, SNJ3, jpole, N)
         _couple_E!(M, SNJ + s, SNJ1, SNJ3, b)
     end
 
