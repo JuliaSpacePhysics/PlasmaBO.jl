@@ -42,14 +42,16 @@ _for_eigvals(M::AbstractMatrix) = Matrix(M)
 pointsolver(prob, alg::AbstractDispersionAlgorithm) =
     _eigenroots(prepare(alg, prob.plasma.populations, realtype(prob)), alg, Complex{realtype(prob)})
 
-function _eigenroots(params, alg, ::Type{CT}) where {CT}
+_bumper_alloc(T, dims...) = isbitstype(T) ? Bumper.alloc!(Bumper.default_buffer(), T, dims...) : Array{T}(undef, dims...)
+
+function _operator(alloc, params, k, alg, ::Type{CT}) where {CT}
     n = matrix_size(alg, params)
+    return dispersion_matrix!(zero!(alloc(CT, n, n)), params, k, alg)
+end
+
+function _eigenroots(params, alg, ::Type{CT}) where {CT}
     return function (k)
-        ωs = @no_escape begin
-            M = @temp_array(CT, n, n)
-            dispersion_matrix!(zero!(M), params, k, alg)
-            eigvals!(_for_eigvals(M))
-        end
+        ωs = @no_escape eigvals!(_for_eigvals(_operator(_bumper_alloc, params, k, alg, CT)))
         return (; omega = ωs, resid = nothing, nevals = 1, converged = true)
     end
 end
@@ -63,8 +65,18 @@ The linear operator whose eigenvalues are the roots `ω`, in the units of `plasm
 function dispersion_matrix(plasma, k::Wavevector, alg::AbstractDispersionAlgorithm; ref...)
     prob, u = normalized(DispersionProblem(plasma, k; ref...))
     T = realtype(prob)
-    params = prepare(alg, prob.plasma.populations, T)
-    n = matrix_size(alg, params)
-    M = dispersion_matrix!(zeros(Complex{T}, n, n), params, prob.k, alg)
+    M = _operator((S, dims...) -> zeros(S, dims...), prepare(alg, prob.plasma.populations, T), prob.k, alg, Complex{T})
     return M .*= u.omega
+end
+
+# Triples r = 1:m: rows r, r + m, r + 2m hold (x, y, z) of ẋᵣ = ξᵣ xᵣ + Bᵣ E; then E (with Ė = -Σᵣ xᵣ + k × B) and B.
+function _full_operator(alloc, ξ, B, kx, kz)
+    m = length(ξ)
+    M = zero!(alloc(eltype(ξ), 3m + 6, 3m + 6))
+    for r in 1:m, c in 0:2
+        M[r + c * m, r + c * m] = ξ[r]
+        M[r + c * m, (3m + 1):(3m + 3)] .= view(B, c + 1, :, r)
+        M[3m + 1 + c, r + c * m] = -1
+    end
+    return _B_E_part!(M, 3m, kx, kz)
 end
