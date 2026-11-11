@@ -69,14 +69,52 @@ function dispersion_matrix(plasma, k::Wavevector, alg::AbstractDispersionAlgorit
     return M .*= u.omega
 end
 
-# Triples r = 1:m: rows r, r + m, r + 2m hold (x, y, z) of ẋᵣ = ξᵣ xᵣ + Bᵣ E; then E (with Ė = -Σᵣ xᵣ + k × B) and B.
-function _full_operator(alloc, ξ, B, kx, kz)
+# The operator with auxiliary triples r (ẋᵣ = ξᵣ xᵣ + Bᵣ E, Ė = -Σᵣ xᵣ + k × B) reduced to the states
+# the fields couple to: at each distinct pole, as many as the rank of the summed residue, with pivots
+# below the poles' `tol` cut (Tian, Xie & Wei 2026, arXiv:2610.41450, §3.1). Roots are unchanged
+# (their eq. 15); the dropped eigenvalues sit exactly on the poles.
+function _reduced_operator(alloc, ξ, B, tol, kx, kz)
+    CT = eltype(ξ)
     m = length(ξ)
-    M = zero!(alloc(eltype(ξ), 3m + 6, 3m + 6))
-    for r in 1:m, c in 0:2
-        M[r + c * m, r + c * m] = ξ[r]
-        M[r + c * m, (3m + 1):(3m + 3)] .= view(B, c + 1, :, r)
-        M[3m + 1 + c, r + c * m] = -1
+    # + 0 maps -0.0 to 0.0, so equal poles sort into contiguous runs.
+    perm = sortperm(ξ; by = z -> (real(z) + 0, imag(z) + 0))
+    ξr = alloc(CT, 3m)
+    L = alloc(CT, 3, 3m)    # E rows ← reduced states
+    Rf = alloc(CT, 3m, 3)   # reduced states ← E
+    Q = alloc(CT, 3, 3)
+    r = 0
+    i = 1
+    while i <= m
+        pole = ξ[perm[i]]
+        fill!(Q, zero(CT))
+        cut = zero(real(CT))
+        while i <= m && ξ[perm[i]] == pole
+            Q .-= view(B, :, :, perm[i])
+            cut = max(cut, tol[perm[i]])
+            i += 1
+        end
+        # Complete-pivoting elimination of Q: each pivot Q[a, b] peels the rank-1 term Q[:, b] Q[a, :] / Q[a, b].
+        for _ in 1:3
+            p, idx = findmax(abs, Q)
+            p > cut || break
+            a, b = Tuple(idx)
+            s = sqrt(Q[a, b])   # split the pivot's size evenly between the two couplings
+            r += 1
+            ξr[r] = pole
+            for c in 1:3
+                L[c, r] = Q[c, b] / s
+                Rf[r, c] = Q[a, c] / s
+            end
+            for c in 1:3, d in 1:3
+                Q[d, c] -= L[d, r] * Rf[r, c]
+            end
+        end
     end
-    return _B_E_part!(M, 3m, kx, kz)
+    M = zero!(alloc(CT, r + 6, r + 6))
+    for t in 1:r
+        M[t, t] = ξr[t]
+    end
+    M[1:r, (r + 1):(r + 3)] .= view(Rf, 1:r, :)
+    M[(r + 1):(r + 3), 1:r] .= view(L, :, 1:r)
+    return _B_E_part!(M, r, kx, kz)
 end

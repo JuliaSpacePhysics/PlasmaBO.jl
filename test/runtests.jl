@@ -214,14 +214,10 @@ end
     @test eltype(ωd) === Complex{Double64} && all(isfinite, ωd)
     @test eltype(ωbig) === Complex{BigFloat} && all(isfinite, ωbig)
 
-    # Susceptibility block (the 3x3 species sum on the field columns) converges
-    # to the BigFloat reference much faster in extended precision.
-    SNJ = (2N + 1) * J
-    SNJ1 = SNJ + 1
-    block(M) = M[[SNJ + 1, SNJ + SNJ1 + 1, SNJ + 2SNJ1 + 1], (3SNJ1 + 1):(3SNJ1 + 3)]
-    Bref = setprecision(256) do; block(asm(BigFloat)) end
-    err(M) = norm(Complex{BigFloat}.(block(M)) - Bref) / norm(Bref)
-    @test err(Md) < err(M64) * big"1e-10"
+    # Roots converge to the 256-bit reference much faster in extended precision.
+    ωref = setprecision(256) do; slv(BigFloat) end
+    err(ω) = maximum(z -> minimum(abs.(Complex{BigFloat}.(ω) .- z)) / abs(z), ωref)
+    @test err(ωd) < err(slv(Float64)) * big"1e-10"
 
     # BOFluid: same generic path; precision follows wave-parameter promotion.
     fluid(::Type{T}, B0) where {T} = Plasma(

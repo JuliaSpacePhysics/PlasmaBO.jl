@@ -46,7 +46,7 @@ VlasovMaxwellDispersion has no `HermiteVDF`: polish such a plasma's roots on the
 
 | solver | distributions |
 |---|---|
-| `BOHH(; N, J)` | using Hermite–Hermite basis; `BiMaxwellian` and `GaussianRing` exactly; other model through `HermiteVDF(model)`; `HermiteVDF(; w_perp, w_para, alm, vd_para, vr_perp)` for given coefficients |
+| `BOHH(; N, J)` | using Hermite–Hermite basis; `BiMaxwellian` and `GaussianRing` exactly; other model through `HermiteVDF(model)`; `HermiteVDF(; w_perp, w_para, alm, vd_para, vr_perp)` for given coefficients; harmonics whose coupling is below roundoff are dropped from the matrix, so a generous `N` costs little |
 | `BOPBK(; N)` | `ProductBiKappa` with integer `kappa_para` in `1:24` |
 | `BOFluid(; gamma_perp, gamma_para)` | multi-fluid solver using population density, drift `vd_para` and `vth_perp_para` |
 
