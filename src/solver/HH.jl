@@ -69,8 +69,8 @@ end
     return P, 2c .* R .- dR
 end
 
-# Fills the pole rows r0 + (n + N)·J + j of one species; returns its E-coupling for the species rows.
-function _assemble_species!(M, p::HHSolverParam{T}, r0, kx, kz, SNJ1, SNJ3, (; bzj, czj), N) where {T}
+# Fills poles ξ and E-couplings B at r0 + (n + N)·J + j for one species; returns its pole-free coupling.
+function _assemble_species!(ξ, B, p::HHSolverParam{T}, r0, kx, kz, (; bzj, czj), N) where {T}
     (; wc, vtz, vtp, vdz, alm) = p
     J = length(czj)
     wp2 = p.wp^2
@@ -80,7 +80,7 @@ function _assemble_species!(M, p::HHSolverParam{T}, r0, kx, kz, SNJ1, SNJ3, (; b
     dr = vdz / vtz
     vq = vtp^2 / vtz
     l_max, m_max = size(alm) .- 1
-    b = ntuple(_ -> zero(eltype(M)), 6)
+    b = ntuple(_ -> zero(eltype(ξ)), 6)
 
     @no_escape begin
         Γ = @temp_array(T, 12, m_max + 3)
@@ -117,8 +117,8 @@ function _assemble_species!(M, p::HHSolverParam{T}, r0, kx, kz, SNJ1, SNJ3, (; b
                     sn = sign(n)
                     pj = (X[1], im * sn * X[2], sn * w * X[3], X[4], -im * w * X[5], w^2 * X[6])
                     r = r0 + (n + N) * J + j
-                    M[r, r] = M[r + SNJ1, r + SNJ1] = M[r + 2SNJ1, r + 2SNJ1] = cnj
-                    _couple_E!(M, r, SNJ1, SNJ3, pj)
+                    ξ[r] = cnj
+                    _coupling!(B, r, pj)
                     b = b .- pj
                 end
             end
@@ -127,42 +127,32 @@ function _assemble_species!(M, p::HHSolverParam{T}, r0, kx, kz, SNJ1, SNJ3, (; b
     return b
 end
 
-# State Vector Organization
-# Indices 1 to SNJ1:           v_snj_x components + species j_x
-# Indices SNJ1+1 to 2*SNJ1:    v_snj_y components + species j_y
-# Indices 2*SNJ1+1 to 3*SNJ1:  v_snj_z components + species j_z
-# Indices SNJ3+1 to SNJ3+6:    E_x, E_y, E_z, B_x, B_y, B_z
-# where SNJ1 = SNJ + S (SNJ pole velocities + S species auxiliary j's)
-
-matrix_size(alg::BOHH, params) = let S = length(params.species)
-    3 * (S * (2 * alg.N + 1) * alg.J + S) + 6
+# Velocity triples (x, y, z) at pole ξ couple to E through
+# [p11 p12 p13; -p12 p22 p23; p13 -p23 p33], and E to them through -I (the current).
+function _coupling!(B, r, (p11, p12, p13, p22, p23, p33))
+    B[1, 1, r], B[1, 2, r], B[1, 3, r] = p11, p12, p13
+    B[2, 1, r], B[2, 2, r], B[2, 3, r] = -p12, p22, p23
+    B[3, 1, r], B[3, 2, r], B[3, 3, r] = p13, -p23, p33
+    return B
 end
 
 prepare(alg::BOHH, populations, ::Type{T}) where {T} =
     (; species = map(sp -> HHSolverParam(sp, T), populations), jpole = get_jpole_coefficients(alg.J, T))
 
-function dispersion_matrix!(M, params, k::Wavevector, alg::BOHH)
-    T = real(eltype(M))
-    N = alg.N
+# One triple per (species, n, j) pole, then one pole-free triple (ξ = 0) per species.
+function _operator(alloc, params, k::Wavevector, alg::BOHH, ::Type{CT}) where {CT}
     (; species, jpole) = params
-    S = length(species)
-    J = length(jpole.czj)
-
-    kx = T(k.k_perp)
-    kz = T(k.k_para)
+    S, J, N = length(species), length(jpole.czj), alg.N
     SNJ = S * (2N + 1) * J
-    SNJ1 = SNJ + S
-    SNJ3 = 3SNJ1
-
+    m = SNJ + S
+    ξ = alloc(CT, m)
+    B = alloc(CT, 3, 3, m)
+    kx, kz = real(CT)(k.k_perp), real(CT)(k.k_para)
     for (s, param) in enumerate(species)
-        b = _assemble_species!(M, param, (s - 1) * (2N + 1) * J, kx, kz, SNJ1, SNJ3, jpole, N)
-        _couple_E!(M, SNJ + s, SNJ1, SNJ3, b)
+        r0 = (s - 1) * (2N + 1) * J
+        b = _assemble_species!(ξ, B, param, r0, kx, kz, jpole, N)
+        ξ[SNJ + s] = 0
+        _coupling!(B, SNJ + s, b)
     end
-
-    # E(J) coupling: J_xyz = j_xyz + sum(v_snj_xyz)
-    M[SNJ3 + 1, 1:SNJ1] .= -1
-    M[SNJ3 + 2, (SNJ1 + 1):2SNJ1] .= -1
-    M[SNJ3 + 3, (2SNJ1 + 1):3SNJ1] .= -1
-    _B_E_part!(M, SNJ3, kx, kz)
-    return M
+    return _full_operator(alloc, ξ, B, kx, kz)
 end
