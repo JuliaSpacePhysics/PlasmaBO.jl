@@ -35,21 +35,15 @@ plasma = Plasma(
 ρᵢ = thermal_speed(p, Tperp) / sqrt(2) / ωₙ
 k = (0.005:0.04:0.7) ./ ρᵢ
 
-# The most unstable mode at each k (by growth rate)
-ωmax = map(k) do x
-    sol = solve(DispersionProblem(plasma, Wavevector(; k = x, theta)), BOHH())
-    argmax(imag, sol.omega)
-end
+survey = solve(DispersionProblem(plasma, AngleSweep(; k = collect(k), theta)), BOHH())
+# The most unstable root at each k
+ωmax = argmax.(imag, survey.omega)
+# Non-propagating: Re ω vanishes up to round-off
+maximum(abs ∘ real, ωmax) / ωₙ
 ```
 
 ```@example mirror
 using CairoMakie
 
-let fig = Figure()
-    ax1 = Axis(fig[1,1]; xlabel = "k*λD", ylabel = "ωᵣ / ωₙ")
-    ax2 = Axis(fig[1,2]; xlabel = "k*λD", ylabel = "γ / ωₙ")
-    scatterlines!(ax1, k .* ρᵢ, real.(ωmax)./ ωₙ)
-    scatterlines!(ax2, k .* ρᵢ, imag.(ωmax)./ ωₙ)
-    fig
-end
+scatterlines(k .* ρᵢ, imag.(ωmax) ./ ωₙ; axis = (; xlabel = "kρᵢ", ylabel = "γ / ωₙ"))
 ```

@@ -36,13 +36,25 @@ vA = alfven_speed(plasma)
 theta = deg2rad(89.5)
 kn = ωn / vA
 
-k = (9.5:0.025:11.5) .* kn
-box = ((0.0 - 0.5im) * ωn, (15.0 + 0.5im) * ωn)
-results = solve(DispersionProblem(plasma, box, AngleSweep(; k = collect(k), theta)), BOHH(; N = 12, J = 4))
+k = collect(9.5:0.025:11.5) .* kn
+```
+
+Every eigenvalue, linked into branches. The spectrum is symmetric under `ω → -conj(ω)`, so each unstable branch has a mirror at `Re ω < 0`; keep `Re ω > 0`:
+
+```@example ice
+survey = solve(DispersionProblem(plasma, AngleSweep(; k, theta)), BOHH(; N = 12, J = 4))
+unstable = filter(b -> isgrowing(b) && real(b[1]) > 0, link(survey))
+[maximum(imag, b.omega) / ωn for b in unstable]   # peak growth rates
 ```
 
 ```@example ice
 using CairoMakie
 
-dispersion_diagram(results; k_unit = kn, omega_unit = ωn, xlabel = "k/kn")
+fig, (axr, axi) = dispersion_diagram(survey; k_unit = kn, omega_unit = ωn, xlabel = "k/kn")
+dispersion_diagram!((axr, axi), unstable; k_unit = kn, omega_unit = ωn)
+ylims!(axr, 8.5, 10.5)
+ylims!(axi, -0.3, 0.2)
+fig
 ```
+
+They grow near the 9th and 10th harmonics of `ωn`, the cyclotron frequency of the ring-beam alpha particles (first row of the table).

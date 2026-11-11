@@ -36,23 +36,32 @@ kn = 31.0613
 k = kn / 4
 wci = gyrofrequency(p, B0)
 
-ωs = solve(DispersionProblem(plasma, Wavevector(; k, theta = θ)), BOHH(; N = 2, J = 24)).omega
-ω_unstable = filter(ω -> isfinite(ω) && imag(ω) > 0.001 * wci, ωs)
-println("Unstable modes (ω/ωci): ", ω_unstable ./ wci)
+alg = BOHH(; N = 2, J = 24)
+at = Wavevector(; k, theta = θ)
+ωs = solve(DispersionProblem(plasma, at), alg).omega
+ω0 = argmax(imag, ωs)   # the most unstable root
+ω0 / wci
 ```
+
+The firehose mode is purely growing: `Re ω` is zero up to round-off, of either sign.
 
 ## Dispersion Curve Scan
 
-```@repl firehose
-sweep = AngleSweep(; k = collect(0.05:0.02:0.5) .* kn, theta = θ);
-box = ((0.0 - 0.1im) * wci, (1.0 + 0.1im) * wci);
-sol = solve(DispersionProblem(plasma, box, sweep), BOHH(; N = 2, J = 24))
-```
+Every eigenvalue over the scan, and the firehose branch tracked through them from `ω0`:
 
-Every root in the box, unlinked: the growing firehose mode is the arc above `Im ω = 0`.
+```@example firehose
+sweep = AngleSweep(; k = collect(0.05:0.01:0.5) .* kn, theta = θ)
+survey = solve(DispersionProblem(plasma, sweep), alg)
+firehose = track(survey, ω0, at)
+maximum(imag, firehose.omega) / wci
+```
 
 ```@example firehose
 using CairoMakie
 
-dispersion_diagram(sol; k_unit = kn, omega_unit = wci, xlabel = "k/kn")
+fig, (axr, axi) = dispersion_diagram(survey; k_unit = kn, omega_unit = wci, xlabel = "k/kn")
+dispersion_diagram!((axr, axi), firehose; k_unit = kn, omega_unit = wci)
+ylims!(axr, -1, 1)
+ylims!(axi, -0.25, 0.1)
+fig
 ```
