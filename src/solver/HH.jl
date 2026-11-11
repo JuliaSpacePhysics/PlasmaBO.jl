@@ -147,12 +147,18 @@ function _operator(alloc, params, k::Wavevector, alg::BOHH, ::Type{CT}) where {C
     m = SNJ + S
     ξ = alloc(CT, m)
     B = alloc(CT, 3, 3, m)
+    tol = alloc(real(CT), m)
     kx, kz = real(CT)(k.k_perp), real(CT)(k.k_para)
     for (s, param) in enumerate(species)
         r0 = (s - 1) * (2N + 1) * J
         b = _assemble_species!(ξ, B, param, r0, kx, kz, jpole, N)
         ξ[SNJ + s] = 0
         _coupling!(B, SNJ + s, b)
+        # Relative to each species' largest residue: a global one would let electrons erase ion harmonics.
+        rs = (r0 + 1):(r0 + (2N + 1) * J)
+        t = 3eps(real(CT)) * max(norm(view(B, :, :, SNJ + s)), maximum(r -> norm(view(B, :, :, r)), rs))
+        tol[rs] .= t
+        tol[SNJ + s] = t
     end
-    return _full_operator(alloc, ξ, B, kx, kz)
+    return _reduced_operator(alloc, ξ, B, tol, kx, kz)
 end
