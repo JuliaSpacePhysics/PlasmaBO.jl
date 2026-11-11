@@ -162,3 +162,54 @@ function _operator(alloc, params, k::Wavevector, alg::BOHH, ::Type{CT}) where {C
     end
     return _reduced_operator(alloc, ξ, B, tol, kx, kz)
 end
+
+# D(ω) and D′(ω), D the E rows of the operator with its states and B eliminated:
+# D(ω) = ωI - Σₜ Lₜ Rₜ/(ω - ξₜ) - M_EB M_BE/ω.
+function _D_dD(M, r, K, ω)
+    D = ω * I - K / ω
+    dD = I + K / ω^2
+    for t in 1:r
+        d = ω - M[t, t]
+        for b in 1:3, a in 1:3
+            q = M[r + a, t] * M[t, r + b] / d
+            D[a, b] -= q
+            dD[a, b] += q / d
+        end
+    end
+    return D, dD
+end
+
+# Newton on det D(ω) = 0, stepping -1/tr(D⁻¹D′): each term of D is rounded on its own, so roots recover
+# most of the accuracy that the eigensolver loses when the J-pole residues cancel (large J). det D itself
+# cancels too, so convergence is judged on the step: below atol, or no longer halving below √atol.
+function _newton_det(M, r, K, ω, atol, maxiter)
+    prev = oftype(abs(ω), Inf)
+    for it in 1:maxiter
+        D, dD = _D_dD(M, r, K, ω)
+        all(isfinite, D) && all(isfinite, dD) || return oftype(ω, NaN), it, ReturnCode.Failure
+        F = lu!(D; check = false)
+        issuccess(F) || return ω, it, ReturnCode.Success   # D exactly singular: ω is a root
+        δ = inv(tr(F \ dD))
+        isfinite(δ) || return oftype(ω, NaN), it, ReturnCode.Failure
+        ω -= δ
+        step = abs(δ) / max(abs(ω), 1)
+        (step <= atol || (step <= sqrt(atol) && step > prev / 2)) && return ω, it, ReturnCode.Success
+        prev = step
+    end
+    return oftype(ω, NaN), maxiter, ReturnCode.MaxIters
+end
+
+# A root of BOHH's own rational relation from ω0.
+function seedsolver(prob, alg::BOHH; atol = 1.0e-12, maxiter = 50)
+    T = realtype(prob)
+    params = prepare(alg, prob.plasma.populations, T)
+    return function (k, ω0)
+        ω, nevals, retcode = @no_escape begin
+            M = _operator(_bumper_alloc, params, k, alg, Complex{T})
+            r = size(M, 1) - 6
+            E, Bf = (r + 1):(r + 3), (r + 4):(r + 6)
+            _newton_det(M, r, M[E, Bf] * M[Bf, E], complex(ω0), atol, maxiter)
+        end
+        return (; omega = ω, resid = nothing, nevals, retcode)
+    end
+end

@@ -44,6 +44,10 @@ exact = refine(branch, Muller(); gate = 0.05)   # or a survey; a root moving fur
 VlasovMaxwellDispersion has no `HermiteVDF`: polish such a plasma's roots on the base models,
 `refine(DispersionProblem(model_plasma, sweep), branch.omega, Muller())`.
 
+At large `J` the Float64 eigensolver also loses accuracy to cancelling J-pole residues.
+`refine(sol, BOHH(; N, J); gate)` recovers it: from each root, Newton on `BOHH`'s own rational
+relation. A single-wavevector `Seed` and `Continuation(BOHH())` use the same Newton from their guess.
+
 | solver | distributions |
 |---|---|
 | `BOHH(; N, J)` | using Hermite–Hermite basis; `BiMaxwellian` and `GaussianRing` exactly; other model through `HermiteVDF(model)`; `HermiteVDF(; w_perp, w_para, alm, vd_para, vr_perp)` for given coefficients; harmonics whose coupling is below roundoff are dropped from the matrix, so a generous `N` costs little |

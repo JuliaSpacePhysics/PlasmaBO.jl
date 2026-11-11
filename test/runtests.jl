@@ -290,6 +290,22 @@ end
     end
 end
 
+@testset "refine with BOHH reaches its rational roots that large-J eigenvalues miss" begin
+    using DoubleFloats, GenericLinearAlgebra, LinearAlgebra
+    B0 = 1.0e-8
+    pk(vp, vz) = HermiteVDF(ProductBiKappa(; vth_perp = vp, vth_para = vz, kappa_perp = 40, kappa_para = 8))
+    plasma = Plasma(Population(Proton(), pk(3.0e4, 2.5e4); n = 5.0e6), Population(Electron(), pk(2.0e6, 2.0e6); n = 5.0e6); B0)
+    k = Wavevector(; k = 2.0e-5, theta = deg2rad(30))
+    alg = BOHH(; N = 1, J = 28)
+    ωd = ComplexF64.(eigvals(dispersion_matrix(Plasma(plasma.populations...; B0 = Double64(B0)), Wavevector(Double64.((k.k_perp, k.k_para))...), alg)))
+    ref = ωd[argmin(abs.(ωd .- 0.62 .+ 0.18im))]   # damped ion mode, ≈ (0.65 - 0.19i) Ωp
+    ω = solve(DispersionProblem(plasma, k), alg).omega
+    e = ω[argmin(abs.(ω .- ref))]
+    @test abs(e - ref) > 1.0e-2 * abs(ref)
+    r = refine(DispersionProblem(plasma, k), e, alg).omega
+    @test abs(r - ref) < 1.0e-4 * abs(ref)
+end
+
 @testset "Sweeps and boxes" begin
     e = Electron()
     plasma = Plasma(Population(e, BiMaxwellian; T = 100.0, n = 1.0e6); B0 = 1.0e-6)
