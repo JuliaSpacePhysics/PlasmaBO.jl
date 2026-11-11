@@ -36,43 +36,35 @@ function HHSolverParam(s, ::Type{T}) where {T}
     )
 end
 
-# alm-weighted m-sums of the `_compute_integral_matrices!` moments, for each l and k ∈ (A, B, C):
-#   Tₗ[k, l+1] = Σₘ alm[l+1,m+1] · (2·Kₖ(m+1) - m·Kₖ(m-1))   (Kₖ = Γ[2k-1, :], the lower power of y)
-#   Uₗ[k, l+1] = Σₘ alm[l+1,m+1] · Γ[2k, m+1]
+# alm-weighted m-sums of the `_compute_integral_matrices!` moments, for each l and product q:
+#   Tₗ[q, l+1] = Σₘ alm[l+1,m+1] · (2·Kq(m+1) - m·Kq(m-1))   (Kq = Γ[2q-1, :], the lower power of y)
+#   Uₗ[q, l+1] = Σₘ alm[l+1,m+1] · Γ[2q, m+1]
 function _precompute_lm_sums!(Tₗ, Uₗ, alm, Γ)
     l_max, m_max = size(alm) .- 1
-    @inbounds for l in 0:l_max
+    @inbounds for l in 0:l_max, q in 1:6
         a = alm[l + 1, 1]
-        ta = a * 2 * Γ[1, 2]
-        ua = a * Γ[2, 1]
-        tb = a * 2 * Γ[3, 2]
-        ub = a * Γ[4, 1]
-        tc = a * 2 * Γ[5, 2]
-        uc = a * Γ[6, 1]
+        t = a * 2 * Γ[2q - 1, 2]
+        u = a * Γ[2q, 1]
         for m in 1:m_max
             a = alm[l + 1, m + 1]
-            ta += a * (2 * Γ[1, m + 2] - m * Γ[1, m])
-            ua += a * Γ[2, m + 1]
-            tb += a * (2 * Γ[3, m + 2] - m * Γ[3, m])
-            ub += a * Γ[4, m + 1]
-            tc += a * (2 * Γ[5, m + 2] - m * Γ[5, m])
-            uc += a * Γ[6, m + 1]
+            t += a * (2 * Γ[2q - 1, m + 2] - m * Γ[2q - 1, m])
+            u += a * Γ[2q, m + 1]
         end
-        Tₗ[1, l + 1] = ta; Tₗ[2, l + 1] = tb; Tₗ[3, l + 1] = tc
-        Uₗ[1, l + 1] = ua; Uₗ[2, l + 1] = ub; Uₗ[3, l + 1] = uc
+        Tₗ[q, l + 1] = t
+        Uₗ[q, l + 1] = u
     end
     return nothing
 end
 
-# Per k: P = Σₗ cˡ Tₗ[k, l+1] and Q = Σₗ (2cˡ⁺¹ - l·cˡ⁻¹) Uₗ[k, l+1] = 2c·R(c) - R′(c),
-# with R(c) = Σₗ cˡ Uₗ[k, l+1], by Horner.
+# Per product q: P = Σₗ cˡ Tₗ[q, l+1] and Q = Σₗ (2cˡ⁺¹ - l·cˡ⁻¹) Uₗ[q, l+1] = 2c·R(c) - R′(c),
+# with R(c) = Σₗ cˡ Uₗ[q, l+1], by Horner.
 @inline function _pole_sums(Tₗ, Uₗ, c)
     z = zero(c)
-    P = R = dR = (z, z, z)
+    P = R = dR = ntuple(_ -> z, 6)
     @inbounds for l in size(Tₗ, 2):-1:1
         dR = dR .* c .+ R
-        R = R .* c .+ (Uₗ[1, l], Uₗ[2, l], Uₗ[3, l])
-        P = P .* c .+ (Tₗ[1, l], Tₗ[2, l], Tₗ[3, l])
+        R = R .* c .+ ntuple(q -> Uₗ[q, l], 6)
+        P = P .* c .+ ntuple(q -> Tₗ[q, l], 6)
     end
     return P, 2c .* R .- dR
 end
@@ -99,13 +91,13 @@ function _assemble_species!(M, p::HHSolverParam{T}, r0, kx, kz, SNJ1, SNJ3, czj,
     b = ntuple(_ -> zero(eltype(M)), 6)
 
     @no_escape begin
-        Γ = @temp_array(T, 6, m_max + 3)
+        Γ = @temp_array(T, 12, m_max + 3)
         Ils = @temp_array(T, l_max + 3)
-        Tₗ = @temp_array(T, 3, l_max + 1)
-        Uₗ = @temp_array(T, 3, l_max + 1)
+        Tₗ = @temp_array(T, 6, l_max + 1)
+        Uₗ = @temp_array(T, 6, l_max + 1)
         Ils .= funIn.(T, 0:(l_max + 2))
 
-        # Everything per harmonic depends on n only through n·wc and Γ, which is even in n.
+        # Γ serves both ±a: n enters otherwise only through n·wc and the sign of the V₁ products.
         for a in 0:N
             _compute_integral_matrices!(Γ, a, as, d, m_max)
             Γ .*= 2 / R
@@ -115,12 +107,11 @@ function _assemble_species!(M, p::HHSolverParam{T}, r0, kx, kz, SNJ1, SNJ3, czj,
             @inbounds for l in 0:l_max
                 Iₗ₋₁ = l >= 1 ? Ils[l] : zero(T)
                 s11 += Ils[l + 1] * Tₗ[1, l + 1]
-                s22 += Ils[l + 1] * Tₗ[3, l + 1]
-                s33 += (dr * (2 * Ils[l + 2] - l * Iₗ₋₁) + (2 * Ils[l + 3] - l * Ils[l + 1])) * Uₗ[1, l + 1]
+                s22 += Ils[l + 1] * Tₗ[4, l + 1]
+                s33 += (dr * (2 * Ils[l + 2] - l * Iₗ₋₁) + (2 * Ils[l + 3] - l * Ils[l + 1])) * Uₗ[6, l + 1]
             end
-            nwkp = a * wc / (kx * vtp)
             mult = a == 0 ? 1 : 2
-            b = b .- mult * wp2 .* (nwkp^2 * s11, 0, 0, s22, 0, s33)
+            b = b .- mult * wp2 .* (s11, 0, 0, s22, 0, s33)
 
             for j in 1:J
                 cⱼ = czj[j]
@@ -131,8 +122,8 @@ function _assemble_species!(M, p::HHSolverParam{T}, r0, kx, kz, SNJ1, SNJ3, czj,
                     cnj = n * wc + kz * u
                     # At n = 0 the pole's k∥ cancels exactly, keeping k∥ = 0 regular.
                     X = (wp2 * bzj[j]) .* (iszero(n) ? (vq / u) .* Q : (n * wc .* P .+ (kz * vq) .* Q) ./ cnj)
-                    nwkp = n * wc / (kx * vtp)
-                    pj = (nwkp^2 * X[1], im * nwkp * X[2], nwkp * w * X[1], X[3], -im * w * X[2], w^2 * X[1])
+                    sn = sign(n)
+                    pj = (X[1], im * sn * X[2], sn * w * X[3], X[4], -im * w * X[5], w^2 * X[6])
                     r = r0 + (n + N) * J + j
                     M[r, r] = M[r + SNJ1, r + SNJ1] = M[r + 2SNJ1, r + 2SNJ1] = cnj
                     _couple_E!(M, r, SNJ1, SNJ3, pj)
@@ -163,8 +154,7 @@ function dispersion_matrix!(M, params, k::Wavevector, alg::BOHH)
     S = length(params)
     (; J, bzj, czj) = get_jpole_coefficients(alg.J, T)
 
-    # The k⊥ → 0 limit is finite but each factor (nwkp, Bessel moments) is singular there.
-    kx = iszero(k.k_perp) ? T(1.0e-30) : T(k.k_perp)
+    kx = T(k.k_perp)
     kz = T(k.k_para)
     kz < 0 && (czj = -czj)
     SNJ = S * (2N + 1) * J

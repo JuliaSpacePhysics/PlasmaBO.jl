@@ -210,6 +210,7 @@ end
     ωd = slv(Double64)
     ωbig = setprecision(128) do; slv(BigFloat) end
     @test eltype(ω32) === ComplexF32 && all(isfinite, ω32)
+    @test all(isfinite, dispersion_matrix(unit(Float32), Wavevector(0.0f0, 0.1f0), BOHH(; N, J)))
     @test eltype(ωd) === Complex{Double64} && all(isfinite, ωd)
     @test eltype(ωbig) === Complex{BigFloat} && all(isfinite, ωbig)
 
