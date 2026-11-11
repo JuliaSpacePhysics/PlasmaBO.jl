@@ -1,11 +1,3 @@
-module PBK
-using QuadGK: quadgk
-using ..PlasmaBO: AbstractDispersionAlgorithm
-using ..PlasmaBO: besselj, loggamma, gamma
-using PlasmaPopulations: ProductBiKappa, kappa_widths
-using PlasmaDispersionBase: Wavevector
-import ..PlasmaBO: dispersion_matrix!, matrix_size, prepare
-
 """
     BOPBK(; N = 2)
 
@@ -33,47 +25,6 @@ function PBK_param(s, ::Type{T}) where {T}
 end
 
 prepare(::BOPBK, populations, ::Type{T}) where {T} = map(sp -> PBK_param(sp, T), populations)
-
-_pbk_per_n(κ) = (κ + 1) * (κ + 4) ÷ 2
-
-function _pbk_len_total(species, Ns)
-    len = 0
-    for sp in species
-        len += (2 * Ns + 1) * _pbk_per_n(Int(sp.κz))
-    end
-    return len
-end
-
-_pbk_len_sub(species, N) = _pbk_len_total(species, N) + 1
-
-function _pbk_species_offset(species, s, Ns)
-    off = 0
-    for i in 1:(s - 1)
-        sp = species[i]
-        off += (2 * Ns + 1) * _pbk_per_n(Int(sp.κz))
-    end
-    return off
-end
-
-function _pbk_snl_index(species, s, idx_n, l, j, Ns)
-    sp = species[s]
-    idx_n < 1 || idx_n > 2 * Ns + 1 && error("idx_n out of range")
-    l < 1 || l > Int(sp.κz) + 1 && error("l out of range")
-    j < 1 || j > l + 1 && error("j out of range")
-
-    per_n = _pbk_per_n(Int(sp.κz))
-    off = _pbk_species_offset(species, s, Ns)
-    off_n = (idx_n - 1) * per_n
-    off_l = (l + 2) * (l - 1) ÷ 2
-    return off + off_n + off_l + j
-end
-
-function _pbk_block_first_index(len_sub, MatrixNo)
-    MatrixNo == 1 && return 0
-    MatrixNo == 2 && return len_sub
-    MatrixNo == 3 && return 2 * len_sub
-    error("MatrixNo must be 1, 2, or 3")
-end
 
 # Pole csn = n ωc + k∥ ξ
 _ξ(p) = p.u0 - 1im * sqrt(p.κz) * p.vtz
@@ -145,9 +96,9 @@ end
 
 # Combinations of the S integrals for harmonics ±ν, shared by every l. At ν = 0 those entering only
 # with a factor n are left zero: the products vanish, while some of the integrals diverge as k⊥ → 0.
-function _pbk_S(p, ν, kx; EPS0)
+function _pbk_S(p, ν, kx)
     λ = kx^2 * p.rhoc^2 / 2
-    S(p1, p2, p3, p4; m = 0) = funcS_pbk(p, ν, λ, p1, p2, p3, p4; m, EPS0)
+    S(p1, p2, p3, p4; m = 0) = funcS_pbk(p, ν, λ, p1, p2, p3, p4; m)
     c, σ = (p.κx + p.sigma + 1) / p.κx, p.sigma
     # S(…; m = 2) = 2λ S
     kx2s2 = S(2, 0, 1, 1; m = 2) / p.rhoc^2
@@ -190,202 +141,78 @@ bz32snl(wp2, wc, ξ, kx2b2) = -1im * wp2 * kx2b2 * ξ^2 / wc^2
 bz33snl(wp2, wc, kx, ξ, b1_kz, kx2b2_kz2) = -1im * wp2 * (2 * kx^2 * b1_kz * ξ + kx2b2_kz2) / wc^2
 bz34snl(wp2, wc, kx, b1_kz2) = -1im * kx^2 * wp2 * b1_kz2 / wc^2
 
-lmax(κz; threshold = 10) = min(κz + 1, threshold)
-
-function _pbk_add_species_Mxy!(
-        M, params, Ss, s,
-        kx, kz;
-        MatrixNo, ExNo, EyNo, EzNo, ExyNo,
-        bx10_by20, len_sub, N
-    )
-    p = params[s]
-    firstIndex = _pbk_block_first_index(len_sub, MatrixNo)
-    κz = p.κz
-
-    wp2 = p.wp2
-    wc = p.wc
-    ξ = _ξ(p)
-
-    for (idx_n, n) in enumerate(-N:N)
-        S = Ss[abs(n) + 1]
-        csn = n * wc + kz * ξ
-        for l in 1:lmax(κz), jj in 1:(l + 1)
-            snlj = _pbk_snl_index(params, s, idx_n, l, jj, N)
-
-            M[snlj, firstIndex + snlj] += csn
-            if jj < l + 1
-                M[snlj, firstIndex + snlj + 1] += 1
-            end
-
-            if jj == l
-                if MatrixNo == 1
-                    b1 = b1snl(S, p, n, l, kz)
-                    b2_kz = b2snl(S, p, l, kz; r = 1)
-                    b3 = b3snl(S, p, n, l, kz)
-
-                    M[snlj, end - ExNo] += bx11snl(wp2, n, b1)
-                    M[snlj, end - EyNo] += bx21snl(wp2, n, b3)
-                    M[snlj, end - EzNo] += bx31snl(wp2, wc, n, kx, ξ, b1, b2_kz)
-
-                    if l <= κz
-                        b1_kz = b1snl(S, p, n, l + 1, kz; r = 1)
-                        M[snlj, end - EzNo] += bx33snl(wp2, wc, n, kx, b1_kz)
-                    end
-                else
-                    b3 = b3snl(S, p, n, l, kz)
-                    b4_kz = b4snl(S, p, l, kz; r = 1)
-                    b5 = b5snl(S, p, n, l, kz)
-
-                    M[snlj, end - ExNo] += -bx21snl(wp2, n, b3)
-                    M[snlj, end - EyNo] += by21snl(wp2, b5)
-                    M[snlj, end - EzNo] += by31snl(wp2, wc, kx, ξ, b3, b4_kz)
-
-                    if l <= κz
-                        b3_kz = b3snl(S, p, n, l + 1, kz; r = 1)
-                        M[snlj, end - EzNo] += by33snl(wp2, wc, kx, b3_kz)
-                    end
-                end
-            elseif jj == l + 1
-                if MatrixNo == 1
-                    b2 = b2snl(S, p, l, kz)
-                    b4 = b4snl(S, p, l, kz)
-
-                    M[snlj, end - ExNo] += bx12snl(wp2, n, b2)
-                    M[snlj, end - EyNo] += bx22snl(wp2, n, b4)
-                    M[snlj, end - EzNo] += bx32snl(wp2, wc, n, kx, ξ, b2)
-                else
-                    b4 = b4snl(S, p, l, kz)
-                    b6 = b6snl(S, p, l, kz)
-
-                    M[snlj, end - ExNo] += -bx22snl(wp2, n, b4)
-                    M[snlj, end - EyNo] += by22snl(wp2, b6)
-                    M[snlj, end - EzNo] += by32snl(wp2, wc, kx, ξ, b4)
-                end
-            end
-
-        end
+# The E-couplings of level l of harmonic n, as `_couple_E!` takes them: the head, at (ω - csn)^-l,
+function _pbk_head(S, p, n, l, kx, kz, ξ)
+    (; κz, wp2, wc) = p
+    b1, b3 = b1snl(S, p, n, l, kz), b3snl(S, p, n, l, kz)
+    p13 = bx31snl(wp2, wc, n, kx, ξ, b1, b2snl(S, p, l, kz; r = 1))
+    p23 = by31snl(wp2, wc, kx, ξ, b3, b4snl(S, p, l, kz; r = 1))
+    p33 = bz31snl(wp2, wc, kx, ξ, b1, kx2b2snl(S, p, l, kz; r = 1))
+    if l <= κz
+        b1_kz = b1snl(S, p, n, l + 1, kz; r = 1)
+        p13 += bx33snl(wp2, wc, n, kx, b1_kz)
+        p23 += by33snl(wp2, wc, kx, b3snl(S, p, n, l + 1, kz; r = 1))
+        p33 += bz33snl(wp2, wc, kx, ξ, b1_kz, kx2b2snl(S, p, l + 1, kz; r = 2))
     end
-
-    for idx_n in 1:(2 * N + 1), l in 1:(κz + 1)
-        snl1 = _pbk_snl_index(params, s, idx_n, l, 1, N)
-        M[len_sub, firstIndex + snl1] += 1
-    end
-
-    if s == length(params)
-        M[len_sub, end - ExyNo] += bx10_by20
-    end
-
-    return nothing
+    l <= κz - 1 && (p33 += bz34snl(wp2, wc, kx, b1snl(S, p, n, l + 2, kz; r = 2)))
+    return (bx11snl(wp2, n, b1), bx21snl(wp2, n, b3), p13, by21snl(wp2, b5snl(S, p, n, l, kz)), p23, p33)
 end
 
-function _pbk_add_species_Mz!(
-        M, params, Ss, s, kx, kz;
-        MatrixNo, ExNo, EyNo, EzNo,
-        by20, len_sub, N,
+# and the tail, at (ω - csn)^-(l+1)
+function _pbk_tail(S, p, n, l, kx, kz, ξ)
+    (; wp2, wc) = p
+    b2, b4 = b2snl(S, p, l, kz), b4snl(S, p, l, kz)
+    return (
+        bx12snl(wp2, n, b2), bx22snl(wp2, n, b4), bx32snl(wp2, wc, n, kx, ξ, b2),
+        by22snl(wp2, b6snl(S, p, l, kz)), by32snl(wp2, wc, kx, ξ, b4), bz32snl(wp2, wc, ξ, kx2b2snl(S, p, l, kz)),
     )
-    p = params[s]
-    firstIndex = _pbk_block_first_index(len_sub, MatrixNo)
-    κz = p.κz
-    wp2 = p.wp2
-    wc = p.wc
+end
+
+# Z_κ∥ is rational in ξ with a pole of order κ∥ + 1. Level l = 1:κ∥+1 of the expansion couples E
+# to (ω - csn)^-l (head) and (ω - csn)^-(l+1) (tail) through its own chain of l + 1 states. A single
+# chain of κ∥ + 2 states per harmonic is equivalent and smaller, but worse conditioned.
+# Each component (x, y, z) has the chains of every species and its current J last.
+_pbk_nstates(p, N) = (2N + 1) * (p.κz + 1) * (p.κz + 4) ÷ 2
+
+matrix_size(alg::BOPBK, params) = 3 * (sum(p -> _pbk_nstates(p, alg.N), params) + 1) + 6
+
+# Fills the chains of one species after row `r` of each component block of `L` rows; returns its last row.
+function _pbk_species!(M, p, r, L, kx, kz, N)
     ξ = _ξ(p)
-    for (idx_n, n) in enumerate(-N:N)
+    Ss = [_pbk_S(p, ν, kx) for ν in 0:N]
+    for n in -N:N
         S = Ss[abs(n) + 1]
-        csn = n * wc + kz * ξ
-        for l in 1:lmax(κz), jj in 1:(l + 1)
-            snlj = _pbk_snl_index(params, s, idx_n, l, jj, N)
-
-            M[snlj, firstIndex + snlj] += csn
-            if jj < l + 1
-                M[snlj, firstIndex + snlj + 1] += 1
+        csn = n * p.wc + kz * ξ
+        for l in 1:min(p.κz + 1, 10)
+            for c in 0:2
+                M[(c + 1) * L, c * L + r + 1] = 1
             end
-
-            if jj == l
-                b1 = b1snl(S, p, n, l, kz)
-                b3 = b3snl(S, p, n, l, kz)
-                b4_kz = b4snl(S, p, l, kz; r = 1)
-                kx2b2_kz = kx2b2snl(S, p, l, kz; r = 1)
-
-                M[snlj, end - ExNo] += bx31snl(wp2, wc, n, kx, ξ, b1, b2snl(S, p, l, kz; r = 1))
-                M[snlj, end - EyNo] += -by31snl(wp2, wc, kx, ξ, b3, b4_kz)
-                M[snlj, end - EzNo] += bz31snl(wp2, wc, kx, ξ, b1, kx2b2_kz)
-
-                if l <= κz
-                    b1_kz = b1snl(S, p, n, l + 1, kz; r = 1)
-                    kx2b2_kz2 = kx2b2snl(S, p, l + 1, kz; r = 2)
-                    b3_kz = b3snl(S, p, n, l + 1, kz; r = 1)
-
-                    M[snlj, end - ExNo] += bx33snl(wp2, wc, n, kx, b1_kz)
-                    M[snlj, end - EyNo] += -by33snl(wp2, wc, kx, b3_kz)
-                    M[snlj, end - EzNo] += bz33snl(wp2, wc, kx, ξ, b1_kz, kx2b2_kz2)
+            for j in 1:(l + 1)
+                r += 1
+                for c in 0:2
+                    M[c * L + r, c * L + r] = csn
+                    j <= l && (M[c * L + r, c * L + r + 1] = 1)
                 end
-
-                if l <= κz - 1
-                    b1_kz2 = b1snl(S, p, n, l + 2, kz; r = 2)
-                    M[snlj, end - EzNo] += bz34snl(wp2, wc, kx, b1_kz2)
-                end
-            elseif jj == l + 1
-                b4 = b4snl(S, p, l, kz)
-
-                M[snlj, end - ExNo] += bx32snl(wp2, wc, n, kx, ξ, b2snl(S, p, l, kz))
-                M[snlj, end - EyNo] += -by32snl(wp2, wc, kx, ξ, b4)
-                M[snlj, end - EzNo] += bz32snl(wp2, wc, ξ, kx2b2snl(S, p, l, kz))
+                j == l && _couple_E!(M, r, L, 3L, _pbk_head(S, p, n, l, kx, kz, ξ))
+                j == l + 1 && _couple_E!(M, r, L, 3L, _pbk_tail(S, p, n, l, kx, kz, ξ))
             end
         end
     end
-
-    for idx_n in 1:(2 * N + 1), l in 1:lmax(κz)
-        snl1 = _pbk_snl_index(params, s, idx_n, l, 1, N)
-        M[len_sub, firstIndex + snl1] += 1
-    end
-
-    if s == length(params)
-        M[len_sub, end - EzNo] += by20
-    end
-
-    return nothing
+    return r
 end
 
-matrix_size(alg::BOPBK, species) = 3 * _pbk_len_sub(species, alg.N) + 6
-
-function dispersion_matrix!(M, params, k::Wavevector, alg::BOPBK; EPS0 = 1.0e-2)
+function dispersion_matrix!(M, params, k::Wavevector, alg::BOPBK)
     T = real(eltype(M))
     kx, kz = T(k.k_perp), T(k.k_para)
-    N = alg.N
-    len_sub = _pbk_len_sub(params, N)
-    bx10_by20 = 1im * sum(sp.wp2 for sp in params)
-
-    Mx = @view M[1:len_sub, :]
-    My = @view M[(len_sub + 1):(2 * len_sub), :]
-    Mz = @view M[(2 * len_sub + 1):(3 * len_sub), :]
-
-    for s in eachindex(params)
-        Ss = [_pbk_S(params[s], ν, kx; EPS0) for ν in 0:N]
-        _pbk_add_species_Mxy!(Mx, params, Ss, s, kx, kz; MatrixNo = 1, ExNo = 5, EyNo = 4, EzNo = 3, ExyNo = 5, bx10_by20, N, len_sub)
-        _pbk_add_species_Mxy!(My, params, Ss, s, kx, kz; MatrixNo = 2, ExNo = 5, EyNo = 4, EzNo = 3, ExyNo = 4, bx10_by20, N, len_sub)
-        _pbk_add_species_Mz!(Mz, params, Ss, s, kx, kz; MatrixNo = 3, ExNo = 5, EyNo = 4, EzNo = 3, by20 = bx10_by20, N, len_sub)
+    L = sum(p -> _pbk_nstates(p, alg.N), params) + 1
+    r = 0
+    for p in params
+        r = _pbk_species!(M, p, r, L, kx, kz, alg.N)
     end
-
-    idx_Jx = len_sub
-    idx_Jy = 2 * len_sub
-    idx_Jz = 3 * len_sub
-
-    M[end - 5, end - 1] += kz
-    M[end - 5, idx_Jx] -= 1im
-
-    M[end - 4, end - 2] -= kz
-    M[end - 4, end] += kx
-    M[end - 4, idx_Jy] -= 1im
-
-    M[end - 3, end - 1] -= kx
-    M[end - 3, idx_Jz] -= 1im
-
-    M[end - 2, end - 4] -= kz
-    M[end - 1, end - 5] += kz
-    M[end - 1, end - 3] -= kx
-    M[end, end - 4] += kx
-
-    return M
-end
-
+    iwp2 = 1im * sum(p -> p.wp2, params)
+    for c in 1:3
+        M[c * L, 3L + c] = iwp2
+        M[3L + c, c * L] = -1im
+    end
+    return _B_E_part!(M, 3L, kx, kz)
 end

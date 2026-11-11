@@ -17,6 +17,7 @@
 - **Breaking**: `B0` is a magnitude or a vector with `ẑ` along it; a negative scalar no longer reverses the gyration sense.
 - **Breaking**: `PlasmaBO.Constants` and the names `q`, `qe`, `me`, `mp`, `kb`, `c0`, `ε0`, `μ0` are removed; use `PlasmaPopulations.E_SI`, `ME_SI`, `MP_SI`, `KB_SI`, `C_SI`, `EPS0_SI`, `MU0_SI`.
 - **Breaking**: `plasma_frequency(q, n, m)` and `Debye_length` are removed; use `PlasmaPopulations.plasma_frequency(particle, n)` and `PlasmaPopulations.debye_length(particle, n, T)`.
+- **Breaking**: `PlasmaBO.PBK` is removed; `BOPBK` lives in `PlasmaBO`.
 
 ### Added
 

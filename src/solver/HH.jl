@@ -69,14 +69,6 @@ end
     return P, 2c .* R .- dR
 end
 
-# Rows r, r + SNJ1, r + 2SNJ1 couple to E through [p11 p12 p13; -p12 p22 p23; p13 -p23 p33].
-function _couple_E!(M, r, SNJ1, SNJ3, (p11, p12, p13, p22, p23, p33))
-    M[r, (SNJ3 + 1):(SNJ3 + 3)] .= (p11, p12, p13)
-    M[r + SNJ1, (SNJ3 + 1):(SNJ3 + 3)] .= (-p12, p22, p23)
-    M[r + 2SNJ1, (SNJ3 + 1):(SNJ3 + 3)] .= (p13, -p23, p33)
-    return M
-end
-
 # Fills the pole rows r0 + (n + N)·J + j of one species; returns its E-coupling for the species rows.
 function _assemble_species!(M, p::HHSolverParam{T}, r0, kx, kz, SNJ1, SNJ3, (; bzj, czj), N) where {T}
     (; wc, vtz, vtp, vdz, alm) = p
@@ -172,21 +164,5 @@ function dispersion_matrix!(M, params, k::Wavevector, alg::BOHH)
     M[SNJ3 + 2, (SNJ1 + 1):2SNJ1] .= -1
     M[SNJ3 + 3, (2SNJ1 + 1):3SNJ1] .= -1
     _B_E_part!(M, SNJ3, kx, kz)
-    return M
-end
-
-# Maxwell's curl equations in units with c = 1
-function _B_E_part!(M, idx, kx, kz)
-    # E(B) coupling: Ampère's law
-    M[idx + 1, idx + 5] = kz
-    M[idx + 2, idx + 4] = -kz
-    M[idx + 2, idx + 6] = kx
-    M[idx + 3, idx + 5] = -kx
-
-    # B(E) coupling: Faraday's law
-    M[idx + 4, idx + 2] = -kz
-    M[idx + 5, idx + 1] = kz
-    M[idx + 5, idx + 3] = -kx
-    M[idx + 6, idx + 2] = kx
     return M
 end

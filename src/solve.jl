@@ -1,10 +1,34 @@
 abstract type AbstractDispersionAlgorithm end
 
-include("solver/PBK.jl"); using .PBK: BOPBK
+zero!(M) = fill!(M, zero(eltype(M)))
+
+# Rows r, r + SNJ1, r + 2SNJ1 couple to E through [p11 p12 p13; -p12 p22 p23; p13 -p23 p33].
+function _couple_E!(M, r, SNJ1, SNJ3, (p11, p12, p13, p22, p23, p33))
+    M[r, (SNJ3 + 1):(SNJ3 + 3)] .= (p11, p12, p13)
+    M[r + SNJ1, (SNJ3 + 1):(SNJ3 + 3)] .= (-p12, p22, p23)
+    M[r + 2SNJ1, (SNJ3 + 1):(SNJ3 + 3)] .= (p13, -p23, p33)
+    return M
+end
+
+# Maxwell's curl equations in units with c = 1
+function _B_E_part!(M, idx, kx, kz)
+    # E(B) coupling: Ampère's law
+    M[idx + 1, idx + 5] = kz
+    M[idx + 2, idx + 4] = -kz
+    M[idx + 2, idx + 6] = kx
+    M[idx + 3, idx + 5] = -kx
+
+    # B(E) coupling: Faraday's law
+    M[idx + 4, idx + 2] = -kz
+    M[idx + 5, idx + 1] = kz
+    M[idx + 5, idx + 3] = -kx
+    M[idx + 6, idx + 2] = kx
+    return M
+end
+
+include("solver/PBK.jl")
 include("solver/HH.jl")
 include("solver/fluid.jl")
-
-zero!(M) = fill!(M, zero(eltype(M)))
 
 # LAPACK eigvals! accepts UnsafeArray views; GenericLinearAlgebra's Householder
 # does not. Aliasing the Bumper buffer via `unsafe_wrap(Array, ...)` segfaults
