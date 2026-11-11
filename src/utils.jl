@@ -20,15 +20,14 @@ polarization_ratio(v, k::Wavevector) = v[end - 4] / _transverse_E(v, k)
 """
     handedness(v, ω, k::Wavevector; threshold = 1e-5)
 
-Rotation sense in real time, about `B₀ ∥ +ẑ`, of the eigenvector `v` with complex frequency `ω`.
-
-Returns `:R` (whistler-like, electron-sense), `:L` (Alfvén-like, ion-sense) or `:linear`.
+Rotation sense of `v` about `B₀ ∥ +ẑ`: `:R` (electron-sense), `:L` (ion-sense) or `:linear`.
 """
 function handedness(v, ω, k::Wavevector; threshold = 1.0e-5)
-    E_perp, Ey = _transverse_E(v, k), v[end - 4]
-    abs(E_perp) < 1.0e-10 && abs(Ey) < 1.0e-10 && return :linear
-    P = Ey / E_perp
-    (abs(P) < threshold || 1 / abs(P) < threshold) && return :linear
-    ellipticity = (real(ω) < 0 ? -1 : 1) * imag(P) / abs(P)
-    return ellipticity > threshold ? :R : ellipticity < -threshold ? :L : :linear
+    E = @view v[(end - 5):(end - 3)]
+    E⊥, Ey = _transverse_E(v, k), E[2]
+    I = abs2(E⊥) + abs2(Ey)
+    # Relative to |E|: v is unit-norm over all states, so its field part can be arbitrarily small.
+    I <= threshold^2 * sum(abs2, E) && return :linear
+    V = sign(real(ω)) * 2 * imag(conj(E⊥) * Ey) / I  # circular polarization degree
+    return V > threshold ? :R : V < -threshold ? :L : :linear
 end

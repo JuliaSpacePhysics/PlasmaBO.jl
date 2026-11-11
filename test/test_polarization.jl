@@ -11,6 +11,8 @@
     @test handedness(field_vector(1, 0, 0), 1.0, parallel) == :linear
     @test handedness(field_vector(1, 1, 0), 1.0, parallel) == :linear   # real P, zero ellipticity
     @test handedness(field_vector(0, 0, 0), 1.0, parallel) == :linear   # no field
+    @test handedness(1.0e-12 .* v_R, 1.0, parallel) == :R               # small field part of v
+    @test handedness(field_vector(1 + sqrt(2) * 1.0e-8, 1.0e-8im, 1), 1.0, oblique) == :linear   # E nearly ∥ k
 
     # θ = 45°: E⊥ = (Ex - Ez)/√2, so Ex = √2 gives E⊥ = 1; the sign of Re ω reverses the sense.
     v_oblique = field_vector(sqrt(2), 1im, 0)
