@@ -9,6 +9,7 @@ on:
       - "docs/**"
       - "Project.toml"
       - "docs/Project.toml"
+      - ".github/workflows/Doc.yml"
     tags: ["*"]
   pull_request:
     paths:
@@ -16,6 +17,7 @@ on:
       - "docs/**"
       - "Project.toml"
       - "docs/Project.toml"
+      - ".github/workflows/Doc.yml"
   workflow_dispatch:
 
 concurrency:
@@ -30,9 +32,12 @@ jobs:
       actions: write # needed to allow julia-actions/cache to proactively delete old caches that it has created
       contents: write
       statuses: write
+      pull-requests: write # page build time comment
     runs-on: ubuntu-latest
     steps:
       - name: Build and deploy Documenter.jl docs
         uses: JuliaSpacePhysics/actions/DocsDocumenter@main
         env:
           JULIA_NUM_THREADS: auto,1
+        with:
+          comment_timings: true
