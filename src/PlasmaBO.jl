@@ -10,9 +10,6 @@ using Reexport: @reexport
 using PlasmaDispersionBase: normalized, realtype
 import PlasmaDispersionBase: pointsolver
 
-export Particle, Electron, Positron, Proton
-export Population, Plasma
-export BiMaxwellian, GaussianRing, BiKappa, ProductBiKappa, Cold, GridVDF
 export dispersion_matrix
 export BOPBK, BOHH, BOFluid
 export HermiteVDF

@@ -52,8 +52,7 @@ VlasovMaxwellDispersion has no `HermiteVDF`: polish such a plasma's roots on the
 
 | name | meaning |
 |---|---|
-| `Particle`, `Electron`, `Positron`, `Proton`, `Population`, `Plasma`, `BiMaxwellian`, `GaussianRing`, `BiKappa`, `ProductBiKappa`, `Cold`, `GridVDF` | re-exported from PlasmaPopulations |
-| PlasmaDispersionBase's exported API (`Wavevector`, `DispersionProblem`, `solve`, `track`, …) | re-exported; [its README](https://github.com/JuliaPlasma/PlasmaDispersionBase.jl#readme) documents it. |
+| PlasmaDispersionBase's exported API (`Wavevector`, `DispersionProblem`, `solve`, `track`, `Plasma`, `Population`, …) | re-exported; [its README](https://github.com/JuliaPlasma/PlasmaDispersionBase.jl#readme) documents it. |
 | `dispersion_matrix(plasma, k::Wavevector, alg; ref)` | the linear operator, eigenvalues in the units of `plasma`; its eigenvectors end in the fields `(E, B)` with `c = 1` |
 | `HermiteVDF(model; w_perp, w_para, vd_para, vr_perp, N_para, N_perp, atol)` | expansion of a gyrotropic model, about its thermal speeds and drift by default |
 | `polarization_ratio(v, k)` | `Ey/E⊥` of eigenvector `v` |
