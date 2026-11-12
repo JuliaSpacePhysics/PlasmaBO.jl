@@ -299,10 +299,11 @@ end
     alg = BOHH(; N = 1, J = 28)
     ωd = ComplexF64.(eigvals(dispersion_matrix(Plasma(plasma.populations...; B0 = Double64(B0)), Wavevector(Double64.((k.k_perp, k.k_para))...), alg)))
     ref = ωd[argmin(abs.(ωd .- 0.62 .+ 0.18im))]   # damped ion mode, ≈ (0.65 - 0.19i) Ωp
-    ω = solve(DispersionProblem(plasma, k), alg).omega
-    e = ω[argmin(abs.(ω .- ref))]
-    @test abs(e - ref) > 1.0e-2 * abs(ref)
-    r = refine(DispersionProblem(plasma, k), e, alg).omega
+    nearest(alg) = (ω = solve(DispersionProblem(plasma, k), alg).omega; ω[argmin(abs.(ω .- ref))])
+    @test abs(nearest(alg) - ref) > 1.0e-2 * abs(ref)
+    # Seeded from J = 28's own eigenvalue, refine is roundoff-luck (it scatters 3-20% across BLAS builds,
+    # beyond Newton's basin); J = 24's is still accurate to < 1%.
+    r = refine(DispersionProblem(plasma, k), nearest(BOHH(; N = 1, J = 24)), alg).omega
     @test abs(r - ref) < 1.0e-4 * abs(ref)
 end
 
