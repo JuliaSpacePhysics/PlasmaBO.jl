@@ -28,5 +28,6 @@ include("special.jl")
 include("integral.jl")
 include("hermite_expansion.jl")
 include("solve.jl")
+include("precompile.jl")
 
 end
