@@ -260,6 +260,23 @@ end
     sol_pbk = link(solve(DispersionProblem(Plasma(Population(e, electron; n); B0), AngleSweep(; k = ks, theta = θ)), BOPBK()))
     @test all(b -> size(b.omega) == (80,), sol_pbk)
     @test maximum(b -> real(b.omega[end]), filter(b -> isfinite(b.omega[end]), sol_pbk)) / wce ≈ 3.0667420557507734
+
+    # Root from VlasovMaxwellDispersion's exact Z_κ∥; the plasma is stable, and mirror-symmetric in k∥ without drift.
+    bk(κz; vd = 0.0) = Plasma(
+        Population(Proton(), ProductBiKappa(; vth_perp = 3.0e4, vth_para = 2.5e4, kappa_perp = 40.0, kappa_para = κz, vd_para = vd); n = 5.0e6),
+        Population(Electron(), ProductBiKappa(; vth_perp = 2.0e6, vth_para = 2.0e6, kappa_perp = 40.0, kappa_para = κz); n = 5.0e6);
+        B0 = 1.0e-8
+    )
+    at(θ) = Wavevector(; k = 2.0e-5, theta = deg2rad(θ))
+    for θ in (30, 150)
+        ωs = modes(bk(12), at(θ), BOPBK(; N = 3)) ./ gyrofrequency(Proton(), 1.0e-8)
+        @test minimum(ω -> abs(ω - (0.6536868 - 0.1972993im)), ωs) < 1.0e-5
+        @test maximum(imag, ωs) < 1.0e-6
+    end
+    # Reversing k∥ and the drift together is a mirror image
+    ω1, ω2 = modes(bk(4; vd = 3.0e4), at(150), BOPBK()), modes(bk(4; vd = -3.0e4), at(30), BOPBK())
+    @test all(ω -> minimum(abs, ω2 .- ω) ≤ 1.0e-8 * maximum(abs, ω1), ω1)
+    @test_throws ArgumentError dispersion_matrix(bk(25), at(30), BOPBK())
 end
 
 @testset "Negative density subtracts a population" begin
@@ -306,12 +323,11 @@ end
     kappa = Plasma(Population(e, ProductBiKappa(e; T = 2555.0, kappa_perp = 4.5, kappa_para = 3, loss_cone = 1.0, vd_para = 1.0e6); n = 2.43e6); B0 = 1.0e-6)
     kx = 0.1
 
-    # The matrix is continuous into k∥ = 0
+    # The roots are continuous into k∥ = 0; BOPBK's matrix is not, as it scales its chains by k∥
     for (plasma, alg) in ((warm, BOHH()), (kappa, BOPBK(; N = 1)))
-        M0 = dispersion_matrix(plasma, Wavevector(kx, 0.0), alg)
-        M1 = dispersion_matrix(plasma, Wavevector(kx, 1.0e-10 * kx), alg)
-        @test all(isfinite, M0)
-        @test all(isapprox.(M0, M1; rtol = 1.0e-7, atol = 1.0e-10 * maximum(abs, M0)))
+        @test all(isfinite, dispersion_matrix(plasma, Wavevector(kx, 0.0), alg))
+        ω0, ω1 = modes(plasma, Wavevector(kx, 0.0), alg), modes(plasma, Wavevector(kx, 1.0e-10 * kx), alg)
+        @test all(ω -> minimum(abs, ω1 .- ω) ≤ 1.0e-7 * maximum(abs, ω0), ω0)
     end
 
     # O-mode: ω² = ωp² + c²k² for kρ ≪ 1
