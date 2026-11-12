@@ -145,10 +145,10 @@ function hermite_expansion(
     Lmax = max(N_para, N_perp)
 
     return @no_escape begin
-        inv_nrm = @temp_array(T, Lmax + 1)
-        ρmat = @temp_array(T, nz, N_para + 1)
-        Ueff = @temp_array(T, nx, N_perp + 1)
-        tmp = @temp_array(T, N_para + 1, nx)
+        inv_nrm = _temp_array(T, Lmax + 1)
+        ρmat = _temp_array(T, nz, N_para + 1)
+        Ueff = _temp_array(T, nx, N_perp + 1)
+        tmp = _temp_array(T, N_para + 1, nx)
         _hermite_inv_norms!(inv_nrm, Lmax)
 
         _fill_basis_mat!(ρmat, v_para, vd_para, w_para, N_para, inv_nrm)

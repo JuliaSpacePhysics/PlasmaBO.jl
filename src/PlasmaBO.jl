@@ -1,7 +1,7 @@
 module PlasmaBO
 
 using QuadGK: quadgk, quadgk!
-using Bumper: Bumper, @no_escape, @alloc
+using Bumper: Bumper, @no_escape
 using LinearAlgebra
 using Statistics: mean
 using PlasmaPopulations

@@ -83,10 +83,10 @@ function _assemble_species!(ξ, B, p::HHSolverParam{T}, r0, kx, kz, (; bzj, czj)
     b = ntuple(_ -> zero(eltype(ξ)), 6)
 
     @no_escape begin
-        Γ = @temp_array(T, 12, m_max + 3)
-        Ils = @temp_array(T, l_max + 3)
-        Tₗ = @temp_array(T, 6, l_max + 1)
-        Uₗ = @temp_array(T, 6, l_max + 1)
+        Γ = _temp_array(T, 12, m_max + 3)
+        Ils = _temp_array(T, l_max + 3)
+        Tₗ = _temp_array(T, 6, l_max + 1)
+        Uₗ = _temp_array(T, 6, l_max + 1)
         Ils .= funIn.(T, 0:(l_max + 2))
 
         # Γ serves both ±a: n enters otherwise only through n·wc and the sign of the V₁ products.
@@ -118,7 +118,7 @@ function _assemble_species!(ξ, B, p::HHSolverParam{T}, r0, kx, kz, (; bzj, czj)
                     pj = (X[1], im * sn * X[2], sn * w * X[3], X[4], -im * w * X[5], w^2 * X[6])
                     r = r0 + (n + N) * J + j
                     ξ[r] = cnj
-                    _coupling!(B, r, pj)
+                    _coupling!(view(B, :, :, r), pj)
                     b = b .- pj
                 end
             end
@@ -127,19 +127,11 @@ function _assemble_species!(ξ, B, p::HHSolverParam{T}, r0, kx, kz, (; bzj, czj)
     return b
 end
 
-# Velocity triples (x, y, z) at pole ξ couple to E through
-# [p11 p12 p13; -p12 p22 p23; p13 -p23 p33], and E to them through -I (the current).
-function _coupling!(B, r, (p11, p12, p13, p22, p23, p33))
-    B[1, 1, r], B[1, 2, r], B[1, 3, r] = p11, p12, p13
-    B[2, 1, r], B[2, 2, r], B[2, 3, r] = -p12, p22, p23
-    B[3, 1, r], B[3, 2, r], B[3, 3, r] = p13, -p23, p33
-    return B
-end
-
 prepare(alg::BOHH, populations, ::Type{T}) where {T} =
     (; species = map(sp -> HHSolverParam(sp, T), populations), jpole = get_jpole_coefficients(alg.J, T))
 
-# One triple per (species, n, j) pole, then one pole-free triple (ξ = 0) per species.
+# One triple per (species, n, j) pole, then one pole-free triple (ξ = 0) per species; E couples
+# to each through -I (the current).
 function _operator(alloc, params, k::Wavevector, alg::BOHH, ::Type{CT}) where {CT}
     (; species, jpole) = params
     S, J, N = length(species), length(jpole.czj), alg.N
@@ -153,7 +145,7 @@ function _operator(alloc, params, k::Wavevector, alg::BOHH, ::Type{CT}) where {C
         r0 = (s - 1) * (2N + 1) * J
         b = _assemble_species!(ξ, B, param, r0, kx, kz, jpole, N)
         ξ[SNJ + s] = 0
-        _coupling!(B, SNJ + s, b)
+        _coupling!(view(B, :, :, SNJ + s), b)
         # Relative to each species' largest residue: a global one would let electrons erase ion harmonics.
         rs = (r0 + 1):(r0 + (2N + 1) * J)
         t = 3eps(real(CT)) * max(norm(view(B, :, :, SNJ + s)), maximum(r -> norm(view(B, :, :, r)), rs))
@@ -161,6 +153,56 @@ function _operator(alloc, params, k::Wavevector, alg::BOHH, ::Type{CT}) where {C
         tol[SNJ + s] = t
     end
     return _reduced_operator(alloc, ξ, B, tol, kx, kz)
+end
+
+# The operator with auxiliary triples r (ẋᵣ = ξᵣ xᵣ + Bᵣ E, Ė = -Σᵣ xᵣ + k × B) reduced to the states
+# the fields couple to: at each distinct pole, as many as the rank of the summed residue, with pivots
+# below the poles' `tol` cut (Tian, Xie & Wei 2026, arXiv:2610.41450, §3.1). Roots are unchanged
+# (their eq. 15); the dropped eigenvalues sit exactly on the poles.
+function _reduced_operator(alloc, ξ, B, tol, kx, kz)
+    CT = eltype(ξ)
+    m = length(ξ)
+    # + 0 maps -0.0 to 0.0, so equal poles sort into contiguous runs.
+    perm = sortperm(ξ; by = z -> (real(z) + 0, imag(z) + 0))
+    ξr = alloc(CT, 3m)
+    L = alloc(CT, 3, 3m)    # E rows ← reduced states
+    Rf = alloc(CT, 3m, 3)   # reduced states ← E
+    Q = alloc(CT, 3, 3)
+    r = 0
+    i = 1
+    while i <= m
+        pole = ξ[perm[i]]
+        fill!(Q, zero(CT))
+        cut = zero(real(CT))
+        while i <= m && ξ[perm[i]] == pole
+            Q .-= view(B, :, :, perm[i])
+            cut = max(cut, tol[perm[i]])
+            i += 1
+        end
+        # Complete-pivoting elimination of Q: each pivot Q[a, b] peels the rank-1 term Q[:, b] Q[a, :] / Q[a, b].
+        for _ in 1:3
+            p, idx = findmax(abs, Q)
+            p > cut || break
+            a, b = Tuple(idx)
+            s = sqrt(Q[a, b])   # split the pivot's size evenly between the two couplings
+            r += 1
+            ξr[r] = pole
+            for c in 1:3
+                L[c, r] = Q[c, b] / s
+                Rf[r, c] = Q[a, c] / s
+            end
+            for c in 1:3, d in 1:3
+                Q[d, c] -= L[d, r] * Rf[r, c]
+            end
+        end
+    end
+    M = zero!(alloc(CT, r + 6, r + 6))
+    for t in 1:r
+        M[t, t] = ξr[t]
+    end
+    M[1:r, (r + 1):(r + 3)] .= view(Rf, 1:r, :)
+    M[(r + 1):(r + 3), 1:r] .= view(L, :, 1:r)
+    return _B_E_part!(M, r, kx, kz)
 end
 
 # D(ω) and D′(ω), D the E rows of the operator with its states and B eliminated:
@@ -205,7 +247,7 @@ function seedsolver(prob, alg::BOHH; atol = 1.0e-12, maxiter = 50)
     params = prepare(alg, prob.plasma.populations, T)
     return function (k, ω0)
         ω, nevals, retcode = @no_escape begin
-            M = _operator(_bumper_alloc, params, k, alg, Complex{T})
+            M = _operator(_temp_array, params, k, alg, Complex{T})
             r = size(M, 1) - 6
             E, Bf = (r + 1):(r + 3), (r + 4):(r + 6)
             _newton_det(M, r, M[E, Bf] * M[Bf, E], complex(ω0), atol, maxiter)

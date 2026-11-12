@@ -9,8 +9,7 @@ function _compute_integral_matrices!(Γₙ, n, a, d, m_max; rtol = nothing, atol
     rtol = something(rtol, tol)
     atol = something(atol, tol)
     M = m_max + 2  # maximum m index needed
-    # QuadGK requires an Array result container. Managed `@temp_array` output
-    # is already an Array; Bumper output is exposed as a non-owning Array alias.
+    # QuadGK requires an Array result container; Bumper output is exposed as a non-owning alias.
     result = Γₙ isa Array ? Γₙ : unsafe_wrap(Array, pointer(Γₙ), size(Γₙ))
     # Moment (y-d)^M peaks at |y-d| = √(M/2) and decays past it at least as fast as the Gaussian.
     ym = sqrt(T(M) / 2) + sqrt(-log(rtol))

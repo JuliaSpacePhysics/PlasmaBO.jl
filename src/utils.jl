@@ -1,6 +1,5 @@
-macro temp_array(T, dims...)
-    return esc(:(isbitstype($T) ? @alloc($T, $(dims...)) : zeros($T, $(dims...))))
-end
+# Valid until the enclosing `@no_escape` ends.
+_temp_array(T, dims...) = isbitstype(T) ? Bumper.alloc!(Bumper.default_buffer(), T, dims...) : zeros(T, dims...)
 
 
 # Component of E perpendicular to k in the x-z plane, from an eigenvector ending in (E, B)

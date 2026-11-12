@@ -40,4 +40,3 @@ julia = "1.10"
 
 [sources]
 PlasmaDispersionBase = {url = "https://github.com/JuliaPlasma/PlasmaDispersionBase.jl"}
-PlasmaPopulations = {url = "https://github.com/JuliaPlasma/PlasmaPopulations.jl"}
