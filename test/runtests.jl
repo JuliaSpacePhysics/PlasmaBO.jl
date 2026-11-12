@@ -305,6 +305,8 @@ end
     # beyond Newton's basin); J = 24's is still accurate to < 1%.
     r = refine(DispersionProblem(plasma, k), nearest(BOHH(; N = 1, J = 24)), alg).omega
     @test abs(r - ref) < 1.0e-4 * abs(ref)
+    # 15% off, over a third of the way to the next root: undamped Newton leaves for it from some directions.
+    @test all(θ -> abs(refine(DispersionProblem(plasma, k), ref * (1 + 0.15cis(θ)), alg).omega - ref) < 1.0e-4 * abs(ref), (0:11) .* (π / 6))
 end
 
 @testset "Sweeps and boxes" begin

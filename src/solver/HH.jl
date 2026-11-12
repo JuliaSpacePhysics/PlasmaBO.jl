@@ -221,11 +221,15 @@ function _D_dD(M, r, K, ω)
     return D, dD
 end
 
-# Newton on det D(ω) = 0, stepping -1/tr(D⁻¹D′): each term of D is rounded on its own, so roots recover
-# most of the accuracy that the eigensolver loses when the J-pole residues cancel (large J). det D itself
-# cancels too, so convergence is judged on the step: below atol, or no longer halving below √atol.
+# Newton on det D(ω) = 0, step δ = 1/tr(D⁻¹D′). D's terms are rounded one by one, so its roots keep the
+# digits the dense eigensolver loses at large J. det D cancels, so convergence is judged on the step: below
+# atol, or no longer halving below √atol. A full step from a poor seed can land in a neighbouring root's
+# basin, so steps are damped by λ = min(1, 1/2h), h the last step's relative departure from its linear
+# prediction (1 - λ)δ; λ = 1/2 at the seed, where h is unknown.
 function _newton_det(M, r, K, ω, atol, maxiter)
     prev = oftype(abs(ω), Inf)
+    λ = oftype(prev, 0.5)
+    δ₀ = zero(ω)
     for it in 1:maxiter
         D, dD = _D_dD(M, r, K, ω)
         all(isfinite, D) && all(isfinite, dD) || return oftype(ω, NaN), it, ReturnCode.Failure
@@ -233,10 +237,11 @@ function _newton_det(M, r, K, ω, atol, maxiter)
         issuccess(F) || return ω, it, ReturnCode.Success   # D exactly singular: ω is a root
         δ = inv(tr(F \ dD))
         isfinite(δ) || return oftype(ω, NaN), it, ReturnCode.Failure
-        ω -= δ
-        step = abs(δ) / max(abs(ω), 1)
-        (step <= atol || (step <= sqrt(atol) && step > prev / 2)) && return ω, it, ReturnCode.Success
-        prev = step
+        step = abs(δ) / max(abs(ω - δ), 1)
+        (step <= atol || (step <= sqrt(atol) && step > prev / 2)) && return ω - δ, it, ReturnCode.Success
+        it > 1 && (λ = min(1, abs(λ * δ₀) / 2abs(δ - (1 - λ) * δ₀)))
+        ω -= λ * δ
+        prev, δ₀ = step, δ
     end
     return oftype(ω, NaN), maxiter, ReturnCode.MaxIters
 end
