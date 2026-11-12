@@ -146,7 +146,7 @@ bz32snl(wp2, wc, ξ, kx2b2) = -1im * wp2 * kx2b2 * ξ^2 / wc^2
 bz33snl(wp2, wc, kx, ξ, b1_kz, kx2b2_kz2) = -1im * wp2 * (2 * kx^2 * b1_kz * ξ + kx2b2_kz2) / wc^2
 bz34snl(wp2, wc, kx, b1_kz2) = -1im * kx^2 * wp2 * b1_kz2 / wc^2
 
-# The E-couplings of level l of harmonic n, as `_couple_E!` takes them: the head, at (ω - csn)^-l,
+# The E-couplings of level l of harmonic n, as `_coupling!` takes them: the head, at (ω - csn)^-l,
 function _pbk_head(S, p, n, l, kx, kz, ξ)
     (; κz, wp2, wc) = p
     b1, b3 = b1snl(S, p, n, l, kz), b3snl(S, p, n, l, kz)
@@ -200,7 +200,7 @@ function _pbk_species!(M, p, r, L, kx, kz, N)
             end
             b = j < m ? _pbk_head(S, p, n, j, kx, kz, ξ) : ntuple(_ -> zero(csn), 6)
             j > 1 && (b = b .+ _pbk_tail(S, p, n, j - 1, kx, kz, ξ))
-            _couple_E!(M, r, L, 3L, b ./ s^(j - 1))
+            _coupling!(view(M, r:L:(r + 2L), (3L + 1):(3L + 3)), b ./ s^(j - 1))
         end
     end
     return r
