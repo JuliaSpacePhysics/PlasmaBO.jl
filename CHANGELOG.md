@@ -23,6 +23,7 @@
 
 ### Added
 
+- A `Seed` at one wavevector and `Continuation(BOHH())` find the `BOHH` root by Newton from the guess, not the nearest eigenvalue.
 - Signed-density components: a `Population` may have negative `n`, enabling exact mixture-of-envelopes representation of subtracted-Maxwellian structures.
 - `atol` keyword in `hermite_expansion`: thresholds grid-quadrature noise in high-order coefficients.
 

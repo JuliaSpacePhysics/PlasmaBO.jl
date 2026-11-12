@@ -9,7 +9,7 @@ using PlasmaPopulations: si_velocity, kappa_widths, pdf
 using Reexport: @reexport
 @reexport using PlasmaDispersionBase
 using PlasmaDispersionBase: normalized, realtype
-import PlasmaDispersionBase: pointsolver
+import PlasmaDispersionBase: pointsolver, seedsolver
 
 export dispersion_matrix
 export BOPBK, BOHH, BOFluid
