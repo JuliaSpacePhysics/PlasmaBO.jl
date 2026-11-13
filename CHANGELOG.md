@@ -1,14 +1,14 @@
 # Changelog
 
-## [Unreleased]
+## [0.3.0] - 2026-11-12
 
 ### Changed
 
-- **Breaking**: plasmas are described with [PlasmaPopulations.jl](https://github.com/JuliaSpacePhysics/PlasmaPopulations.jl) (its main types re-exported). `Maxwellian`, `BiKappa`, `BiKappa2`, `FluidSpecies` and the ChargedParticles/Unitful dependencies are removed; use `Population(particle, BiMaxwellian/GaussianRing/ProductBiKappa/BiKappa(...); n)`. Drifts and ring speeds are in m/s (or Unitful).
+- **Breaking**: plasmas are described with `PlasmaPopulations.jl` (its main types re-exported). `Maxwellian`, `BiKappa`, `BiKappa2`, `FluidSpecies` and the ChargedParticles/Unitful dependencies are removed; use `Population(particle, BiMaxwellian/GaussianRing/ProductBiKappa/BiKappa(...); n)`. Drifts and ring speeds are in m/s (or Unitful).
 - **Breaking**: `HHSolverParam` is internal; give precomputed Hermite coefficients as `HermiteVDF(; w_perp, w_para, alm, vd_para, vr_perp)`. `BOHH` expands any non-Maxwellian model with `HermiteVDF(model)`.
 - **Breaking**: kappa models are expanded about their thermal speeds instead of their kappa widths θ, so `BOHH` results for them change; pass `HermiteVDF(model; w_perp, w_para)` for the former reference.
 - **Breaking**: `BOHH` expands drifting non-Maxwellian models about their drift; the expansion used to ignore it, so results change.
-- **Breaking**: problems, solutions, wavevectors and branch linking come from [PlasmaDispersionBase.jl](https://github.com/JuliaPlasma/PlasmaDispersionBase.jl): `solve(species, B0, kx, kz; N)` → `solve(DispersionProblem(plasma, Wavevector(kx, kz)), BOHH(; N))`, a `SurveySolution`; `solve(species, B0, ks, θs, alg)` → `solve(DispersionProblem(plasma, [box,] AngleSweep(; k = ks, theta = θs)), alg())`.
+- **Breaking**: problems, solutions, wavevectors and branch linking come from `PlasmaDispersionBase.jl`: `solve(species, B0, kx, kz; N)` → `solve(DispersionProblem(plasma, Wavevector(kx, kz)), BOHH(; N))`, a `SurveySolution`; `solve(species, B0, ks, θs, alg)` → `solve(DispersionProblem(plasma, [box,] AngleSweep(; k = ks, theta = θs)), alg())`.
 - **Breaking**: `track(sol, (k, ω))` → `track(sol, ω, Wavevector(k .* sincos(θ)...))` on a `SurveySolution`. `BranchPoint`, `SurfaceBranchPoint` and `DispersionSolution(k, θ, ω)` are removed; it follows the nearest root by `abs`.
 - **Breaking**: `plot_branches` and `plot(sol, kn, ωn)` are removed; use `dispersion_diagram(sol)`.
 - **Breaking**: fluid closure moved to the solver, `BOFluid(; gamma_perp, gamma_para)`.
@@ -25,7 +25,7 @@
 
 - A `Seed` at one wavevector and `Continuation(BOHH())` find the `BOHH` root by Newton from the guess, not the nearest eigenvalue.
 - Signed-density components: a `Population` may have negative `n`, enabling exact mixture-of-envelopes representation of subtracted-Maxwellian structures.
-- `atol` keyword in `hermite_expansion`: thresholds grid-quadrature noise in high-order coefficients.
+- `atol` keyword in `HermiteVDF`: thresholds grid-quadrature noise in high-order coefficients.
 
 ## [0.2.0] - 2025-12-26
 

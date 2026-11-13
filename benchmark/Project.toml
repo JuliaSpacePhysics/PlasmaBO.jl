@@ -7,6 +7,3 @@ PlasmaPopulations = "19fe0aba-210f-40e6-8711-72208e0968be"
 [compat]
 BenchmarkTools = "1"
 julia = "1.10"
-
-[sources]
-PlasmaDispersionBase = { url = "https://github.com/JuliaPlasma/PlasmaDispersionBase.jl" }

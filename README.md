@@ -57,7 +57,7 @@ relation. A single-wavevector `Seed` and `Continuation(BOHH())` use the same New
 
 | name | meaning |
 |---|---|
-| PlasmaDispersionBase's exported API (`Wavevector`, `DispersionProblem`, `solve`, `track`, `Plasma`, `Population`, …) | re-exported; [its README](https://github.com/JuliaPlasma/PlasmaDispersionBase.jl#readme) documents it. |
+| `Wavevector`, `DispersionProblem`, `solve`, `track`, `Plasma`, `Population`, … | PlasmaDispersionBase's API re-exported |
 | `dispersion_matrix(plasma, k::Wavevector, alg; ref)` | the linear operator, eigenvalues in the units of `plasma`; its eigenvectors end in the fields `(E, B)` with `c = 1` |
 | `HermiteVDF(model; w_perp, w_para, vd_para, vr_perp, N_para, N_perp, atol)` | expansion of a gyrotropic model, about its thermal speeds and drift by default |
 | `polarization_ratio(v, k)` | `Ey/E⊥` of eigenvector `v` |
