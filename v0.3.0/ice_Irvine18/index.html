@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><meta name="referrer" content="no-referrer"/><title>Ion cyclotron emission · PlasmaBO.jl</title><meta name="title" content="Ion cyclotron emission · PlasmaBO.jl"/><meta property="og:title" content="Ion cyclotron emission · PlasmaBO.jl"/><meta property="twitter:title" content="Ion cyclotron emission · PlasmaBO.jl"/><meta name="description" content="Documentation for PlasmaBO.jl."/><meta property="og:description" content="Documentation for PlasmaBO.jl."/><meta property="twitter:description" content="Documentation for PlasmaBO.jl."/><meta property="og:url" content="https://JuliaSpacePhysics.github.io/PlasmaBO.jl/ice_Irvine18/"/><meta property="twitter:url" content="https://JuliaSpacePhysics.github.io/PlasmaBO.jl/ice_Irvine18/"/><link rel="canonical" href="https://JuliaSpacePhysics.github.io/PlasmaBO.jl/ice_Irvine18/"/><script data-outdated-warner src="../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.63.2/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../search_index.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script><link href="../assets/documentercitations/citations-hover.css" rel="stylesheet" type="text/css"/><link href="../assets/documentercitations/citations.css" rel="stylesheet" type="text/css"/><script src="../assets/documentercitations/citations-data.js"></script><script src="../assets/documentercitations/citations-hover.js"></script><script src="../assets/documentercitations/citations-backlinks.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../">PlasmaBO.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../">Home</a></li><li><a class="tocitem" href="../ringbeam_Umeda12/">Ring beam instability</a></li><li><a class="tocitem" href="../ionbeam_gary84/">Ion beam instability</a></li><li><a class="tocitem" href="../firehose_Astfalk17/">Firehose instability</a></li><li><a class="tocitem" href="../mirror_mode/">Mirror mode</a></li><li class="is-active"><a class="tocitem" href>Ion cyclotron emission</a><ul class="internal"><li><a class="tocitem" href="#Dispersion-Curve-Scan"><span>Dispersion Curve Scan</span></a></li></ul></li><li><a class="tocitem" href="../rlp_Cattaert07/">R/L/P modes (PBK solver)</a></li><li><a class="tocitem" href="../cold_plasma/">Cold plasma (fluid vs kinetic solver)</a></li><li><a class="tocitem" href="../dispersion_surface/">Dispersion surface tracking</a></li><li><a class="tocitem" href="../demo_polarization/">Wave polarization and handedness</a></li><li><a class="tocitem" href="../math_notes/">Math notes</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Ion cyclotron emission</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Ion cyclotron emission</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/JuliaSpacePhysics/PlasmaBO.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/JuliaSpacePhysics/PlasmaBO.jl/blob/main/docs/src/ice_Irvine18.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Case:-Ion-cyclotron-emission"><a class="docs-heading-anchor" href="#Case:-Ion-cyclotron-emission">Case: Ion cyclotron emission</a><a id="Case:-Ion-cyclotron-emission-1"></a><a class="docs-heading-anchor-permalink" href="#Case:-Ion-cyclotron-emission" title="Permalink"></a></h1><p>Ion cyclotron emission (ICE) driven by a ring ion beam distribution</p><pre><code class="language-julia hljs">using PlasmaBO
+using PlasmaPopulations: gyrofrequency, thermal_speed, alfven_speed
+using PlasmaPopulations: E_SI as qe, MP_SI as mp, C_SI as c0
+
+using DelimitedFiles
+
+# Magnetic field (Tesla)
+B0 = 2.1
+
+# Species table taken from the original BO MATLAB input
+fpath = pkgdir(PlasmaBO, &quot;test/ice_Irvine18.in&quot;)
+readdlm(fpath)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">4×8 Matrix{Any}:
+   &quot;qs(e)&quot;   &quot;ms(m_unit)&quot;   &quot;ns(m^-3)&quot;  …   &quot;vdsz/c&quot;   &quot;vdsr/c&quot;   &quot;ifv(1/0)&quot;
+  2         4.0            1.0e16          0.0        0.045      1
+  1         2.0            9.98e18         0.0        0.0        1
+ -1         0.0005447      1.0e19          0.0        0.0        1</code></pre><h2 id="Dispersion-Curve-Scan"><a class="docs-heading-anchor" href="#Dispersion-Curve-Scan">Dispersion Curve Scan</a><a id="Dispersion-Curve-Scan-1"></a><a class="docs-heading-anchor-permalink" href="#Dispersion-Curve-Scan" title="Permalink"></a></h2><pre><code class="language-julia hljs">tbl = readdlm(fpath, Float64; skipstart = 1)
+# charge in e, mass in proton masses, temperatures in eV, drift and ring speeds in c
+species = map(eachrow(tbl)) do row
+    z, m, n, Tz, Tp, vd, vr = row[1:7]
+    p = Particle(z * qe, m * mp)
+    vdf = GaussianRing(; vr_perp = vr * c0, w_perp = thermal_speed(p, Tp), vth_para = thermal_speed(p, Tz), vd_para = vd * c0)
+    Population(p, vdf; n)
+end
+plasma = Plasma(species...; B0)
+
+ωn = gyrofrequency(species[1].particle, B0)
+vA = alfven_speed(plasma)
+
+theta = deg2rad(89.5)
+kn = ωn / vA
+
+k = collect(9.5:0.025:11.5) .* kn</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">81-element Vector{Float64}:
+  93.30054333102575
+  93.54607107663371
+  93.79159882224168
+  94.03712656784963
+  94.2826543134576
+  94.52818205906556
+  94.77370980467353
+  95.01923755028149
+  95.26476529588943
+  95.5102930414974
+   ⋮
+ 110.97854101479905
+ 111.224068760407
+ 111.46959650601497
+ 111.71512425162294
+ 111.9606519972309
+ 112.20617974283887
+ 112.45170748844681
+ 112.69723523405477
+ 112.94276297966275</code></pre><p>Every eigenvalue, linked into branches. The spectrum is symmetric under <code>ω → -conj(ω)</code>, so each unstable branch has a mirror at <code>Re ω &lt; 0</code>; keep <code>Re ω &gt; 0</code>:</p><pre><code class="language-julia hljs">survey = solve(DispersionProblem(plasma, AngleSweep(; k, theta)), BOHH(; N = 12, J = 4))
+unstable = filter(b -&gt; isgrowing(b) &amp;&amp; real(b[1]) &gt; 0, link(survey))
+[maximum(imag, b.omega) / ωn for b in unstable]   # peak growth rates</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">2-element Vector{Float64}:
+ 0.1678955273872143
+ 0.15714128026740357</code></pre><pre><code class="language-julia hljs">using CairoMakie
+
+fig, (axr, axi) = dispersion_diagram(survey; k_unit = kn, omega_unit = ωn, xlabel = &quot;k/kn&quot;)
+dispersion_diagram!((axr, axi), unstable; k_unit = kn, omega_unit = ωn)
+ylims!(axr, 8.5, 10.5)
+ylims!(axi, -0.3, 0.2)
+fig</code></pre><img src="238ff772.png" alt="Example block output" width="935" height="450"/><p>They grow near the 9th and 10th harmonics of <code>ωn</code>, the cyclotron frequency of the ring-beam alpha particles (first row of the table).</p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../mirror_mode/">« Mirror mode</a><a class="docs-footer-nextpage" href="../rlp_Cattaert07/">R/L/P modes (PBK solver) »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.20.0 on <span class="colophon-date" title="Friday 13 November 2026 06:16">Friday 13 November 2026</span>. Using Julia version 1.13.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
