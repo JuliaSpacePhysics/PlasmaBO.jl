@@ -68,6 +68,7 @@ See [documentation](https://JuliaSpacePhysics.github.io/PlasmaBO.jl/dev/) for wo
 ## Experiments
 
 - [`arbitrary_precision/`](experiments/arbitrary_precision/) — `BOHH`/`BOFluid`/`BOPBK` assembly and solve at `Float64`, `Double64`, and `BigFloat`.
+- [`benchmark/botian/`](benchmark/botian/) — speed and root agreement against [BO-T](https://github.com/FusionAlpha/botian) (Python).
 
 ## Elsewhere
 
