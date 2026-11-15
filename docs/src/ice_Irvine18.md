@@ -24,7 +24,7 @@ tbl = readdlm(fpath, Float64; skipstart = 1)
 # charge in e, mass in proton masses, temperatures in eV, drift and ring speeds in c
 species = map(eachrow(tbl)) do row
     z, m, n, Tz, Tp, vd, vr = row[1:7]
-    p = Particle(z * qe, m * mp)
+    p = Particle(; q = z * qe, m = m * mp)
     vdf = GaussianRing(; vr_perp = vr * c0, w_perp = thermal_speed(p, Tp), vth_para = thermal_speed(p, Tz), vd_para = vd * c0)
     Population(p, vdf; n)
 end

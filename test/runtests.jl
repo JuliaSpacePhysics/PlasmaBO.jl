@@ -192,7 +192,7 @@ end
     N, J = 1, 4
     # unit gyro- and plasma frequency, unit thermal speeds
     unit(::Type{T}) where {T} = Plasma(
-        Population(Particle(one(T), one(T)), HermiteVDF(; w_perp = one(T), w_para = one(T), alm = ones(T, 1, 1)); n = T(ε0));
+        Population(Particle(; q = one(T), m = one(T)), HermiteVDF(; w_perp = one(T), w_para = one(T), alm = ones(T, 1, 1)); n = T(ε0));
         B0 = one(T),
     )
 
@@ -221,7 +221,7 @@ end
 
     # BOFluid: same generic path; precision follows wave-parameter promotion.
     fluid(::Type{T}, B0) where {T} = Plasma(
-        Population(Particle(T(q), T(mp)), BiMaxwellian(; vth = T(1.0e4)); n = one(T));
+        Population(Particle(; q = T(q), m = T(mp)), BiMaxwellian(; vth = T(1.0e4)); n = one(T));
         B0,
     )
     @test eltype(modes(fluid(Float64, big"1"), Wavevector(big"0.2", big"0.1"), BOFluid())) === Complex{BigFloat}

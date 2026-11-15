@@ -8,9 +8,7 @@ const SUITE = BenchmarkGroup()
 
 cattaert_electron() = ProductBiKappa(Electron(); T = 2555.0, kappa_perp = 200.0, kappa_para = 1.0)
 
-SUITE["Umeda2012"] = BenchmarkGroup()
-
-let
+let g = SUITE["Umeda2012"]
     B0 = 96.24e-9  # [Tesla]
     T = 51 # [eV]
     e = Electron()
@@ -31,23 +29,18 @@ let
     kx = k * sin(θ)
     kz = k * cos(θ)
 
-    SUITE["Umeda2012"]["solve"] = @benchmarkable solve($(DispersionProblem(plasma, Wavevector(kx, kz))), BOHH(; N = 6, J = 12))
+    g["solve"] = @benchmarkable solve($(DispersionProblem(plasma, Wavevector(kx, kz))), BOHH(; N = 6, J = 12))
 
     k_ranges = (0.01:0.05:0.3) .* kn
     sweep = AngleSweep(; k = collect(k_ranges), theta = θ)
-    SUITE["Umeda2012"]["scan"] = @benchmarkable solve($(DispersionProblem(plasma, sweep)), BOHH(; N = 6))
+    g["scan"] = @benchmarkable solve($(DispersionProblem(plasma, sweep)), BOHH(; N = 6))
     ω0, k0 = (2.32 + 0.33im) * wce, Wavevector((0.1kn) .* sincos(θ)...)
     survey = solve(DispersionProblem(plasma, sweep), BOHH(; N = 6))
-    SUITE["Umeda2012"]["link"] = @benchmarkable link($survey)
-    SUITE["Umeda2012"]["track"] = @benchmarkable track($survey, $ω0, $k0)
+    g["link"] = @benchmarkable link($survey)
+    g["track"] = @benchmarkable track($survey, $ω0, $k0)
 end
 
-# ==============================================================================
-# Fluid vs Kinetic
-# ==============================================================================
-SUITE["FluidVsKinetic"] = BenchmarkGroup()
-
-let
+let g = SUITE["FluidVsKinetic"]
     # Cold plasma parameters
     B0 = 1.0e-8  # [Tesla]
     n = 1.0e6    # [m^-3]
@@ -59,16 +52,11 @@ let
     kx, kz = k .* sincos(θ)
 
     plasma = Plasma(Population(Electron(), BiMaxwellian; T, n), Population(Proton(), BiMaxwellian; T, n); B0)
-    SUITE["FluidVsKinetic"]["kinetic"] = @benchmarkable solve($(DispersionProblem(plasma, Wavevector(kx, kz))), BOHH(; N = 2, J = 8))
-    SUITE["FluidVsKinetic"]["fluid"] = @benchmarkable solve($(DispersionProblem(plasma, Wavevector(kx, kz))), BOFluid())
+    g["kinetic"] = @benchmarkable solve($(DispersionProblem(plasma, Wavevector(kx, kz))), BOHH(; N = 2, J = 8))
+    g["fluid"] = @benchmarkable solve($(DispersionProblem(plasma, Wavevector(kx, kz))), BOFluid())
 end
 
-# ==============================================================================
-# Mirror Mode
-# ==============================================================================
-SUITE["MirrorMode"] = BenchmarkGroup()
-
-let
+let g = SUITE["MirrorMode"]
     B0 = 100.0e-9
     θ = deg2rad(71)
 
@@ -89,7 +77,7 @@ let
     k_val = 0.35 / ρᵢ
     kx, kz = k_val .* sincos(θ)
 
-    SUITE["MirrorMode"]["solve"] = @benchmarkable solve($(DispersionProblem(plasma, Wavevector(kx, kz))), BOHH())
+    g["solve"] = @benchmarkable solve($(DispersionProblem(plasma, Wavevector(kx, kz))), BOHH())
 end
 
 SUITE["HermiteExpansion"] = BenchmarkGroup()
@@ -101,9 +89,6 @@ let
     )
 end
 
-# ==============================================================================
-# PBK Solver
-# ==============================================================================
 SUITE["PBKSolver"] = BenchmarkGroup()
 
 let
@@ -111,7 +96,6 @@ let
     θ = deg2rad(30)
 
     n = 2.43e6           # [m^-3]
-    T = 2555.0           # [eV]
     electron = Plasma(Population(Electron(), cattaert_electron(); n); B0)
 
     wce = abs(B0 * q / me)
@@ -123,11 +107,7 @@ let
     SUITE["PBKSolver"]["solve"] = @benchmarkable solve($(DispersionProblem(electron, AngleSweep(; k = collect(ks), theta = θ))), BOPBK())
 end
 
-
-# Matrix Construction - isolating matrix assembly from eigensolve that dominates `solve`.
-SUITE["BuildMatrix"] = BenchmarkGroup()
-
-let
+let g = SUITE["BuildMatrix"]
     B0 = 1.0e-6
     electron = Plasma(Population(Electron(), cattaert_electron(); n = 2.43e6); B0)
     wce = abs(B0 * q / me)
@@ -137,6 +117,6 @@ let
     kx = 0.1 * kn * cos(θ)
     kz = 0.1 * kn * sin(θ)
 
-    SUITE["BuildMatrix"]["HH"] = @benchmarkable dispersion_matrix($electron, $(Wavevector(kx, kz)), BOHH())
-    SUITE["BuildMatrix"]["PBK"] = @benchmarkable dispersion_matrix($electron, $(Wavevector(kx, kz)), BOPBK())
+    g["HH"] = @benchmarkable dispersion_matrix($electron, $(Wavevector(kx, kz)), BOHH())
+    g["PBK"] = @benchmarkable dispersion_matrix($electron, $(Wavevector(kx, kz)), BOPBK())
 end

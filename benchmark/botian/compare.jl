@@ -5,7 +5,7 @@ BLAS.set_num_threads(1)  # as BO-T; (k, θ) sweeps still use Julia threads
 
 # BO-T's SI constants (bo_setup.m); its electron is 5.447e-4 proton masses.
 const qe, mp, c = 1.60217662e-19, 1.6726219e-27, 2.99792458e8
-const proton, electron = Particle(qe, mp), Particle(-qe, 5.447e-4 * mp)
+const proton, electron = Particle(; q = qe, m = mp), Particle(; q = -qe, m = 5.447e-4 * mp)
 vth(p, T_eV) = sqrt(2 * T_eV * qe / p.m)
 
 results(file) = joinpath(@__DIR__, "results", file)

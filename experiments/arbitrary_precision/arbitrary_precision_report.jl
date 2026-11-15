@@ -34,7 +34,7 @@ const TYPES = [
 function report_matrix(::Type{T}) where {T}
     # unit gyro- and plasma frequency, unit thermal speeds
     vdf = HermiteVDF(; w_perp = one(T), w_para = one(T), alm = T.(alm))
-    plasma = Plasma(Population(Particle(one(T), one(T)), vdf; n = T(PlasmaPopulations.EPS0_SI)); B0 = one(T))
+    plasma = Plasma(Population(Particle(; q = one(T), m = one(T)), vdf; n = T(PlasmaPopulations.EPS0_SI)); B0 = one(T))
     return dispersion_matrix(plasma, Wavevector(T(0.2), T(0.1)), BOHH(; N, J))
 end
 
