@@ -18,7 +18,7 @@ const NZ = 128
 const N = 2
 const J = 4
 
-p, e = Proton(), Electron()
+p, e = Proton, Electron
 proton = ProductBiKappa(p; T_perp = 993.367, T_para = 1986.734, kappa_perp = 5.5, kappa_para = 5.5)
 electron = BiMaxwellian(e; T = 496.683)
 w_perp, w_para = kappa_widths(proton)

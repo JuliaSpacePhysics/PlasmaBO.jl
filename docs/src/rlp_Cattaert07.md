@@ -18,7 +18,7 @@ T = 2555.0           # [eV]
 κz = 1.0
 κx = 200.0
 
-e = Electron()
+e = Electron
 vth = thermal_speed(e, T)
 electron = Plasma(Population(e, ProductBiKappa(; vth, kappa_perp = κx, kappa_para = κz); n); B0)
 wce = abs(gyrofrequency(e, B0))

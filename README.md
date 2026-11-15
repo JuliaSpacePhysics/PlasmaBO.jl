@@ -12,7 +12,7 @@ using PlasmaBO
 
 B0 = 100e-9                       # background field [T]
 n, T = 8.7e6, 2.857e-3            # density [m^-3], temperature [eV]
-p, e = Proton(), Electron()
+p, e = Proton, Electron
 plasma = Plasma(Population(p, BiMaxwellian; T, n), Population(e, BiMaxwellian; T, n); B0)
 
 # Every mode at one wavevector (k⊥, k∥) [m^-1], in rad/s

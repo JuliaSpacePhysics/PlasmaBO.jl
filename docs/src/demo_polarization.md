@@ -49,7 +49,7 @@ electric_field(v) = (v[end-5], v[end-4], v[end-3])
 magnetic_field(v) = (v[end-2], v[end-1], v[end])
 
 # Define species
-plasma = Plasma(Population(Electron(), Cold(); n), Population(Proton(), Cold(); n); B0)
+plasma = Plasma(Population(Electron, Cold(); n), Population(Proton, Cold(); n); B0)
 
 # Construct the dispersion matrix using BOFluid solver
 M = dispersion_matrix(plasma, Wavevector(kx, kz), BOFluid())

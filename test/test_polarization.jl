@@ -25,7 +25,7 @@
     @test handedness(v_R, 1.0, Wavevector(0.0, 0.0)) == :R
 
     # Eigenvectors of a solver's matrix end in the fields
-    plasma = Plasma(Population(Electron(), BiMaxwellian; T = 1.0, n = 1.0e11), Population(Proton(), BiMaxwellian; T = 1.0, n = 1.0e11); B0 = 1.0e-4)
+    plasma = Plasma(Population(Electron, BiMaxwellian; T = 1.0, n = 1.0e11), Population(Proton, BiMaxwellian; T = 1.0, n = 1.0e11); B0 = 1.0e-4)
     k = Wavevector(0.0, 1.0)
     for alg in (BOFluid(), BOHH(; N = 2, J = 8))
         decomp = eigen!(dispersion_matrix(plasma, k, alg))

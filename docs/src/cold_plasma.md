@@ -19,7 +19,7 @@ B0 = 100e-9 # [Tesla]
 n = 8.7e6
 T = 2.857e-3
 
-p, e = Proton(), Electron()
+p, e = Proton, Electron
 plasma = Plasma(Population(p, BiMaxwellian; T, n), Population(e, BiMaxwellian; T, n); B0)
 
 wci = gyrofrequency(p, B0)

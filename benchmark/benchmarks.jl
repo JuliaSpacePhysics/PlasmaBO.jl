@@ -6,12 +6,12 @@ using PlasmaBO: hermite_expansion, gen_fv2d
 
 const SUITE = BenchmarkGroup()
 
-cattaert_electron() = ProductBiKappa(Electron(); T = 2555.0, kappa_perp = 200.0, kappa_para = 1.0)
+cattaert_electron() = ProductBiKappa(Electron; T = 2555.0, kappa_perp = 200.0, kappa_para = 1.0)
 
 let g = SUITE["Umeda2012"]
     B0 = 96.24e-9  # [Tesla]
     T = 51 # [eV]
-    e = Electron()
+    e = Electron
     plasma = Plasma(
         Population(e, (vth = thermal_speed(e, T); GaussianRing(; vr_perp = 0.05c0, w_perp = vth, vth_para = vth, vd_para = 0.1c0)); n = 1.0e5),
         Population(e, BiMaxwellian; T, n = 9.0e5);
@@ -51,7 +51,7 @@ let g = SUITE["FluidVsKinetic"]
     θ = deg2rad(45)
     kx, kz = k .* sincos(θ)
 
-    plasma = Plasma(Population(Electron(), BiMaxwellian; T, n), Population(Proton(), BiMaxwellian; T, n); B0)
+    plasma = Plasma(Population(Electron, BiMaxwellian; T, n), Population(Proton, BiMaxwellian; T, n); B0)
     g["kinetic"] = @benchmarkable solve($(DispersionProblem(plasma, Wavevector(kx, kz))), BOHH(; N = 2, J = 8))
     g["fluid"] = @benchmarkable solve($(DispersionProblem(plasma, Wavevector(kx, kz))), BOFluid())
 end
@@ -64,10 +64,10 @@ let g = SUITE["MirrorMode"]
     Tpara = 24840.0
     Tperp = 49680.0
 
-    p = Proton()
+    p = Proton
     plasma = Plasma(
         Population(p, BiMaxwellian; T_perp = Tperp, T_para = Tpara, n),
-        Population(Electron(), BiMaxwellian; T = Tpara, n);
+        Population(Electron, BiMaxwellian; T = Tpara, n);
         B0,
     )
     ρᵢ = thermal_speed(p, Tperp) / sqrt(2) / gyrofrequency(p, B0)
@@ -96,7 +96,7 @@ let
     θ = deg2rad(30)
 
     n = 2.43e6           # [m^-3]
-    electron = Plasma(Population(Electron(), cattaert_electron(); n); B0)
+    electron = Plasma(Population(Electron, cattaert_electron(); n); B0)
 
     wce = abs(B0 * q / me)
     ρce = kappa_widths(cattaert_electron())[1] / wce
@@ -109,7 +109,7 @@ end
 
 let g = SUITE["BuildMatrix"]
     B0 = 1.0e-6
-    electron = Plasma(Population(Electron(), cattaert_electron(); n = 2.43e6); B0)
+    electron = Plasma(Population(Electron, cattaert_electron(); n = 2.43e6); B0)
     wce = abs(B0 * q / me)
     ρce = kappa_widths(cattaert_electron())[1] / wce
     kn = 1 / ρce

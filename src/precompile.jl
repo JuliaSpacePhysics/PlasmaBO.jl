@@ -1,7 +1,7 @@
 using PrecompileTools: @setup_workload, @compile_workload
 
 @setup_workload begin
-    p, e = Proton(), Electron()
+    p, e = Proton, Electron
     B0, n, T = 5.0e-9, 5.0e6, 12.94
     maxwellian = Plasma(Population(p, BiMaxwellian; T, n), Population(e, BiMaxwellian; T, n); B0)
     at = Wavevector(; k = 1.0e-4, theta = 0.5)

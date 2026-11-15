@@ -17,7 +17,7 @@ B0 = 5e-9 # [Tesla]
 n = 5.0e6
 T = 12.94
 
-p, e = Proton(), Electron()
+p, e = Proton, Electron
 plasma = Plasma(Population(p, BiMaxwellian; T, n), Population(e, BiMaxwellian; T, n); B0)
 
 wn = abs(gyrofrequency(p, B0))

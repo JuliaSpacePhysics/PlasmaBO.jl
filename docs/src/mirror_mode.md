@@ -25,7 +25,7 @@ n = 1e6
 Tpara = 24840.0
 Tperp = 49680.0
 
-p, e = Proton(), Electron()
+p, e = Proton, Electron
 plasma = Plasma(
     Population(p, BiMaxwellian; T_perp = Tperp, T_para = Tpara, n),
     Population(e, BiMaxwellian; T = Tpara, n);

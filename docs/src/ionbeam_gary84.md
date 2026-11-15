@@ -83,9 +83,9 @@ plasmas = map(v0_vals) do v0
     v0b = v0m + v0
 
     plasma = Plasma(
-        Population(Proton(), BiMaxwellian; T = Tm_eV, vd_para = v0m, n = nm),
-        Population(Proton(), BiMaxwellian; T = Tb_eV, vd_para = v0b, n = nb),
-        Population(Electron(), BiMaxwellian; T = Te_eV, n = ne);
+        Population(Proton, BiMaxwellian; T = Tm_eV, vd_para = v0m, n = nm),
+        Population(Proton, BiMaxwellian; T = Tb_eV, vd_para = v0b, n = nb),
+        Population(Electron, BiMaxwellian; T = Te_eV, n = ne);
         B0,
     )
     plasma
@@ -171,9 +171,9 @@ plasmas = map(v0_vals) do v0
     v0b = v0m + v0
 
     plasma = Plasma(
-        Population(Proton(), BiMaxwellian; T = Tm_eV, vd_para = v0m, n = nm),
-        Population(Proton(), BiMaxwellian; T = Tb_eV, vd_para = v0b, n = nb),
-        Population(Electron(), BiMaxwellian; T = Te_eV, n = ne);
+        Population(Proton, BiMaxwellian; T = Tm_eV, vd_para = v0m, n = nm),
+        Population(Proton, BiMaxwellian; T = Tb_eV, vd_para = v0b, n = nb),
+        Population(Electron, BiMaxwellian; T = Te_eV, n = ne);
         B0,
     )
     plasma
@@ -260,9 +260,9 @@ plasmas = map(v0_vals) do v0
     v0b = v0m + v0
 
     plasma = Plasma(
-        Population(Proton(), BiMaxwellian; T = Tm_eV, vd_para = v0m, n = nm),
-        Population(Proton(), BiMaxwellian; T = Tb_eV, vd_para = v0b, n = nb),
-        Population(Electron(), BiMaxwellian; T = Te_eV, n = ne);
+        Population(Proton, BiMaxwellian; T = Tm_eV, vd_para = v0m, n = nm),
+        Population(Proton, BiMaxwellian; T = Tb_eV, vd_para = v0b, n = nb),
+        Population(Electron, BiMaxwellian; T = Te_eV, n = ne);
         B0,
     )
     plasma
@@ -330,11 +330,11 @@ Te_eV = 1.0 * Tm_eV
 Tparallel_b = 1.0 * Tb_eV
 Tperp_b = 10.0 * Tb_eV
 
-p = Proton()
+p = Proton
 plasma = Plasma(
     Population(p, BiMaxwellian; T = Tm_eV, n = nm),
     Population(p, BiMaxwellian; T_perp = Tperp_b, T_para = Tparallel_b, n = nb),
-    Population(Electron(), BiMaxwellian; T = Te_eV, n = ne);
+    Population(Electron, BiMaxwellian; T = Te_eV, n = ne);
     B0,
 )
 
@@ -383,9 +383,9 @@ v0m = -nb * v0 / (nm + nb)
 v0b = v0m + v0
 
 plasma = Plasma(
-    Population(Proton(), BiMaxwellian; T = Tm_eV, vd_para = v0m, n = nm),
-    Population(Proton(), BiMaxwellian; T = Tb_eV, vd_para = v0b, n = nb),
-    Population(Electron(), BiMaxwellian; T = Te_eV, n = ne);
+    Population(Proton, BiMaxwellian; T = Tm_eV, vd_para = v0m, n = nm),
+    Population(Proton, BiMaxwellian; T = Tb_eV, vd_para = v0b, n = nb),
+    Population(Electron, BiMaxwellian; T = Te_eV, n = ne);
     B0,
 )
 

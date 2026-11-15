@@ -24,7 +24,7 @@ B0 = 0.1  # [Tesla]
 θ = deg2rad(45)
 n = 5.0e19
 
-p, e = Proton(), Electron()
+p, e = Proton, Electron
 electron = BiMaxwellian(e; T = 496.683)
 proton = ProductBiKappa(p; T_perp = 993.367, T_para = 1986.734, kappa_perp = 5.5, kappa_para = 5.5)
 ```

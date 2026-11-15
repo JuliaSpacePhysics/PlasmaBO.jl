@@ -24,7 +24,7 @@ using Unitful
 # Umeda 2012 ring beam configuration
 B0 = 96.24e-9  # [Tesla]
 
-e = Electron()
+e = Electron
 T = 51u"eV"
 vth = thermal_speed(e, T)
 plasma = Plasma(

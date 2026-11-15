@@ -1,6 +1,6 @@
 @testset "Hermite expansion" begin
     # End-to-end: product bi-kappa — pin a handful of alm entries.
-    bk = ProductBiKappa(Electron(); T = 2555.0, kappa_perp = 200.0, kappa_para = 1.0)
+    bk = ProductBiKappa(Electron; T = 2555.0, kappa_perp = 200.0, kappa_para = 1.0)
     w_perp, w_para = kappa_widths(bk)
     r = HermiteVDF(bk; w_perp, w_para, N_para = 8, N_perp = 8)
     @test size(r.alm) == (9, 9)
@@ -32,8 +32,8 @@ end
     raw = hermite_expansion(fv, vz, vx, α, α; N_para = 40, N_perp = 0).alm
     @test count(!iszero, raw) > 1     # raw carries quadrature noise
     plasma = Plasma(
-        Population(Electron(), HermiteVDF(; w_perp = α, w_para = α, alm = e_th); n = n_e),
-        Population(Proton(), BiMaxwellian; T = T_eV, n = n_e);
+        Population(Electron, HermiteVDF(; w_perp = α, w_para = α, alm = e_th); n = n_e),
+        Population(Proton, BiMaxwellian; T = T_eV, n = n_e);
         B0,
     )
     kz = 0.34 * wpe / c0_
