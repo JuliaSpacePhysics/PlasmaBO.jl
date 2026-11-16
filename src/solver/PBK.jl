@@ -59,43 +59,37 @@ function _dbesselj_scaled(ν, z)
     return (_besselj_scaled(ν - 1, z) - (z / 2)^2 * _besselj_scaled(ν + 1, z)) / 2
 end
 
-# aᵐ S with a = k⊥ρc. As a → 0, S ~ a^(p3 - 3 + p1ν + p2|ν - 1|) with ν = |n|: some S diverge, but
-# each such S is multiplied by λ, k⊥², or a factor vanishing at n = 0. Callers fold the first two
-# in through `m` and skip the last; the small-λ branch factors the Bessel powers out of the
-# integrand so the folded result is finite at k⊥ = 0.
-# Every caller has p1 + p2 = 2, so S is even in n and takes ν = |n|.
-function funcS_pbk(p, ν, λ::T, p1, p2, p3, p4; m = 0, EPS0 = 1.0e-2) where {T}
+# (p1, p2, p3, p4, m) of the S integrals, in `_pbk_S`'s order; only the first three enter at ν = 0.
+const _PBK_S_TERMS = (
+    (2, 0, 1, 1, 2), (1, 1, 2, 1, 0), (0, 2, 3, 1, 0), (2, 0, 1, 1, 0), (2, 0, 1, 2, 0),
+    (2, 0, -1, 1, 2), (1, 1, 2, 2, 0), (1, 1, 0, 1, 2), (0, 2, 3, 2, 0), (0, 2, 1, 1, 2),
+)
+
+# aᵐ S per term, a = k⊥ρc. As a → 0, S ~ a^(p3 - 3 + p1ν + p2|ν - 1|), ν = |n|: some S diverge, but
+# each such S is multiplied by λ or k⊥² (folded in through `m`) or by a factor vanishing at n = 0.
+# The integrand carries the Bessel powers factored out, so the folded result is finite at k⊥ = 0.
+# p1 + p2 = 2 makes S even in n. One quadrature for all terms shares the Bessel evaluations.
+function funcS_pbk(p, ν, λ::T) where {T}
     κx = p.κx
     sgm = p.sigma
     eps0 = eps(one(T))
     C = 4 * κx^(-sgm - 1) * exp(loggamma(κx + sgm + 1) - loggamma(κx)) / gamma(sgm + 1)
-
-    # Denominator is computed via `log1p` to avoid exponent overflow in
-    # extended precision (Double64 maxes at ~1e308 like Float64).
-    if λ > EPS0
-        function integrand1(x)
-            jn = besselj(ν, x)
-            djn = (besselj(ν - 1, x) - besselj(ν + 1, x)) / 2
-            num = (x + eps0)^(2 * sgm + p3) * jn^p1 * djn^p2
-            log_den = (κx + sgm + p4) * log1p(x^2 / λ / κx / 2)
-            return num * exp(-log_den)
-        end
-        tmp = quadgk(integrand1, zero(T), T(Inf))[1]
-        return C * (2 * λ)^(m // 2 - sgm - 2) * tmp
-    else
-        a = sqrt(2 * λ)
-        q = abs(ν - 1)
-        eJ = p1 * ν + p2 * q
-        function integrand2(x)
-            z = x * a
-            jn = iszero(p1) ? one(z) : _besselj_scaled(ν, z)^p1
-            djn = iszero(p2) ? one(z) : _dbesselj_scaled(ν, z)^p2
-            num = (x + eps0)^(2 * sgm + p3) * x^eJ * jn * djn
-            log_den = (κx + sgm + p4) * log1p(x^2 / κx)
-            return num * exp(-log_den)
-        end
-        tmp = quadgk(integrand2, zero(T), T(Inf))[1]
-        return C * a^(p3 - 3 + m + eJ) * tmp / 2^eJ
+    nterms = iszero(ν) ? 3 : length(_PBK_S_TERMS)
+    a = sqrt(2 * λ)
+    eJ(p1, p2) = p1 * ν + p2 * abs(ν - 1)
+    I = quadgk(zero(T), T(Inf)) do x
+        jn, djn = _besselj_scaled(ν, x * a), _dbesselj_scaled(ν, x * a)
+        SVector(ntuple(length(_PBK_S_TERMS)) do i
+            p1, p2, p3, p4 = _PBK_S_TERMS[i]
+            i > nterms && return zero(T)
+            num = (x + eps0)^(2 * sgm + p3) * x^eJ(p1, p2) * jn^p1 * djn^p2
+            # log1p: the denominator itself overflows Double64 (max ~1e308)
+            num * exp(-(κx + sgm + p4) * log1p(x^2 / κx))
+        end)
+    end[1]
+    return ntuple(length(_PBK_S_TERMS)) do i
+        p1, p2, p3, _, m = _PBK_S_TERMS[i]
+        C * a^(p3 - 3 + m + eJ(p1, p2)) * I[i] / 2^eJ(p1, p2)
     end
 end
 
@@ -103,18 +97,13 @@ end
 # with a factor n are left zero: the products vanish, while some of the integrals diverge as k⊥ → 0.
 function _pbk_S(p, ν, kx)
     λ = kx^2 * p.rhoc^2 / 2
-    S(p1, p2, p3, p4; m = 0) = funcS_pbk(p, ν, λ, p1, p2, p3, p4; m)
     c, σ = (p.κx + p.sigma + 1) / p.κx, p.sigma
-    # S(…; m = 2) = 2λ S
-    kx2s2 = S(2, 0, 1, 1; m = 2) / p.rhoc^2
-    s4, s6 = S(1, 1, 2, 1), S(0, 2, 3, 1)
+    kx2s2, s4, s6, s2, s17a, s17b, s38a, s38b, s59a, s59b = funcS_pbk(p, ν, λ)
     z = zero(λ)
-    iszero(ν) && return (; s17 = z, s2 = z, kx2s2, s38 = z, s4, s59 = z, s6)
+    iszero(ν) && return (; s17 = z, s2 = z, kx2s2 = kx2s2 / p.rhoc^2, s38 = z, s4, s59 = z, s6)
     return (;
-        s17 = c * S(2, 0, 1, 2) - σ * S(2, 0, -1, 1; m = 2),
-        s2 = S(2, 0, 1, 1), kx2s2,
-        s38 = c * S(1, 1, 2, 2) - σ * S(1, 1, 0, 1; m = 2), s4,
-        s59 = c * S(0, 2, 3, 2) - σ * S(0, 2, 1, 1; m = 2), s6,
+        s17 = c * s17a - σ * s17b, s2, kx2s2 = kx2s2 / p.rhoc^2,
+        s38 = c * s38a - σ * s38b, s4, s59 = c * s59a - σ * s59b, s6,
     )
 end
 

@@ -1,6 +1,7 @@
 module PlasmaBO
 
 using QuadGK: quadgk, quadgk!
+using StaticArrays: SVector
 using Bumper: Bumper, @no_escape
 using LinearAlgebra
 using Statistics: mean
