@@ -24,13 +24,13 @@
     @test polarization_ratio(field_vector(2, 6, 0), Wavevector(0.0, 0.0)) ≈ 3.0
     @test handedness(v_R, 1.0, Wavevector(0.0, 0.0)) == :R
 
-    # Eigenvectors of a solver's matrix end in the fields
+    # A solver's eigenvectors end in the fields: parallel light waves are circular, one of each sense
     plasma = Plasma(Population(Electron, BiMaxwellian; T = 1.0, n = 1.0e11), Population(Proton, BiMaxwellian; T = 1.0, n = 1.0e11); B0 = 1.0e-4)
     k = Wavevector(0.0, 1.0)
     for alg in (BOFluid(), BOHH(; N = 2, J = 8))
-        decomp = eigen!(dispersion_matrix(plasma, k, alg))
-        i = findfirst(ω -> isfinite(ω) && abs(real(ω)) > 1.0e3, decomp.values)
-        @test isfinite(polarization_ratio(decomp.vectors[:, i], k))
-        @test handedness(decomp.vectors[:, i], decomp.values[i], k) in (:R, :L, :linear)
+        (; values, vectors) = eigen!(dispersion_matrix(plasma, k, alg))
+        light = findall(ω -> isfinite(ω) && real(ω) > 1.0e8, values)
+        @test sort([handedness(vectors[:, i], values[i], k) for i in light]) == [:L, :R]
+        @test all(i -> abs(polarization_ratio(vectors[:, i], k)) ≈ 1, light)
     end
 end

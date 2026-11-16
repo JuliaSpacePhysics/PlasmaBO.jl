@@ -1,122 +1,54 @@
 using BenchmarkTools
 using PlasmaBO
-using PlasmaPopulations: gyrofrequency, thermal_speed, debye_length
-using PlasmaPopulations: E_SI as q, ME_SI as me, C_SI as c0, kappa_widths
-using PlasmaBO: hermite_expansion, gen_fv2d
+using PlasmaPopulations: gyrofrequency, thermal_speed, debye_length, kappa_widths
+using PlasmaPopulations: C_SI as c0
 
 const SUITE = BenchmarkGroup()
 
-cattaert_electron() = ProductBiKappa(Electron; T = 2555.0, kappa_perp = 200.0, kappa_para = 1.0)
-
 let g = SUITE["Umeda2012"]
-    B0 = 96.24e-9  # [Tesla]
-    T = 51 # [eV]
-    e = Electron
+    B0, T, e = 96.24e-9, 51, Electron
+    vth = thermal_speed(e, T)
     plasma = Plasma(
-        Population(e, (vth = thermal_speed(e, T); GaussianRing(; vr_perp = 0.05c0, w_perp = vth, vth_para = vth, vd_para = 0.1c0)); n = 1.0e5),
+        Population(e, GaussianRing(; vr_perp = 0.05c0, w_perp = vth, vth_para = vth, vd_para = 0.1c0); n = 1.0e5),
         Population(e, BiMaxwellian; T, n = 9.0e5);
         B0,
     )
-
-    # Compute normalization
-    wce = abs(B0 * q / me)
-    lambdaD = debye_length(e, 1.0e6, T)
-    kn = 1 / lambdaD
-
-    # Wave vector: k*λD = 0.03, θ = 40°
-    k = 0.03 / lambdaD
+    wce = abs(gyrofrequency(e, B0))
+    kn = 1 / debye_length(e, 1.0e6, T)
     θ = deg2rad(40)
-    kx = k * sin(θ)
-    kz = k * cos(θ)
 
-    g["solve"] = @benchmarkable solve($(DispersionProblem(plasma, Wavevector(kx, kz))), BOHH(; N = 6, J = 12))
-
-    k_ranges = (0.01:0.05:0.3) .* kn
-    sweep = AngleSweep(; k = collect(k_ranges), theta = θ)
-    g["scan"] = @benchmarkable solve($(DispersionProblem(plasma, sweep)), BOHH(; N = 6))
-    ω0, k0 = (2.32 + 0.33im) * wce, Wavevector((0.1kn) .* sincos(θ)...)
-    survey = solve(DispersionProblem(plasma, sweep), BOHH(; N = 6))
+    g["solve"] = @benchmarkable solve($(DispersionProblem(plasma, Wavevector(; k = 0.03kn, theta = θ))), BOHH(; N = 6, J = 12))
+    sweep = DispersionProblem(plasma, AngleSweep(; k = collect(0.01:0.05:0.3) .* kn, theta = θ))
+    g["scan"] = @benchmarkable solve($sweep, BOHH(; N = 6))
+    survey = solve(sweep, BOHH(; N = 6))
     g["link"] = @benchmarkable link($survey)
-    g["track"] = @benchmarkable track($survey, $ω0, $k0)
-end
-
-let g = SUITE["FluidVsKinetic"]
-    # Cold plasma parameters
-    B0 = 1.0e-8  # [Tesla]
-    n = 1.0e6    # [m^-3]
-    T = 0.01     # [eV] - very cold
-
-    # Wave vector
-    k = 1.0  # [m^-1]
-    θ = deg2rad(45)
-    kx, kz = k .* sincos(θ)
-
-    plasma = Plasma(Population(Electron, BiMaxwellian; T, n), Population(Proton, BiMaxwellian; T, n); B0)
-    g["kinetic"] = @benchmarkable solve($(DispersionProblem(plasma, Wavevector(kx, kz))), BOHH(; N = 2, J = 8))
-    g["fluid"] = @benchmarkable solve($(DispersionProblem(plasma, Wavevector(kx, kz))), BOFluid())
+    g["track"] = @benchmarkable track($survey, $((2.32 + 0.33im) * wce), $(Wavevector(; k = 0.1kn, theta = θ)))
 end
 
 let g = SUITE["MirrorMode"]
-    B0 = 100.0e-9
-    θ = deg2rad(71)
-
-    n = 1.0e6
-    Tpara = 24840.0
-    Tperp = 49680.0
-
-    p = Proton
+    B0, n, p = 100.0e-9, 1.0e6, Proton
     plasma = Plasma(
-        Population(p, BiMaxwellian; T_perp = Tperp, T_para = Tpara, n),
-        Population(Electron, BiMaxwellian; T = Tpara, n);
+        Population(p, BiMaxwellian; T_perp = 49680.0, T_para = 24840.0, n),
+        Population(Electron, BiMaxwellian; T = 24840.0, n);
         B0,
     )
-    ρᵢ = thermal_speed(p, Tperp) / sqrt(2) / gyrofrequency(p, B0)
-
-    # Selecting a single k for benchmark, from the range (0.005:0.04:0.7) ./ ρᵢ
-    # Choosing a value in the middle
-    k_val = 0.35 / ρᵢ
-    kx, kz = k_val .* sincos(θ)
-
-    g["solve"] = @benchmarkable solve($(DispersionProblem(plasma, Wavevector(kx, kz))), BOHH())
+    ρi = thermal_speed(p, 49680.0) / sqrt(2) / gyrofrequency(p, B0)
+    problem = DispersionProblem(plasma, Wavevector(; k = 0.35 / ρi, theta = deg2rad(71)))
+    g["BOHH"] = @benchmarkable solve($problem, BOHH())
+    g["BOFluid"] = @benchmarkable solve($problem, BOFluid())
 end
 
-SUITE["HermiteExpansion"] = BenchmarkGroup()
-
-let
-    g = gen_fv2d(cattaert_electron())
-    SUITE["HermiteExpansion"]["ProductBiKappa"] = @benchmarkable hermite_expansion(
-        $(g.fv), $(g.v_para), $(g.v_perp), $(g.w_para), $(g.w_perp); N_para = 16, N_perp = 16
-    )
-end
-
-SUITE["PBKSolver"] = BenchmarkGroup()
-
-let
-    B0 = 1.0e-6          # [Tesla]
+let g = SUITE["Cattaert2007"]
+    B0, e = 1.0e-6, Electron
+    vdf = ProductBiKappa(e; T = 2555.0, kappa_perp = 200.0, kappa_para = 1.0)
+    w_perp, w_para = kappa_widths(vdf)
+    plasma = Plasma(Population(e, vdf; n = 2.43e6); B0)
+    kn = abs(gyrofrequency(e, B0)) / w_perp
     θ = deg2rad(30)
 
-    n = 2.43e6           # [m^-3]
-    electron = Plasma(Population(Electron, cattaert_electron(); n); B0)
-
-    wce = abs(B0 * q / me)
-    ρce = kappa_widths(cattaert_electron())[1] / wce
-    kn = 1 / ρce  # so that k/kn = kρce
-    kρ_scan = range(1.0e-4, 0.3; length = 80)
-    ks = kρ_scan .* kn
-
-    SUITE["PBKSolver"]["solve"] = @benchmarkable solve($(DispersionProblem(electron, AngleSweep(; k = collect(ks), theta = θ))), BOPBK())
-end
-
-let g = SUITE["BuildMatrix"]
-    B0 = 1.0e-6
-    electron = Plasma(Population(Electron, cattaert_electron(); n = 2.43e6); B0)
-    wce = abs(B0 * q / me)
-    ρce = kappa_widths(cattaert_electron())[1] / wce
-    kn = 1 / ρce
-    θ = deg2rad(30)
-    kx = 0.1 * kn * cos(θ)
-    kz = 0.1 * kn * sin(θ)
-
-    g["HH"] = @benchmarkable dispersion_matrix($electron, $(Wavevector(kx, kz)), BOHH())
-    g["PBK"] = @benchmarkable dispersion_matrix($electron, $(Wavevector(kx, kz)), BOPBK())
+    g["HermiteVDF"] = @benchmarkable HermiteVDF($vdf; w_perp = $w_perp, w_para = $w_para, N_para = 16, N_perp = 16)
+    k = Wavevector(; k = 0.1kn, theta = θ)
+    g["matrix BOHH"] = @benchmarkable dispersion_matrix($plasma, $k, BOHH())
+    g["matrix BOPBK"] = @benchmarkable dispersion_matrix($plasma, $k, BOPBK())
+    g["scan"] = @benchmarkable solve($(DispersionProblem(plasma, AngleSweep(; k = collect(range(1.0e-4, 0.3; length = 80) .* kn), theta = θ))), BOPBK())
 end
