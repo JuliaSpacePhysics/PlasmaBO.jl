@@ -97,7 +97,7 @@ where ρ_l and u_m are normalized Hermite basis functions. `N_para`, `N_perp` ar
 
 # Arguments
 - `fv`: Distribution function values, `fv[i_para, i_perp]`
-- `v_para`, `v_perp`: Uniform velocity grids. For non-uniform tables use `HermiteVDF(GridVDF(...))`.
+- `v_para`, `v_perp`: Uniform velocity grids. For non-uniform tables use `HermiteVDF(GyrotropicGridVDF(...))`.
 - `w_para`, `w_perp`: 1/e widths of the reference Gaussian
 - `vd_para`, `vr_perp`: its center, the parallel drift and the ring speed (default: 0)
 - `atol`: Absolute tolerance for zeroing small coefficients

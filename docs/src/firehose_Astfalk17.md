@@ -1,7 +1,7 @@
 # Case: Firehose instability (kappa distribution)
 
 This page demonstrates test firehose instability using Hermite-Hermite (HH) expansion for bi-kappa distribution.
-`BOHH` expands every non-Maxwellian model into a `HermiteVDF` about its thermal speeds and drift. Use `HermiteVDF(model; w_perp, w_para, N_para, N_perp)` to control the expansion, and `HermiteVDF(GridVDF(v_perp, v_para, f))` for tabulated distributions. The series is truncated, so low κ needs care: see [BO-PBK](rlp_Cattaert07.md) for integer κ∥.
+`BOHH` expands every non-Maxwellian model into a `HermiteVDF` about its thermal speeds and drift. Use `HermiteVDF(model; w_perp, w_para, N_para, N_perp)` to control the expansion. The series is truncated, so low κ needs care: see [BO-PBK](rlp_Cattaert07.md) for integer κ∥.
 
 ### Simulation Parameters
 
