@@ -1,0 +1,15 @@
+name: Benchmark
+on:
+  pull_request:
+    paths-ignore:
+      - 'README.md'
+      - 'CONTRIBUTING.md'
+      - 'CHANGELOG.md'
+      - 'test/**'
+      - 'docs/**'
+  push:
+    branches: [main]
+jobs:
+  benchmark:
+    uses: JuliaSpacePhysics/actions/.github/workflows/benchmark.yml@main
+    permissions: {actions: write, contents: read}

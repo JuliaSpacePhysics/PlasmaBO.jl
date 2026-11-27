@@ -1,0 +1,9 @@
+name: Benchmark comment
+on:
+  workflow_run:
+    workflows: [Benchmark]
+    types: [completed]
+jobs:
+  comment:
+    uses: JuliaSpacePhysics/actions/.github/workflows/benchmark-comment.yml@main
+    permissions: {actions: read, pull-requests: write}
