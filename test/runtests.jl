@@ -312,13 +312,13 @@ end
     @test all(isapprox.(M0, M1; rtol = 1.0e-7, atol = 1.0e-10 * maximum(abs, M0)))
 end
 
-@testset "GridVDF through BOHH" begin
+@testset "GyrotropicGridVDF through BOHH" begin
     B0, n = 0.1, 5.0e19
     p, e = Proton, Electron
     k = Wavevector(; k = 31.0613 / 4, theta = deg2rad(45))
     wci = gyrofrequency(p, B0)
     table(d, (w_perp, w_para), vd = 0.0) = let v_perp = range(0, 12w_perp, 241), v_para = range(vd - 12w_para, vd + 12w_para, 481)
-        GridVDF(v_perp, v_para, [pdf(d, x, z) for x in v_perp, z in v_para])
+        GyrotropicGridVDF(v_perp, v_para, [pdf(d, x, z) for x in v_perp, z in v_para])
     end
     growth(proton, electron) =
         maximum(imag, filter(isfinite, modes(Plasma(Population(p, proton; n), Population(e, electron; n); B0), k, BOHH(; N = 2, J = 24)))) / wci

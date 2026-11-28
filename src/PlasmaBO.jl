@@ -6,7 +6,7 @@ using Bumper: Bumper, @no_escape
 using LinearAlgebra
 using Statistics: mean
 using PlasmaPopulations
-using PlasmaPopulations: si_velocity, kappa_widths, pdf
+using PlasmaPopulations: si_velocity, kappa_widths, pdf, isgyrotropic
 using Reexport: @reexport
 @reexport using PlasmaDispersionBase
 using PlasmaDispersionBase: normalized, realtype
